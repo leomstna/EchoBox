@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MusicBoxd</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="glass-header">
+        <h1>MusicBoxd</h1>
+        <div class="header-controls">
+            <button id="login-btn" class="aero-btn">Login com Google</button>
+            <span id="user-info" style="display:none;"></span>
+        </div>
+    </header>
+
+    <main>
+        <section class="search-section">
+            <input type="text" id="search-input" placeholder="Busque um álbum foda...">
+            <button id="search-btn" class="aero-btn">Procurar</button>
+        </section>
+
+        <section class="grid-container" id="album-grid">
+            </section>
+    </main>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
