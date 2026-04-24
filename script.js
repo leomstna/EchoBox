@@ -53,7 +53,7 @@ searchBtn.addEventListener('click', async () => {
 
     try {
         // Flask rodando na porta 5000
-        const response = await fetch(`https://api-musicbox-m275.onrender.com/search?q=${encodeURIComponent(query)}`);
+        const response = await fetch(`https://api-musicbox-m275.onrender.com`);
         const data = await response.json();
         
         albumGrid.innerHTML = ''; // Limpa o loading
