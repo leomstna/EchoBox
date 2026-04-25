@@ -88,7 +88,7 @@ searchBtn.addEventListener('click', async () => {
     try {
         // Usa o type do select (album ou track/single)
         const type = filterType.value;
-        const url = `https://SEU-LINK-DO-RENDER.onrender.com/search?q=${encodeURIComponent(finalQuery)}&type=${type}`;
+        const url = `https://api-musicbox-m275.onrender.com/search?q=${encodeURIComponent(finalQuery)}&type=${type}`;
         
         const response = await fetch(url);
         const data = await response.json();
