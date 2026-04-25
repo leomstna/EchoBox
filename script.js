@@ -112,7 +112,7 @@ searchBtn.addEventListener('click', async () => {
         const type = filterType.value;
         
         // !!! COLA TEU LINK DO RENDER AQUI EMBAIXO !!!
-        const url = `https://SEU-LINK-DO-RENDER.onrender.com/search?q=${encodeURIComponent(finalQuery)}&type=${type}`;
+        const url = `https://api-musicbox-m275.onrender.com/search?q=${encodeURIComponent(finalQuery)}&type=${type}`;
         
         const response = await fetch(url);
         const data = await response.json();
