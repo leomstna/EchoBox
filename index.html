@@ -3,27 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MusicBoxd</title>
+    <title>MusicBoxd | Abismo</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 <body>
-    <header class="glass-header">
-        <h1>MusicBoxd</h1>
-        <div class="header-controls">
-            <button id="login-btn" class="aero-btn">Login com Google</button>
-            <span id="user-info" style="display:none;"></span>
+    <nav class="pill-nav">
+        <div class="logo">MusicBoxd</div>
+        <div class="nav-links">
+            <a href="#home">Home</a>
+            <a href="#search-section">Explorar</a>
         </div>
+        <div class="user-actions">
+            <button id="login-btn" class="btn-primary">Entrar</button>
+            <div id="user-menu" style="display: none;">
+                <img id="nav-pfp" src="https://via.placeholder.com/40" alt="Perfil">
+                <button id="profile-btn" class="btn-ghost"><i class="ph ph-user"></i></button>
+                <button id="logout-btn" class="btn-ghost"><i class="ph ph-sign-out"></i></button>
+            </div>
+        </div>
+    </nav>
+
+    <header id="home" class="hero fade-in-up">
+        <p class="subtitle">O LIMITE DIGITAL</p>
+        <h1>Sua vida.<br>Sua trilha sonora.</h1>
+        <p class="desc">Catalogue, avalie e devore álbuns no vazio da rede.</p>
     </header>
 
-    <main>
-        <section class="search-section">
-            <input type="text" id="search-input" placeholder="Busque um álbum foda...">
-            <button id="search-btn" class="aero-btn">Procurar</button>
-        </section>
+    <main id="search-section" class="fade-in-up" style="animation-delay: 0.2s;">
+        <div class="search-bar-container">
+            <input type="text" id="search-input" placeholder="Injete o nome da obra...">
+            
+            <div class="filters">
+                <select id="filter-type" class="dark-select">
+                    <option value="album">Álbum</option>
+                    <option value="single">Single / EP</option>
+                </select>
+                <input type="number" id="filter-year" class="dark-input" placeholder="Ano (Opcional)" min="1900" max="2026">
+                <button id="search-btn" class="btn-primary">Buscar</button>
+            </div>
+        </div>
 
+        <div id="loading-text" class="pulse-text" style="display: none;">Acessando os arquivos...</div>
+        
         <section class="grid-container" id="album-grid">
             </section>
     </main>
+
+    <div id="profile-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content border-glow">
+            <div class="modal-header">
+                <h2>Seu Arquivo</h2>
+                <button id="close-modal" class="btn-ghost"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="pfp-edit">
+                    <img id="modal-pfp" src="" alt="Sua Cara">
+                    <input type="text" id="edit-pfp-url" class="dark-input" placeholder="URL da nova foto">
+                </div>
+                <label>Codinome</label>
+                <input type="text" id="edit-name" class="dark-input">
+                <label>Manifesto (Bio)</label>
+                <textarea id="edit-bio" class="dark-input" rows="4" placeholder="O que passa na sua cabeça?"></textarea>
+                <button id="save-profile" class="btn-primary w-100">Salvar Modificações</button>
+            </div>
+        </div>
+    </div>
 
     <script type="module" src="script.js"></script>
 </body>
