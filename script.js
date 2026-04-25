@@ -4,12 +4,13 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase
 
 // COLA TUAS CHAVES REAIS DO FIREBASE AQUI MANO
 const firebaseConfig = {
-  apiKey: "SUA_API_KEY",
-  authDomain: "SEU_APP.firebaseapp.com",
-  projectId: "SEU_PROJECT_ID",
-  storageBucket: "SEU_APP.appspot.com",
-  messagingSenderId: "SEU_SENDER_ID",
-  appId: "SEU_APP_ID"
+  apiKey: "AIzaSyCvRd8N7UQaGLsV-0rxjLn-Z4Ys14KH3pY",
+  authDomain: "mvp-rede-social.firebaseapp.com",
+  projectId: "mvp-rede-social",
+  storageBucket: "mvp-rede-social.firebasestorage.app",
+  messagingSenderId: "245441998885",
+  appId: "1:245441998885:web:ab16004bc2ed9af9e30fcc",
+  measurementId: "G-6BEHZM47SL"
 };
 
 const app = initializeApp(firebaseConfig);
