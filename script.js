@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCvRd8N7UQaGLsV-0rxjLn-Z4Ys14KH3pY",
@@ -39,17 +39,81 @@ const loadingText = document.getElementById('loading-text');
 let currentUser = null;
 
 // --- BOTÕES DA NAVBAR ---
+const showSection = (id) => {
+    document.getElementById('home').style.display = id === 'home' ? 'block' : 'none';
+    document.getElementById('search-section').style.display = id === 'search-section' ? 'block' : 'none';
+    document.getElementById('network-section').style.display = id === 'network-section' ? 'block' : 'none';
+};
+
 document.getElementById('link-home').addEventListener('click', (e) => {
     e.preventDefault();
-    window.scrollTo({ top: 0, behavior: 'smooth' }); 
+    showSection('home');
+    document.getElementById('search-section').style.display = 'block'; 
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 
 document.getElementById('link-explorar').addEventListener('click', (e) => {
     e.preventDefault();
+    showSection('search-section');
     searchInput.value = ''; 
     filterYear.value = '2026'; 
-    searchBtn.click(); 
-    document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' }); 
+    searchBtn.click();
+});
+
+// --- SISTEMA DE COMUNIDADE (REDE) ---
+document.getElementById('link-rede').addEventListener('click', async (e) => {
+    e.preventDefault();
+    showSection('network-section');
+    
+    const usersGrid = document.getElementById('users-grid');
+    usersGrid.innerHTML = '<p class="pulse-text">Rastreando sinal dos usuários...</p>';
+
+    try {
+        const usersSnap = await getDocs(collection(db, "users"));
+        usersGrid.innerHTML = '';
+        
+        usersSnap.forEach(docSnap => {
+            if(currentUser && docSnap.id === currentUser.uid) return; 
+            
+            const data = docSnap.data();
+            const userCard = document.createElement('div');
+            userCard.className = 'user-card fade-in-up';
+            userCard.innerHTML = `
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <img src="${data.photoURL || 'https://via.placeholder.com/50'}" alt="Foto">
+                    <div>
+                        <h4 style="color:#fff;">${data.name || 'Anônimo'}</h4>
+                        <p style="font-size:0.7rem; color:#666;">${data.bio ? data.bio.substring(0, 30) + '...' : 'Sem manifesto'}</p>
+                    </div>
+                </div>
+                <button class="btn-follow" data-id="${docSnap.id}">Seguir</button>
+            `;
+            usersGrid.appendChild(userCard);
+        });
+
+        document.querySelectorAll('.btn-follow').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                if(!currentUser) return alert("Tem que logar pra seguir alguém.");
+                
+                const targetId = e.target.getAttribute('data-id');
+                const followRef = doc(db, "users", currentUser.uid, "following", targetId);
+                
+                if (e.target.classList.contains('following')) {
+                    await deleteDoc(followRef);
+                    e.target.classList.remove('following');
+                    e.target.innerText = 'Seguir';
+                } else {
+                    await setDoc(followRef, { followedAt: new Date() });
+                    e.target.classList.add('following');
+                    e.target.innerText = 'Seguindo';
+                }
+            });
+        });
+
+    } catch (err) {
+        console.error("Erro ao carregar rede:", err);
+        usersGrid.innerHTML = '<p style="color:red;">Falha ao acessar a rede.</p>';
+    }
 });
 
 // --- SISTEMA DE AUTENTICAÇÃO ---
@@ -61,7 +125,6 @@ logoutBtn.addEventListener('click', () => {
     });
 });
 
-// --- CARREGA O PERFIL QUANDO LOGA ---
 onAuthStateChanged(auth, async (user) => {
     currentUser = user;
     if (user) {
@@ -88,7 +151,6 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 // --- SISTEMA DO MODAL DE PERFIL ---
-// Abre o perfil e já puxa as obras avaliadas do Firestore
 navPfp.addEventListener('click', async () => {
     modal.style.display = 'flex';
     const ratedContainer = document.getElementById('user-rated-albums');
@@ -106,15 +168,18 @@ navPfp.addEventListener('click', async () => {
         }
         
         ratedContainer.innerHTML = '';
+        let animDelay = 0; // O tempo da animação em cascata
+        
         querySnapshot.forEach((docSnap) => {
             const data = docSnap.data();
             ratedContainer.innerHTML += `
-                <div style="min-width: 80px; text-align: center;">
+                <div class="rated-album-mini" style="animation-delay: ${animDelay}s;">
                     <img src="${data.image}" style="width: 80px; height: 80px; border-radius: 8px; object-fit: cover; border: 1px solid #333;">
                     <p style="font-size: 0.7rem; color: #fff; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px;" title="${data.name}">${data.name}</p>
                     <p style="font-size: 0.8rem; color: #fff;">${'★'.repeat(data.rating)}${'☆'.repeat(5 - data.rating)}</p>
                 </div>
             `;
+            animDelay += 0.08; 
         });
     } catch (error) {
         console.error("Erro ao carregar álbuns:", error);
@@ -124,7 +189,6 @@ navPfp.addEventListener('click', async () => {
 
 closeModal.addEventListener('click', () => modal.style.display = 'none');
 
-// Lógica de Upload da Nova Foto
 fileInput.addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (file) {
@@ -136,7 +200,7 @@ fileInput.addEventListener('change', function(e) {
     }
 });
 
-// --- SALVA O PERFIL DE VERDADE ---
+// --- SALVA O PERFIL ---
 document.getElementById('save-profile').addEventListener('click', async () => {
     if (!currentUser) return alert("Tem que logar primeiro.");
 
@@ -210,7 +274,6 @@ searchBtn.addEventListener('click', async () => {
             `;
             albumGrid.appendChild(card);
 
-            // Escopo correto: As estrelas de cada card chamam a função pra salvar
             const stars = Array.from(card.querySelectorAll('.stars i'));
             stars.forEach((star, index) => {
                 star.addEventListener('click', () => {
@@ -230,7 +293,6 @@ searchBtn.addEventListener('click', async () => {
                         }
                     });
 
-                    // --- SALVA NO BANCO QUANDO DÁ A NOTA ---
                     const rating = index + 1;
                     const safeId = album.name.replace(/[^a-zA-Z0-9]/g, ''); 
                     
