@@ -150,9 +150,32 @@ fileInput.addEventListener('change', function(e) {
     }
 });
 
-document.getElementById('save-profile').addEventListener('click', () => {
-    alert("Interface pronta! Na próxima a gente injeta o banco de dados pra salvar o manifesto e a foto permanentemente.");
-    modal.style.display = 'none';
+document.getElementById('save-profile').addEventListener('click', async () => {
+    if (!currentUser) return alert("Tem que logar primeiro.");
+
+    const newName = document.getElementById('edit-name').value;
+    const newBio = document.getElementById('edit-bio').value;
+    const newPfp = modalPfp.src; 
+    
+    document.getElementById('save-profile').innerText = "Salvando...";
+
+    try {
+        await setDoc(doc(db, "users", currentUser.uid), {
+            name: newName,
+            bio: newBio,
+            photoURL: newPfp
+        }, { merge: true });
+        
+        // Atualiza a foto da navbar na hora
+        navPfp.src = newPfp;
+        
+        document.getElementById('save-profile').innerText = "Salvar Modificações";
+        modal.style.display = 'none';
+    } catch (error) {
+        console.error("Erro ao salvar:", error);
+        alert("A conexão com o banco falhou ao salvar.");
+        document.getElementById('save-profile').innerText = "Salvar Modificações";
+    }
 });
 
 // --- SISTEMA DE BUSCA E ESTRELAS ---
