@@ -11,15 +11,14 @@
     <nav class="pill-nav">
         <div class="logo">MusicBoxd</div>
         <div class="nav-links">
-            <a href="#home">Home</a>
-            <a href="#search-section">Explorar</a>
+            <a href="#" id="link-home">Home</a>
+            <a href="#" id="link-explorar">Explorar</a>
         </div>
         <div class="user-actions">
             <button id="login-btn" class="btn-primary">Entrar</button>
-            <div id="user-menu" style="display: none;">
-                <img id="nav-pfp" src="https://via.placeholder.com/40" alt="Perfil">
-                <button id="profile-btn" class="btn-ghost"><i class="ph ph-user"></i></button>
-                <button id="logout-btn" class="btn-ghost"><i class="ph ph-sign-out"></i></button>
+            <div id="user-menu" style="display: none; align-items: center; gap: 15px;">
+                <img id="nav-pfp" src="https://via.placeholder.com/40" alt="Perfil" style="cursor: pointer;" title="Abrir Arquivo">
+                <button id="logout-btn" class="btn-ghost" title="Sair"><i class="ph ph-sign-out"></i></button>
             </div>
         </div>
     </nav>
@@ -32,9 +31,9 @@
 
     <main id="search-section" class="fade-in-up" style="animation-delay: 0.2s;">
         <div class="search-bar-container">
-            <input type="text" id="search-input" placeholder="Injete o nome da obra...">
+            <input type="text" id="search-input" class="dark-input" placeholder="Injete o nome da obra..." autocomplete="off">
             
-            <div class="filters">
+            <div class="filters" style="margin-top: 15px;">
                 <select id="filter-type" class="dark-select">
                     <option value="album">Álbum</option>
                     <option value="single">Single / EP</option>
@@ -51,21 +50,31 @@
     </main>
 
     <div id="profile-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-content border-glow">
+        <div class="modal-content border-glow" style="max-width: 600px;">
             <div class="modal-header">
                 <h2>Seu Arquivo</h2>
                 <button id="close-modal" class="btn-ghost"><i class="ph ph-x"></i></button>
             </div>
             <div class="modal-body">
                 <div class="pfp-edit">
-                    <img id="modal-pfp" src="" alt="Sua Cara">
-                    <input type="text" id="edit-pfp-url" class="dark-input" placeholder="URL da nova foto">
+                    <img id="modal-pfp" src="https://via.placeholder.com/60" alt="Sua Cara">
+                    <label for="edit-pfp-file" class="btn-ghost" style="font-size: 1rem; border: 1px solid #333; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Mudar Foto</label>
+                    <input type="file" id="edit-pfp-file" accept="image/*" style="display: none;">
                 </div>
+                
                 <label>Codinome</label>
                 <input type="text" id="edit-name" class="dark-input">
-                <input type="text" id="search-input" class="dark-input" placeholder="Injete o nome da obra...">
+                
                 <label>Manifesto (Bio)</label>
-                <textarea id="edit-bio" class="dark-input" rows="4" placeholder="O que passa na sua cabeça?"></textarea>
+                <textarea id="edit-bio" class="dark-input" rows="3" placeholder="O que passa na sua cabeça?"></textarea>
+                
+                <div style="margin-top: 20px; border-top: 1px solid #222; padding-top: 15px;">
+                    <h3 style="font-size: 1rem; margin-bottom: 10px; color: #aaa;">Obras Avaliadas</h3>
+                    <div id="user-rated-albums" style="display: flex; gap: 10px; overflow-x: auto;">
+                        <p style="color: #444; font-size: 0.8rem;">(O banco de dados ainda será conectado...)</p>
+                    </div>
+                </div>
+
                 <button id="save-profile" class="btn-primary w-100">Salvar Modificações</button>
             </div>
         </div>

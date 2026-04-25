@@ -81,3 +81,25 @@ body { background-color: #050505; color: #ededed; overflow-x: hidden; }
 .pfp-edit { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
 .pfp-edit img { width: 60px; height: 60px; border-radius: 50%; border: 1px solid #333; object-fit: cover; }
 .modal-body label { display: block; margin: 15px 0 5px 0; color: #888; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
+
+/* Mata as setas do campo de Número (Ano) */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+/* Customiza a seta do campo Select (Álbum/Single) */
+select.dark-select {
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg fill='%23888888' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 10px top 50%;
+    padding-right: 30px;
+}
