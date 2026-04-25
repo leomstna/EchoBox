@@ -40,6 +40,20 @@ const loadingText = document.getElementById('loading-text');
 
 let currentUser = null;
 
+// --- BOTÕES DA NAVBAR ---
+document.getElementById('link-home').addEventListener('click', (e) => {
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: 'smooth' }); // Rola pro topo liso
+});
+
+document.getElementById('link-explorar').addEventListener('click', (e) => {
+    e.preventDefault();
+    searchInput.value = ''; // Limpa texto
+    filterYear.value = '2026'; // Joga o ano de lançamento atual
+    searchBtn.click(); // Força o clique no botão de buscar
+    document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' }); // Desce até a busca
+});
+
 // --- SISTEMA DE AUTENTICAÇÃO ---
 loginBtn.addEventListener('click', () => signInWithPopup(auth, provider));
 
@@ -49,17 +63,60 @@ logoutBtn.addEventListener('click', () => {
     });
 });
 
-onAuthStateChanged(auth, (user) => {
+// --- CARREGA O PERFIL QUANDO LOGA ---
+onAuthStateChanged(auth, async (user) => {
     currentUser = user;
     if (user) {
         loginBtn.style.display = 'none';
         userMenu.style.display = 'flex';
-        navPfp.src = user.photoURL || 'https://via.placeholder.com/40';
-        modalPfp.src = user.photoURL || 'https://via.placeholder.com/60';
-        editName.value = user.displayName;
+        
+        // Vai no Abismo (Firestore) ver se já tem perfil salvo
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        
+        if (userDoc.exists()) {
+            const data = userDoc.data();
+            navPfp.src = data.photoURL || user.photoURL;
+            modalPfp.src = data.photoURL || user.photoURL;
+            editName.value = data.name || user.displayName;
+            document.getElementById('edit-bio').value = data.bio || "";
+        } else {
+            // Primeiro login (pega os dados normais do Google)
+            navPfp.src = user.photoURL;
+            modalPfp.src = user.photoURL;
+            editName.value = user.displayName;
+        }
     } else {
         loginBtn.style.display = 'block';
         userMenu.style.display = 'none';
+    }
+});
+
+// --- SALVA O PERFIL DE VERDADE ---
+document.getElementById('save-profile').addEventListener('click', async () => {
+    if (!currentUser) return alert("Tem que logar primeiro, fih.");
+
+    const newName = document.getElementById('edit-name').value;
+    const newBio = document.getElementById('edit-bio').value;
+    const newPfp = modalPfp.src; // Pega a foto (seja do google ou a que tu upou)
+    
+    document.getElementById('save-profile').innerText = "Salvando...";
+
+    try {
+        await setDoc(doc(db, "users", currentUser.uid), {
+            name: newName,
+            bio: newBio,
+            photoURL: newPfp
+        }, { merge: true });
+        
+        // Atualiza a foto da navbar na hora
+        navPfp.src = newPfp;
+        
+        document.getElementById('save-profile').innerText = "Salvar Modificações";
+        modal.style.display = 'none';
+    } catch (error) {
+        console.error("Erro ao salvar:", error);
+        alert("A conexão com o abismo falhou ao salvar.");
+        document.getElementById('save-profile').innerText = "Salvar Modificações";
     }
 });
 
