@@ -1,8 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// !!! COLA TUAS CHAVES DO FIREBASE AQUI !!!
 const firebaseConfig = {
   apiKey: "AIzaSyCvRd8N7UQaGLsV-0rxjLn-Z4Ys14KH3pY",
   authDomain: "mvp-rede-social.firebaseapp.com",
@@ -42,15 +41,15 @@ let currentUser = null;
 // --- BOTÕES DA NAVBAR ---
 document.getElementById('link-home').addEventListener('click', (e) => {
     e.preventDefault();
-    window.scrollTo({ top: 0, behavior: 'smooth' }); // Rola pro topo liso
+    window.scrollTo({ top: 0, behavior: 'smooth' }); 
 });
 
 document.getElementById('link-explorar').addEventListener('click', (e) => {
     e.preventDefault();
-    searchInput.value = ''; // Limpa texto
-    filterYear.value = '2026'; // Joga o ano de lançamento atual
-    searchBtn.click(); // Força o clique no botão de buscar
-    document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' }); // Desce até a busca
+    searchInput.value = ''; 
+    filterYear.value = '2026'; 
+    searchBtn.click(); 
+    document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' }); 
 });
 
 // --- SISTEMA DE AUTENTICAÇÃO ---
@@ -69,7 +68,6 @@ onAuthStateChanged(auth, async (user) => {
         loginBtn.style.display = 'none';
         userMenu.style.display = 'flex';
         
-        // Vai no Abismo (Firestore) ver se já tem perfil salvo
         const userDoc = await getDoc(doc(db, "users", user.uid));
         
         if (userDoc.exists()) {
@@ -79,7 +77,6 @@ onAuthStateChanged(auth, async (user) => {
             editName.value = data.name || user.displayName;
             document.getElementById('edit-bio').value = data.bio || "";
         } else {
-            // Primeiro login (pega os dados normais do Google)
             navPfp.src = user.photoURL;
             modalPfp.src = user.photoURL;
             editName.value = user.displayName;
@@ -90,52 +87,41 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// --- SALVA O PERFIL DE VERDADE ---
-document.getElementById('save-profile').addEventListener('click', async () => {
-    if (!currentUser) return alert("Tem que logar primeiro, fih.");
-
-    const newName = document.getElementById('edit-name').value;
-    const newBio = document.getElementById('edit-bio').value;
-    const newPfp = modalPfp.src; // Pega a foto (seja do google ou a que tu upou)
+// --- SISTEMA DO MODAL DE PERFIL ---
+// Abre o perfil e já puxa as obras avaliadas do Firestore
+navPfp.addEventListener('click', async () => {
+    modal.style.display = 'flex';
+    const ratedContainer = document.getElementById('user-rated-albums');
     
-    document.getElementById('save-profile').innerText = "Salvando...";
-
+    if (!currentUser) return;
+    
+    ratedContainer.innerHTML = '<p style="color: #666; font-size: 0.8rem;">Acessando o banco de dados...</p>';
+    
     try {
-        await setDoc(doc(db, "users", currentUser.uid), {
-            name: newName,
-            bio: newBio,
-            photoURL: newPfp
-        }, { merge: true });
+        const querySnapshot = await getDocs(collection(db, "users", currentUser.uid, "ratings"));
         
-        // Atualiza a foto da navbar na hora
-        navPfp.src = newPfp;
+        if (querySnapshot.empty) {
+            ratedContainer.innerHTML = '<p style="color: #444; font-size: 0.8rem;">O abismo está vazio. Avalie alguma obra.</p>';
+            return;
+        }
         
-        document.getElementById('save-profile').innerText = "Salvar Modificações";
-        modal.style.display = 'none';
+        ratedContainer.innerHTML = '';
+        querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            ratedContainer.innerHTML += `
+                <div style="min-width: 80px; text-align: center;">
+                    <img src="${data.image}" style="width: 80px; height: 80px; border-radius: 8px; object-fit: cover; border: 1px solid #333;">
+                    <p style="font-size: 0.7rem; color: #fff; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px;" title="${data.name}">${data.name}</p>
+                    <p style="font-size: 0.8rem; color: #fff;">${'★'.repeat(data.rating)}${'☆'.repeat(5 - data.rating)}</p>
+                </div>
+            `;
+        });
     } catch (error) {
-        console.error("Erro ao salvar:", error);
-        alert("A conexão com o abismo falhou ao salvar.");
-        document.getElementById('save-profile').innerText = "Salvar Modificações";
+        console.error("Erro ao carregar álbuns:", error);
+        ratedContainer.innerHTML = '<p style="color: #ff3333; font-size: 0.8rem;">Erro ao ler o banco de dados.</p>';
     }
 });
 
-// --- LÓGICA DA NAVBAR E MENU EXTRAS ---
-document.getElementById('link-home').addEventListener('click', (e) => {
-    e.preventDefault();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-});
-
-document.getElementById('link-explorar').addEventListener('click', (e) => {
-    e.preventDefault();
-    searchInput.value = ''; 
-    filterYear.value = '2026'; 
-    searchBtn.click(); 
-    document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' });
-});
-
-// --- SISTEMA DO MODAL DE PERFIL ---
-// Abre o perfil clicando na foto da navbar
-navPfp.addEventListener('click', () => modal.style.display = 'flex');
 closeModal.addEventListener('click', () => modal.style.display = 'none');
 
 // Lógica de Upload da Nova Foto
@@ -144,12 +130,13 @@ fileInput.addEventListener('change', function(e) {
     if (file) {
         const reader = new FileReader();
         reader.onload = function(event) {
-            modalPfp.src = event.target.result; // Muda a foto no modal na hora
+            modalPfp.src = event.target.result;
         }
         reader.readAsDataURL(file);
     }
 });
 
+// --- SALVA O PERFIL DE VERDADE ---
 document.getElementById('save-profile').addEventListener('click', async () => {
     if (!currentUser) return alert("Tem que logar primeiro.");
 
@@ -166,7 +153,6 @@ document.getElementById('save-profile').addEventListener('click', async () => {
             photoURL: newPfp
         }, { merge: true });
         
-        // Atualiza a foto da navbar na hora
         navPfp.src = newPfp;
         
         document.getElementById('save-profile').innerText = "Salvar Modificações";
@@ -191,8 +177,6 @@ searchBtn.addEventListener('click', async () => {
 
     try {
         const type = filterType.value;
-        
-        // !!! COLA TEU LINK DO RENDER AQUI EMBAIXO !!!
         const url = `https://api-musicbox-m275.onrender.com/search?q=${encodeURIComponent(finalQuery)}&type=${type}`;
         
         const response = await fetch(url);
@@ -225,11 +209,9 @@ searchBtn.addEventListener('click', async () => {
                 </div>
             `;
             albumGrid.appendChild(card);
-        });
 
-        // Lógica de pintar as estrelas perfeitamente
-        document.querySelectorAll('.stars').forEach(starContainer => {
-            const stars = Array.from(starContainer.children);
+            // Escopo correto: As estrelas de cada card chamam a função pra salvar
+            const stars = Array.from(card.querySelectorAll('.stars i'));
             stars.forEach((star, index) => {
                 star.addEventListener('click', () => {
                     if(!currentUser) { 
@@ -247,6 +229,17 @@ searchBtn.addEventListener('click', async () => {
                             s.classList.add('ph');
                         }
                     });
+
+                    // --- SALVA NO BANCO QUANDO DÁ A NOTA ---
+                    const rating = index + 1;
+                    const safeId = album.name.replace(/[^a-zA-Z0-9]/g, ''); 
+                    
+                    setDoc(doc(db, "users", currentUser.uid, "ratings", safeId), {
+                        name: album.name,
+                        artist: album.artist,
+                        image: album.image || 'https://via.placeholder.com/200',
+                        rating: rating
+                    }).catch(err => console.error("Erro ao salvar nota:", err));
                 });
             });
         });
