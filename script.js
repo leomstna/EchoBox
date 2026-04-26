@@ -65,12 +65,37 @@ document.getElementById('link-explorar').addEventListener('click', (e) => {
     e.preventDefault();
     showSection('search-section');
     if (!searchInput.value.trim()) {
-        filterYear.value = "2026";
-        setTimeout(() => searchBtn.click(), 100); 
+        loadTrending();
     } else {
         searchInput.focus(); 
     }
 });
+
+// --- FUNÇÃO PARA PUXAR ÁLBUNS EM ALTA ---
+const loadTrending = async () => {
+    loadingText.style.display = 'block';
+    albumGrid.innerHTML = '';
+    document.getElementById('pagination-controls').style.display = 'none';
+
+    try {
+        const response = await fetch(`https://api-musicbox-m275.onrender.com/trending`);
+        const data = await response.json();
+        
+        loadingText.style.display = 'none';
+
+        if (!data || data.length === 0) {
+            albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum lançamento encontrado.</p>';
+            return;
+        }
+
+        currentAlbums = data;
+        currentPage = 1;
+        renderPage();
+    } catch (error) {
+        loadingText.style.display = 'none';
+        albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333; width:100%;">A conexão com o servidor falhou.</p>';
+    }
+};
 
 // --- SISTEMA DE COMUNIDADE ---
 const renderUsers = (usersList) => {
@@ -394,8 +419,8 @@ document.getElementById('next-page').addEventListener('click', () => {
 searchBtn.addEventListener('click', async () => {
     let rawQuery = searchInput.value.trim();
     if (!rawQuery) {
-        // Envia um termo neutro para puxar álbuns aleatórios da API
-        rawQuery = "a"; 
+        loadTrending();
+        return;
     }
 
     let finalQuery = rawQuery;
