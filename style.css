@@ -109,8 +109,13 @@ body { background-color: #050505; color: #ededed; overflow-x: hidden; }
 }
 .modal-content.liquid-glass { 
     background: rgba(10, 10, 10, 0.95) !important;
-    border-radius: 16px; width: 90%; max-width: 500px; padding: 30px; 
+    border-radius: 16px; 
+    width: 90%; 
+    max-width: 500px; 
+    padding: 30px; 
     animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+    max-height: 85vh; 
+    overflow-y: auto; 
 }
 .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .pfp-edit { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
