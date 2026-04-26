@@ -58,7 +58,9 @@ document.getElementById('link-explorar').addEventListener('click', (e) => {
     searchInput.focus(); 
 });
 
-// --- SISTEMA DE COMUNIDADE (REDE) ---
+// O início dos imports e config do Firebase continua igual...
+// Certifica-te apenas de que no teu link-rede o texto está atualizado:
+
 document.getElementById('link-rede').addEventListener('click', async (e) => {
     e.preventDefault();
     showSection('network-section');
@@ -88,26 +90,7 @@ document.getElementById('link-rede').addEventListener('click', async (e) => {
             `;
             usersGrid.appendChild(userCard);
         });
-
-        document.querySelectorAll('.btn-follow').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                if(!currentUser) return alert("Faça login para seguir um usuário.");
-                
-                const targetId = e.target.getAttribute('data-id');
-                const followRef = doc(db, "users", currentUser.uid, "following", targetId);
-                
-                if (e.target.classList.contains('following')) {
-                    await deleteDoc(followRef);
-                    e.target.classList.remove('following');
-                    e.target.innerText = 'Seguir';
-                } else {
-                    await setDoc(followRef, { followedAt: new Date() });
-                    e.target.classList.add('following');
-                    e.target.innerText = 'Seguindo';
-                }
-            });
-        });
-
+        // ... resto da lógica de seguir ...
     } catch (err) {
         console.error("Erro ao carregar rede:", err);
         usersGrid.innerHTML = '<p style="color:red;">Falha ao acessar os dados da comunidade.</p>';
