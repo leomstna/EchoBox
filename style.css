@@ -9,7 +9,7 @@ body { background-color: #050505; color: #ededed; overflow-x: hidden; }
 .site-enter { animation: siteLoad 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
 /* SCROLLBAR PREMIUM */
-.custom-scroll::-webkit-scrollbar { height: 6px; }
+.custom-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
 .custom-scroll::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
 .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 10px; }
 .custom-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.4); }
@@ -101,22 +101,25 @@ body { background-color: #050505; color: #ededed; overflow-x: hidden; }
 .stars { display: flex; gap: 2px; color: #444; cursor: pointer; }
 .stars i:hover, .stars i.active { color: #fff; text-shadow: 0 0 5px rgba(255,255,255,0.8); }
 
-/* MODALS */
+/* MODALS - COM LIMITAÇÃO DE ALTURA (A SOLUÇÃO DO ANEXO) */
 .modal-overlay { 
     position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
     background: rgba(0,0,0,0.85); z-index: 99999; 
     display: flex; justify-content: center; align-items: center; 
+    overflow: hidden; /* Fundo travado */
 }
 .modal-content.liquid-glass { 
     background: rgba(10, 10, 10, 0.95) !important;
-    border-radius: 16px; 
-    width: 90%; 
-    max-width: 500px; 
-    padding: 30px; 
+    border-radius: 16px; width: 90%; max-width: 500px; padding: 30px; 
     animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
-    max-height: 85vh; 
-    overflow-y: auto; 
+    max-height: 85vh; /* O truque pro modal nunca estourar a tela */
+    overflow-y: auto; /* Barrinha de rolagem interna */
 }
+/* Estilizando a rolagem interna do modal */
+.modal-content::-webkit-scrollbar { width: 6px; }
+.modal-content::-webkit-scrollbar-track { background: transparent; }
+.modal-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+
 .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .pfp-edit { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
 .pfp-edit img { width: 60px; height: 60px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); object-fit: cover; }
