@@ -42,6 +42,11 @@ const loadingText = document.getElementById('loading-text');
 let currentUser = null;
 let allUsersData = [];
 
+// Variáveis da Paginação
+let currentAlbums = [];
+let currentPage = 1;
+const itemsPerPage = 12;
+
 // --- NAVEGAÇÃO ---
 const showSection = (id) => {
     document.getElementById('home').style.display = id === 'home' ? 'block' : 'none';
@@ -60,7 +65,6 @@ document.getElementById('link-explorar').addEventListener('click', (e) => {
     e.preventDefault();
     showSection('search-section');
     if (!searchInput.value.trim()) {
-        searchInput.value = "Em alta";
         filterYear.value = "2026";
         setTimeout(() => searchBtn.click(), 100); 
     } else {
@@ -68,13 +72,13 @@ document.getElementById('link-explorar').addEventListener('click', (e) => {
     }
 });
 
-// --- SISTEMA DE COMUNIDADE (REDE & AMIGOS) ---
+// --- SISTEMA DE COMUNIDADE ---
 const renderUsers = (usersList) => {
     const usersGrid = document.getElementById('users-grid');
     usersGrid.innerHTML = '';
     
     if (usersList.length === 0) {
-        usersGrid.innerHTML = '<p style="color:#aaa; text-align:center; width:100%; margin-top:20px;">Nenhum utilizador encontrado com esse nome.</p>';
+        usersGrid.innerHTML = '<p style="color:#aaa; text-align:center; width:100%; margin-top:20px;">Nenhum usuário encontrado.</p>';
         return;
     }
 
@@ -88,7 +92,7 @@ const renderUsers = (usersList) => {
             <div class="user-info-click" style="display:flex; align-items:center; gap:10px; width: 100%;">
                 <img src="${data.photoURL || 'https://via.placeholder.com/50'}" alt="Foto">
                 <div>
-                    <h4 class="glow-text" style="color:#fff;">${data.name || 'Anónimo'}</h4>
+                    <h4 class="glow-text" style="color:#fff;">${data.name || 'Anônimo'}</h4>
                     <p style="font-size:0.7rem; color:#aaa;">${data.bio ? data.bio.substring(0, 30) + '...' : 'Sem biografia'}</p>
                 </div>
             </div>
@@ -102,7 +106,7 @@ const renderUsers = (usersList) => {
     document.querySelectorAll('.btn-follow').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             e.stopPropagation(); 
-            if(!currentUser) return alert("Faz login para adicionares amigos.");
+            if(!currentUser) return alert("Faça login para adicionar amigos.");
             
             const targetId = e.target.getAttribute('data-id');
             const followRef = doc(db, "users", currentUser.uid, "friends", targetId);
@@ -125,7 +129,7 @@ document.getElementById('link-rede').addEventListener('click', async (e) => {
     showSection('network-section');
     
     const usersGrid = document.getElementById('users-grid');
-    usersGrid.innerHTML = '<p class="pulse-text">Buscando utilizadores na rede<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span></p>';
+    usersGrid.innerHTML = '<p class="pulse-text">Buscando usuários na rede<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span></p>';
 
     try {
         const usersSnap = await getDocs(collection(db, "users"));
@@ -137,13 +141,12 @@ document.getElementById('link-rede').addEventListener('click', async (e) => {
         });
         
         if (allUsersData.length === 0) {
-            usersGrid.innerHTML = '<p style="color:#aaa; text-align:center; width:100%; margin-top:20px;">És o único utilizador na plataforma no momento. Convida outras pessoas!</p>';
+            usersGrid.innerHTML = '<p style="color:#aaa; text-align:center; width:100%; margin-top:20px;">Você é o único usuário no momento. Convide amigos!</p>';
         } else {
             renderUsers(allUsersData);
         }
     } catch (err) {
-        console.error("Erro ao carregar rede:", err);
-        usersGrid.innerHTML = '<p style="color:#ff3333; text-align:center;">Falha ao aceder aos dados da comunidade.</p>';
+        usersGrid.innerHTML = '<p style="color:#ff3333; text-align:center;">Falha ao acessar dados da comunidade.</p>';
     }
 });
 
@@ -155,12 +158,12 @@ if(document.getElementById('user-search-input')) {
     });
 }
 
-// --- VER PERFIL DE OUTRA PESSOA ---
+// --- VER PERFIL PÚBLICO ---
 const openPublicProfile = async (uid, userData) => {
     publicModal.style.display = 'flex';
-    document.getElementById('public-name').innerText = userData.name || 'Anónimo';
+    document.getElementById('public-name').innerText = userData.name || 'Anônimo';
     document.getElementById('public-pfp').src = userData.photoURL || 'https://via.placeholder.com/80';
-    document.getElementById('public-bio').innerText = userData.bio || 'Este utilizador não possui biografia.';
+    document.getElementById('public-bio').innerText = userData.bio || 'Este usuário não possui biografia.';
     
     const container = document.getElementById('public-rated-albums');
     container.innerHTML = '<p style="color: #888; font-size: 0.8rem;">Buscando obras...</p>';
@@ -197,6 +200,7 @@ loginBtn.addEventListener('click', () => signInWithPopup(auth, provider));
 logoutBtn.addEventListener('click', () => {
     signOut(auth).then(() => {
         albumGrid.innerHTML = ''; 
+        document.getElementById('pagination-controls').style.display = 'none';
     });
 });
 
@@ -225,20 +229,20 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// --- SISTEMA DO SEU MODAL DE PERFIL ---
+// --- SISTEMA DO MODAL DE PERFIL ---
 navPfp.addEventListener('click', async () => {
     modal.style.display = 'flex';
     const ratedContainer = document.getElementById('user-rated-albums');
     
     if (!currentUser) return;
     
-    ratedContainer.innerHTML = '<p style="color: #888; font-size: 0.8rem;">Aceder a dados da conta...</p>';
+    ratedContainer.innerHTML = '<p style="color: #888; font-size: 0.8rem;">Acessando dados da conta...</p>';
     
     try {
         const querySnapshot = await getDocs(collection(db, "users", currentUser.uid, "ratings"));
         
         if (querySnapshot.empty) {
-            ratedContainer.innerHTML = '<p style="color: #444; font-size: 0.8rem;">Ainda não avaliaste nenhuma obra.</p>';
+            ratedContainer.innerHTML = '<p style="color: #444; font-size: 0.8rem;">Nenhuma obra avaliada.</p>';
             return;
         }
         
@@ -257,7 +261,6 @@ navPfp.addEventListener('click', async () => {
             animDelay += 0.08; 
         });
     } catch (error) {
-        console.error("Erro ao carregar álbuns:", error);
         ratedContainer.innerHTML = '<p style="color: #ff3333; font-size: 0.8rem;">Erro ao ler os dados.</p>';
     }
 });
@@ -275,15 +278,14 @@ fileInput.addEventListener('change', function(e) {
     }
 });
 
-// --- SALVA O PERFIL ---
 document.getElementById('save-profile').addEventListener('click', async () => {
-    if (!currentUser) return alert("Faz login primeiro.");
+    if (!currentUser) return alert("Faça login primeiro.");
 
     const newName = document.getElementById('edit-name').value;
     const newBio = document.getElementById('edit-bio').value;
     const newPfp = modalPfp.src; 
     
-    document.getElementById('save-profile').innerText = "A guardar...";
+    document.getElementById('save-profile').innerText = "Salvando...";
 
     try {
         await setDoc(doc(db, "users", currentUser.uid), {
@@ -297,18 +299,103 @@ document.getElementById('save-profile').addEventListener('click', async () => {
         document.getElementById('save-profile').innerText = "Salvar Modificações";
         modal.style.display = 'none';
     } catch (error) {
-        console.error("Erro ao salvar:", error);
-        alert("A conexão com a base de dados falhou.");
+        alert("A conexão com o banco falhou.");
         document.getElementById('save-profile').innerText = "Salvar Modificações";
     }
 });
 
-// --- SISTEMA DE BUSCA E ESTRELAS ---
+// --- RENDERIZAÇÃO DA PAGINAÇÃO ---
+const renderPage = () => {
+    albumGrid.innerHTML = '';
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const pageData = currentAlbums.slice(start, end);
+
+    if (currentAlbums.length > itemsPerPage) {
+        document.getElementById('pagination-controls').style.display = 'flex';
+        document.getElementById('page-info').innerText = `Página ${currentPage} de ${Math.ceil(currentAlbums.length / itemsPerPage)}`;
+        document.getElementById('prev-page').style.visibility = currentPage === 1 ? 'hidden' : 'visible';
+        document.getElementById('next-page').style.visibility = end >= currentAlbums.length ? 'hidden' : 'visible';
+    } else {
+        document.getElementById('pagination-controls').style.display = 'none';
+    }
+
+    pageData.forEach(album => {
+        const card = document.createElement('div');
+        card.className = 'album-card fade-in-up liquid-glass';
+        card.innerHTML = `
+            <img src="${album.image || 'https://via.placeholder.com/200'}" alt="Capa">
+            <div class="album-title glow-text">${album.name}</div>
+            <div class="album-artist">${album.artist}</div>
+            
+            <div class="rating-ui">
+                <span style="font-size: 0.7rem; color: #aaa;">AVALIAR</span>
+                <div class="stars">
+                    <i class="ph ph-star"></i>
+                    <i class="ph ph-star"></i>
+                    <i class="ph ph-star"></i>
+                    <i class="ph ph-star"></i>
+                    <i class="ph ph-star"></i>
+                </div>
+            </div>
+        `;
+        albumGrid.appendChild(card);
+
+        const stars = Array.from(card.querySelectorAll('.stars i'));
+        stars.forEach((star, index) => {
+            star.addEventListener('click', () => {
+                if(!currentUser) { 
+                    alert('Faça login para avaliar esta obra.'); 
+                    return; 
+                }
+                stars.forEach((s, i) => {
+                    if (i <= index) {
+                        s.style.color = '#fff';
+                        s.classList.remove('ph');
+                        s.classList.add('ph-fill');
+                    } else {
+                        s.style.color = '#444';
+                        s.classList.remove('ph-fill');
+                        s.classList.add('ph');
+                    }
+                });
+
+                const rating = index + 1;
+                const safeId = album.name.replace(/[^a-zA-Z0-9]/g, ''); 
+                
+                setDoc(doc(db, "users", currentUser.uid, "ratings", safeId), {
+                    name: album.name,
+                    artist: album.artist,
+                    image: album.image || 'https://via.placeholder.com/200',
+                    rating: rating
+                }).catch(err => console.error("Erro ao salvar nota:", err));
+            });
+        });
+    });
+};
+
+document.getElementById('prev-page').addEventListener('click', () => {
+    if (currentPage > 1) {
+        currentPage--;
+        renderPage();
+        document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' });
+    }
+});
+
+document.getElementById('next-page').addEventListener('click', () => {
+    if ((currentPage * itemsPerPage) < currentAlbums.length) {
+        currentPage++;
+        renderPage();
+        document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' });
+    }
+});
+
+// --- SISTEMA DE BUSCA ---
 searchBtn.addEventListener('click', async () => {
     let rawQuery = searchInput.value.trim();
     if (!rawQuery) {
-        rawQuery = "Lançamentos"; 
-        searchInput.value = rawQuery;
+        // Envia um termo neutro para puxar álbuns aleatórios da API
+        rawQuery = "a"; 
     }
 
     let finalQuery = rawQuery;
@@ -316,6 +403,7 @@ searchBtn.addEventListener('click', async () => {
     
     loadingText.style.display = 'block';
     albumGrid.innerHTML = '';
+    document.getElementById('pagination-controls').style.display = 'none';
 
     try {
         const type = filterType.value;
@@ -327,67 +415,17 @@ searchBtn.addEventListener('click', async () => {
         loadingText.style.display = 'none';
 
         if (!data || data.length === 0) {
-            albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registo encontrado.</p>';
+            albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registro encontrado.</p>';
             return;
         }
 
-        data.forEach(album => {
-            const card = document.createElement('div');
-            card.className = 'album-card fade-in-up liquid-glass';
-            card.innerHTML = `
-                <img src="${album.image || 'https://via.placeholder.com/200'}" alt="Capa">
-                <div class="album-title glow-text">${album.name}</div>
-                <div class="album-artist">${album.artist}</div>
-                
-                <div class="rating-ui">
-                    <span style="font-size: 0.7rem; color: #aaa;">AVALIAR</span>
-                    <div class="stars">
-                        <i class="ph ph-star"></i>
-                        <i class="ph ph-star"></i>
-                        <i class="ph ph-star"></i>
-                        <i class="ph ph-star"></i>
-                        <i class="ph ph-star"></i>
-                    </div>
-                </div>
-            `;
-            albumGrid.appendChild(card);
-
-            const stars = Array.from(card.querySelectorAll('.stars i'));
-            stars.forEach((star, index) => {
-                star.addEventListener('click', () => {
-                    if(!currentUser) { 
-                        alert('Faz login para avaliar esta obra.'); 
-                        return; 
-                    }
-                    stars.forEach((s, i) => {
-                        if (i <= index) {
-                            s.style.color = '#fff';
-                            s.classList.remove('ph');
-                            s.classList.add('ph-fill');
-                        } else {
-                            s.style.color = '#444';
-                            s.classList.remove('ph-fill');
-                            s.classList.add('ph');
-                        }
-                    });
-
-                    const rating = index + 1;
-                    const safeId = album.name.replace(/[^a-zA-Z0-9]/g, ''); 
-                    
-                    setDoc(doc(db, "users", currentUser.uid, "ratings", safeId), {
-                        name: album.name,
-                        artist: album.artist,
-                        image: album.image || 'https://via.placeholder.com/200',
-                        rating: rating
-                    }).catch(err => console.error("Erro ao guardar nota:", err));
-                });
-            });
-        });
+        currentAlbums = data;
+        currentPage = 1;
+        renderPage();
 
     } catch (error) {
-        console.error("Erro:", error);
         loadingText.style.display = 'none';
-        albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333; width:100%;">A conexão aos servidores falhou. Verifica o link do Render.</p>';
+        albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333; width:100%;">A conexão falhou.</p>';
     }
 });
 
