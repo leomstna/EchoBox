@@ -29,6 +29,9 @@ const modalPfp = document.getElementById('modal-pfp');
 const editName = document.getElementById('edit-name');
 const fileInput = document.getElementById('edit-pfp-file');
 
+const publicModal = document.getElementById('public-profile-modal');
+const closePublicModal = document.getElementById('close-public-modal');
+
 const searchBtn = document.getElementById('search-btn');
 const searchInput = document.getElementById('search-input');
 const filterType = document.getElementById('filter-type');
@@ -37,8 +40,9 @@ const albumGrid = document.getElementById('album-grid');
 const loadingText = document.getElementById('loading-text');
 
 let currentUser = null;
+let allUsersData = []; // Salva os usuários para a barra de pesquisa
 
-// --- BOTÕES DA NAVBAR ---
+// --- NAVEGAÇÃO ---
 const showSection = (id) => {
     document.getElementById('home').style.display = id === 'home' ? 'block' : 'none';
     document.getElementById('search-section').style.display = id === 'search-section' ? 'block' : 'none';
@@ -55,47 +59,135 @@ document.getElementById('link-home').addEventListener('click', (e) => {
 document.getElementById('link-explorar').addEventListener('click', (e) => {
     e.preventDefault();
     showSection('search-section');
-    searchInput.focus(); 
+    if (!searchInput.value.trim()) {
+        searchInput.value = "Em alta"; // Termo padrão se a barra estiver vazia
+        filterYear.value = "2026";
+        searchBtn.click();
+    } else {
+        searchInput.focus(); 
+    }
 });
 
-// O início dos imports e config do Firebase continua igual...
-// Certifica-te apenas de que no teu link-rede o texto está atualizado:
+// --- SISTEMA DE COMUNIDADE (REDE & AMIGOS) ---
+const renderUsers = (usersList) => {
+    const usersGrid = document.getElementById('users-grid');
+    usersGrid.innerHTML = '';
+    
+    if (usersList.length === 0) {
+        usersGrid.innerHTML = '<p style="color:#aaa;">Nenhum usuário encontrado com esse nome.</p>';
+        return;
+    }
+
+    usersList.forEach(userObj => {
+        const data = userObj.data;
+        const uid = userObj.id;
+        
+        const userCard = document.createElement('div');
+        userCard.className = 'user-card fade-in-up liquid-glass';
+        userCard.innerHTML = `
+            <div class="user-info-click" style="display:flex; align-items:center; gap:10px; width: 100%;">
+                <img src="${data.photoURL || 'https://via.placeholder.com/50'}" alt="Foto">
+                <div>
+                    <h4 class="glow-text" style="color:#fff;">${data.name || 'Anônimo'}</h4>
+                    <p style="font-size:0.7rem; color:#aaa;">${data.bio ? data.bio.substring(0, 30) + '...' : 'Sem biografia'}</p>
+                </div>
+            </div>
+            <button class="btn-follow" data-id="${uid}">Adicionar Amigo</button>
+        `;
+        usersGrid.appendChild(userCard);
+
+        // Abrir perfil público
+        userCard.querySelector('.user-info-click').addEventListener('click', () => openPublicProfile(uid, data));
+    });
+
+    // Lógica do botão Amigo
+    document.querySelectorAll('.btn-follow').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation(); // Evita abrir o modal ao clicar no botão
+            if(!currentUser) return alert("Faça login para adicionar amigos.");
+            
+            const targetId = e.target.getAttribute('data-id');
+            const followRef = doc(db, "users", currentUser.uid, "friends", targetId);
+            
+            if (e.target.classList.contains('following')) {
+                await deleteDoc(followRef);
+                e.target.classList.remove('following');
+                e.target.innerText = 'Adicionar Amigo';
+            } else {
+                await setDoc(followRef, { addedAt: new Date() });
+                e.target.classList.add('following');
+                e.target.innerText = 'Amigo Adicionado';
+            }
+        });
+    });
+};
 
 document.getElementById('link-rede').addEventListener('click', async (e) => {
     e.preventDefault();
     showSection('network-section');
     
     const usersGrid = document.getElementById('users-grid');
-    usersGrid.innerHTML = '<p class="pulse-text">Buscando usuários na rede...</p>';
+    usersGrid.innerHTML = '<p class="pulse-text">Buscando usuários na rede<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span></p>';
 
     try {
         const usersSnap = await getDocs(collection(db, "users"));
-        usersGrid.innerHTML = '';
+        allUsersData = [];
         
         usersSnap.forEach(docSnap => {
             if(currentUser && docSnap.id === currentUser.uid) return; 
-            
-            const data = docSnap.data();
-            const userCard = document.createElement('div');
-            userCard.className = 'user-card fade-in-up';
-            userCard.innerHTML = `
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <img src="${data.photoURL || 'https://via.placeholder.com/50'}" alt="Foto">
-                    <div>
-                        <h4 style="color:#fff;">${data.name || 'Anônimo'}</h4>
-                        <p style="font-size:0.7rem; color:#666;">${data.bio ? data.bio.substring(0, 30) + '...' : 'Sem biografia'}</p>
-                    </div>
-                </div>
-                <button class="btn-follow" data-id="${docSnap.id}">Seguir</button>
-            `;
-            usersGrid.appendChild(userCard);
+            allUsersData.push({ id: docSnap.id, data: docSnap.data() });
         });
-        // ... resto da lógica de seguir ...
+        
+        renderUsers(allUsersData);
     } catch (err) {
         console.error("Erro ao carregar rede:", err);
         usersGrid.innerHTML = '<p style="color:red;">Falha ao acessar os dados da comunidade.</p>';
     }
 });
+
+// Pesquisa de usuários
+document.getElementById('user-search-input').addEventListener('input', (e) => {
+    const term = e.target.value.toLowerCase();
+    const filtered = allUsersData.filter(u => (u.data.name || "").toLowerCase().includes(term));
+    renderUsers(filtered);
+});
+
+// --- VER PERFIL DE OUTRA PESSOA ---
+const openPublicProfile = async (uid, userData) => {
+    publicModal.style.display = 'flex';
+    document.getElementById('public-name').innerText = userData.name || 'Anônimo';
+    document.getElementById('public-pfp').src = userData.photoURL || 'https://via.placeholder.com/80';
+    document.getElementById('public-bio').innerText = userData.bio || 'Este usuário não possui um manifesto.';
+    
+    const container = document.getElementById('public-rated-albums');
+    container.innerHTML = '<p style="color: #888; font-size: 0.8rem;">Buscando obras...</p>';
+    
+    try {
+        const snap = await getDocs(collection(db, "users", uid, "ratings"));
+        if (snap.empty) {
+            container.innerHTML = '<p style="color: #444; font-size: 0.8rem;">Nenhuma obra avaliada.</p>';
+            return;
+        }
+        
+        container.innerHTML = '';
+        let animDelay = 0;
+        snap.forEach((docSnap) => {
+            const data = docSnap.data();
+            container.innerHTML += `
+                <div class="rated-album-mini" style="animation-delay: ${animDelay}s;">
+                    <img src="${data.image}">
+                    <p style="font-size: 0.7rem; color: #fff; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px;" title="${data.name}">${data.name}</p>
+                    <p style="font-size: 0.8rem; color: #fff;">${'★'.repeat(data.rating)}${'☆'.repeat(5 - data.rating)}</p>
+                </div>
+            `;
+            animDelay += 0.08; 
+        });
+    } catch (error) {
+        container.innerHTML = '<p style="color: #ff3333; font-size: 0.8rem;">Erro ao carregar obras.</p>';
+    }
+};
+closePublicModal.addEventListener('click', () => publicModal.style.display = 'none');
+
 
 // --- SISTEMA DE AUTENTICAÇÃO ---
 loginBtn.addEventListener('click', () => signInWithPopup(auth, provider));
@@ -131,14 +223,14 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// --- SISTEMA DO MODAL DE PERFIL ---
+// --- SISTEMA DO SEU MODAL DE PERFIL ---
 navPfp.addEventListener('click', async () => {
     modal.style.display = 'flex';
     const ratedContainer = document.getElementById('user-rated-albums');
     
     if (!currentUser) return;
     
-    ratedContainer.innerHTML = '<p style="color: #666; font-size: 0.8rem;">Acessando dados da conta...</p>';
+    ratedContainer.innerHTML = '<p style="color: #888; font-size: 0.8rem;">Acessando dados da conta...</p>';
     
     try {
         const querySnapshot = await getDocs(collection(db, "users", currentUser.uid, "ratings"));
@@ -155,7 +247,7 @@ navPfp.addEventListener('click', async () => {
             const data = docSnap.data();
             ratedContainer.innerHTML += `
                 <div class="rated-album-mini" style="animation-delay: ${animDelay}s;">
-                    <img src="${data.image}" style="width: 80px; height: 80px; border-radius: 8px; object-fit: cover; border: 1px solid #333;">
+                    <img src="${data.image}">
                     <p style="font-size: 0.7rem; color: #fff; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px;" title="${data.name}">${data.name}</p>
                     <p style="font-size: 0.8rem; color: #fff;">${'★'.repeat(data.rating)}${'☆'.repeat(5 - data.rating)}</p>
                 </div>
@@ -211,8 +303,11 @@ document.getElementById('save-profile').addEventListener('click', async () => {
 
 // --- SISTEMA DE BUSCA E ESTRELAS ---
 searchBtn.addEventListener('click', async () => {
-    const rawQuery = searchInput.value.trim();
-    if (!rawQuery) return;
+    let rawQuery = searchInput.value.trim();
+    if (!rawQuery) {
+        rawQuery = "Lançamentos"; // Fallback se a busca estiver vazia
+        searchInput.value = rawQuery;
+    }
 
     let finalQuery = rawQuery;
     if (filterYear.value) finalQuery += ` year:${filterYear.value}`;
@@ -236,14 +331,14 @@ searchBtn.addEventListener('click', async () => {
 
         data.forEach(album => {
             const card = document.createElement('div');
-            card.className = 'album-card fade-in-up';
+            card.className = 'album-card fade-in-up liquid-glass';
             card.innerHTML = `
                 <img src="${album.image || 'https://via.placeholder.com/200'}" alt="Capa">
-                <div class="album-title">${album.name}</div>
+                <div class="album-title glow-text">${album.name}</div>
                 <div class="album-artist">${album.artist}</div>
                 
                 <div class="rating-ui">
-                    <span style="font-size: 0.7rem; color: #666;">AVALIAR</span>
+                    <span style="font-size: 0.7rem; color: #aaa;">AVALIAR</span>
                     <div class="stars">
                         <i class="ph ph-star"></i>
                         <i class="ph ph-star"></i>
