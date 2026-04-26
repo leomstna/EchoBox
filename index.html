@@ -4,19 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EchoBox</title>
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css?v=4">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
-<body>
-    <nav class="pill-nav">
-        <div class="logo">EchoBox</div>
+<body class="site-enter">
+    <svg style="visibility: hidden; position: absolute;" width="0" height="0" xmlns="http://www.w3.org/2000/svg" version="1.1">
+        <defs>
+            <filter id="goo">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
+                <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="goo" />
+                <feComposite in="SourceGraphic" in2="goo" operator="atop"/>
+            </filter>
+        </defs>
+    </svg>
+
+    <nav class="pill-nav liquid-glass">
+        <div class="logo glow-text">EchoBox</div>
         <div class="nav-links">
             <a href="#" id="link-home">Home</a>
             <a href="#" id="link-explorar">Explorar</a>
             <a href="#" id="link-rede">Comunidade</a>
         </div>
         <div class="user-actions">
-            <button id="login-btn" class="btn-primary">Entrar</button>
+            <button id="login-btn" class="btn-primary glow-box">Entrar</button>
             <div id="user-menu" style="display: none; align-items: center; gap: 15px;">
                 <img id="nav-pfp" src="https://via.placeholder.com/40" alt="Perfil" style="cursor: pointer;" title="Abrir Perfil">
                 <button id="logout-btn" class="btn-ghost" title="Sair"><i class="ph ph-sign-out"></i></button>
@@ -26,63 +36,88 @@
 
     <header id="home" class="hero fade-in-up">
         <p class="subtitle">A PLATAFORMA</p>
-        <h1>Sua vida.<br>Sua trilha sonora.</h1>
+        <div class="gooey-container">
+            <h1 class="glow-text gooey-title">Sua vida.<br>Sua trilha sonora.</h1>
+        </div>
         <p class="desc">Catalogue, avalie e descubra álbuns na rede.</p>
     </header>
 
     <main id="search-section" class="fade-in-up" style="animation-delay: 0.2s;">
         <div class="search-bar-container">
-            <input type="text" id="search-input" class="dark-input" placeholder="Pesquise o nome da obra..." autocomplete="off">
+            <input type="text" id="search-input" class="dark-input liquid-glass" placeholder="Pesquise o nome da obra..." autocomplete="off">
             
             <div class="filters" style="margin-top: 15px;">
-                <select id="filter-type" class="dark-select">
+                <select id="filter-type" class="dark-select liquid-glass">
                     <option value="album">Álbum</option>
                     <option value="single">Single / EP</option>
                 </select>
-                <input type="number" id="filter-year" class="dark-input" placeholder="Ano (Opcional)" min="1900" max="2026">
-                <button id="search-btn" class="btn-primary">Buscar</button>
+                <input type="number" id="filter-year" class="dark-input liquid-glass" placeholder="Ano (Opcional)" min="1900" max="2026">
+                <button id="search-btn" class="btn-primary glow-box">Buscar</button>
             </div>
         </div>
 
-        <div id="loading-text" class="pulse-text" style="display: none;">Buscando registros...</div>
+        <div id="loading-text" class="pulse-text" style="display: none;">
+            Buscando registros<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span>
+        </div>
         
         <section class="grid-container" id="album-grid">
         </section>
     </main>
 
     <main id="network-section" class="fade-in-up" style="display: none;">
-        <h2 style="margin-bottom: 20px; border-bottom: 1px solid #222; padding-bottom: 10px;">Comunidade</h2>
+        <h2 class="glow-text" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">Comunidade</h2>
+        <input type="text" id="user-search-input" class="dark-input liquid-glass" placeholder="Buscar perfil por nome..." style="max-width: 400px; margin-bottom: 30px;">
         <div id="users-grid" class="grid-container">
         </div>
     </main>
 
     <div id="profile-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-content border-glow" style="max-width: 600px;">
+        <div class="modal-content liquid-glass">
             <div class="modal-header">
-                <h2>Seu Perfil</h2>
+                <h2 class="glow-text">Seu Perfil</h2>
                 <button id="close-modal" class="btn-ghost"><i class="ph ph-x"></i></button>
             </div>
             <div class="modal-body">
                 <div class="pfp-edit">
                     <img id="modal-pfp" src="https://via.placeholder.com/60" alt="Sua Foto">
-                    <label for="edit-pfp-file" class="btn-ghost" style="font-size: 1rem; border: 1px solid #333; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Mudar Foto</label>
+                    <label for="edit-pfp-file" class="btn-ghost" style="font-size: 1rem; border: 1px solid rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 5px; cursor: pointer;">Mudar Foto</label>
                     <input type="file" id="edit-pfp-file" accept="image/*" style="display: none;">
                 </div>
                 
                 <label>Nome</label>
-                <input type="text" id="edit-name" class="dark-input">
+                <input type="text" id="edit-name" class="dark-input liquid-glass">
                 
                 <label>Biografia</label>
-                <textarea id="edit-bio" class="dark-input" rows="3" placeholder="Escreva algo sobre você..."></textarea>
+                <textarea id="edit-bio" class="dark-input liquid-glass" rows="3" placeholder="Escreva algo sobre você..."></textarea>
                 
-                <div style="margin-top: 20px; border-top: 1px solid #222; padding-top: 15px;">
+                <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
                     <h3 style="font-size: 1rem; margin-bottom: 10px; color: #aaa;">Obras Avaliadas</h3>
-                    <div id="user-rated-albums" style="display: flex; gap: 10px; overflow-x: auto;">
+                    <div id="user-rated-albums" class="custom-scroll" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px;">
                         <p style="color: #444; font-size: 0.8rem;">(Nenhuma obra avaliada ainda...)</p>
                     </div>
                 </div>
 
-                <button id="save-profile" class="btn-primary w-100">Salvar Modificações</button>
+                <button id="save-profile" class="btn-primary glow-box w-100">Salvar Modificações</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="public-profile-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content liquid-glass">
+            <div class="modal-header">
+                <h2 id="public-name" class="glow-text">Perfil</h2>
+                <button id="close-public-modal" class="btn-ghost"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="modal-body" style="text-align: center;">
+                <img id="public-pfp" src="https://via.placeholder.com/80" alt="Foto" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; margin-bottom: 15px; box-shadow: 0 0 15px rgba(255,255,255,0.2);">
+                <p id="public-bio" style="color: #aaa; font-size: 0.9rem; margin-bottom: 25px;"></p>
+                
+                <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; text-align: left;">
+                    <h3 style="font-size: 1rem; margin-bottom: 10px; color: #aaa;">Acervo do Usuário</h3>
+                    <div id="public-rated-albums" class="custom-scroll" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px;">
+                        <p style="color: #444; font-size: 0.8rem;">Buscando obras...</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
