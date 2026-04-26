@@ -55,9 +55,7 @@ document.getElementById('link-home').addEventListener('click', (e) => {
 document.getElementById('link-explorar').addEventListener('click', (e) => {
     e.preventDefault();
     showSection('search-section');
-    searchInput.value = ''; 
-    filterYear.value = '2026'; 
-    searchBtn.click();
+    searchInput.focus(); 
 });
 
 // --- SISTEMA DE COMUNIDADE (REDE) ---
@@ -66,7 +64,7 @@ document.getElementById('link-rede').addEventListener('click', async (e) => {
     showSection('network-section');
     
     const usersGrid = document.getElementById('users-grid');
-    usersGrid.innerHTML = '<p class="pulse-text">Rastreando sinal dos usuários...</p>';
+    usersGrid.innerHTML = '<p class="pulse-text">Buscando usuários na rede...</p>';
 
     try {
         const usersSnap = await getDocs(collection(db, "users"));
@@ -83,7 +81,7 @@ document.getElementById('link-rede').addEventListener('click', async (e) => {
                     <img src="${data.photoURL || 'https://via.placeholder.com/50'}" alt="Foto">
                     <div>
                         <h4 style="color:#fff;">${data.name || 'Anônimo'}</h4>
-                        <p style="font-size:0.7rem; color:#666;">${data.bio ? data.bio.substring(0, 30) + '...' : 'Sem manifesto'}</p>
+                        <p style="font-size:0.7rem; color:#666;">${data.bio ? data.bio.substring(0, 30) + '...' : 'Sem biografia'}</p>
                     </div>
                 </div>
                 <button class="btn-follow" data-id="${docSnap.id}">Seguir</button>
@@ -93,7 +91,7 @@ document.getElementById('link-rede').addEventListener('click', async (e) => {
 
         document.querySelectorAll('.btn-follow').forEach(btn => {
             btn.addEventListener('click', async (e) => {
-                if(!currentUser) return alert("Tem que logar pra seguir alguém.");
+                if(!currentUser) return alert("Faça login para seguir um usuário.");
                 
                 const targetId = e.target.getAttribute('data-id');
                 const followRef = doc(db, "users", currentUser.uid, "following", targetId);
@@ -112,7 +110,7 @@ document.getElementById('link-rede').addEventListener('click', async (e) => {
 
     } catch (err) {
         console.error("Erro ao carregar rede:", err);
-        usersGrid.innerHTML = '<p style="color:red;">Falha ao acessar a rede.</p>';
+        usersGrid.innerHTML = '<p style="color:red;">Falha ao acessar os dados da comunidade.</p>';
     }
 });
 
@@ -157,18 +155,18 @@ navPfp.addEventListener('click', async () => {
     
     if (!currentUser) return;
     
-    ratedContainer.innerHTML = '<p style="color: #666; font-size: 0.8rem;">Acessando o banco de dados...</p>';
+    ratedContainer.innerHTML = '<p style="color: #666; font-size: 0.8rem;">Acessando dados da conta...</p>';
     
     try {
         const querySnapshot = await getDocs(collection(db, "users", currentUser.uid, "ratings"));
         
         if (querySnapshot.empty) {
-            ratedContainer.innerHTML = '<p style="color: #444; font-size: 0.8rem;">O abismo está vazio. Avalie alguma obra.</p>';
+            ratedContainer.innerHTML = '<p style="color: #444; font-size: 0.8rem;">Você ainda não avaliou nenhuma obra.</p>';
             return;
         }
         
         ratedContainer.innerHTML = '';
-        let animDelay = 0; // O tempo da animação em cascata
+        let animDelay = 0; 
         
         querySnapshot.forEach((docSnap) => {
             const data = docSnap.data();
@@ -183,7 +181,7 @@ navPfp.addEventListener('click', async () => {
         });
     } catch (error) {
         console.error("Erro ao carregar álbuns:", error);
-        ratedContainer.innerHTML = '<p style="color: #ff3333; font-size: 0.8rem;">Erro ao ler o banco de dados.</p>';
+        ratedContainer.innerHTML = '<p style="color: #ff3333; font-size: 0.8rem;">Erro ao ler os dados.</p>';
     }
 });
 
@@ -202,7 +200,7 @@ fileInput.addEventListener('change', function(e) {
 
 // --- SALVA O PERFIL ---
 document.getElementById('save-profile').addEventListener('click', async () => {
-    if (!currentUser) return alert("Tem que logar primeiro.");
+    if (!currentUser) return alert("Faça login primeiro.");
 
     const newName = document.getElementById('edit-name').value;
     const newBio = document.getElementById('edit-bio').value;
@@ -223,7 +221,7 @@ document.getElementById('save-profile').addEventListener('click', async () => {
         modal.style.display = 'none';
     } catch (error) {
         console.error("Erro ao salvar:", error);
-        alert("A conexão com o banco falhou ao salvar.");
+        alert("A conexão com o banco de dados falhou.");
         document.getElementById('save-profile').innerText = "Salvar Modificações";
     }
 });
@@ -249,7 +247,7 @@ searchBtn.addEventListener('click', async () => {
         loadingText.style.display = 'none';
 
         if (!data || data.length === 0) {
-            albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registro encontrado no abismo.</p>';
+            albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registro encontrado.</p>';
             return;
         }
 
@@ -278,7 +276,7 @@ searchBtn.addEventListener('click', async () => {
             stars.forEach((star, index) => {
                 star.addEventListener('click', () => {
                     if(!currentUser) { 
-                        alert('Faça login para corromper este álbum com sua nota.'); 
+                        alert('Faça login para avaliar esta obra.'); 
                         return; 
                     }
                     stars.forEach((s, i) => {
