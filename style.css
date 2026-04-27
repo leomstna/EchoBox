@@ -7,8 +7,8 @@ body { background-color: #050505; color: #ededed; overflow-x: hidden; }
 .transition-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #050505; z-index: 9999999; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
 .section-page { transition: opacity 0.3s ease; }
 
-/* OBSERVER SCROLL ANIMATIONS (Mágica aqui, bem suave) */
-.scroll-trigger { opacity: 0; transform: translateY(40px); transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+/* OBSERVER SCROLL ANIMATIONS (Mágica Suave) */
+.scroll-trigger { opacity: 0; transform: translateY(20px); transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1); }
 .scroll-animated { opacity: 1 !important; transform: translateY(0) !important; }
 
 .custom-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
@@ -52,7 +52,6 @@ textarea.dark-input { resize: none; max-height: 80px; }
 .hero { text-align: center; padding: 100px 20px; }
 .hero .subtitle { color: #666; font-size: 0.8rem; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 15px; }
 .search-bar-container { max-width: 800px; margin: 0 auto 50px auto; padding: 0 20px; }
-#search-input { font-size: 1.2rem; height: 48px; }
 
 /* TOGGLE DE IPHONE BRUTO */
 .switch { position: relative; display: inline-block; width: 40px; height: 20px; flex-shrink: 0; }
@@ -63,12 +62,17 @@ textarea.dark-input { resize: none; max-height: 80px; }
 .switch input:checked + .slider-toggle:before { transform: translateX(18px); background-color: #000; }
 
 .filters-row { position: relative; width: 100%; }
-.range-slider-wrapper { margin-top: 10px; }
+.range-slider-wrapper { margin-top: 10px; position: relative; }
 .slider-track { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 5px; position: absolute; z-index: 1; pointer-events: none; }
 .slider-fill { height: 100%; background: #fff; border-radius: 5px; position: absolute; z-index: 2; box-shadow: 0 0 10px rgba(255,255,255,0.5); }
-input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; position: absolute; left: 0; background: transparent; pointer-events: none; z-index: 3; }
-input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #fff; cursor: pointer; pointer-events: auto; box-shadow: 0 0 10px rgba(0,0,0,0.5); border: 2px solid #fff; }
-input[type=range]::-moz-range-thumb { appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #fff; cursor: pointer; pointer-events: auto; border: 2px solid #fff; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+
+/* BLINDAGEM CSS AQUI (Pra não zoar o volume do Player) */
+.range-slider-wrapper input[type=range] { 
+    -webkit-appearance: none; appearance: none; width: 100%; position: absolute; left: 0; 
+    background: transparent; pointer-events: none; z-index: 3; margin: 0; 
+}
+.range-slider-wrapper input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #fff; cursor: pointer; pointer-events: auto; box-shadow: 0 0 10px rgba(0,0,0,0.5); border: 2px solid #fff; }
+.range-slider-wrapper input[type=range]::-moz-range-thumb { appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #fff; cursor: pointer; pointer-events: auto; border: 2px solid #fff; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
 
 .type-options { display: flex; gap: 10px; }
 .type-options input[type="radio"] { display: none; }
@@ -133,20 +137,20 @@ input[type=range]::-moz-range-thumb { appearance: none; height: 16px; width: 16p
 .feed-item img.pfp { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
 .feed-item img.cover { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; cursor: pointer; }
 
-/* FIX DEFINITIVO DO PLAYER E DO VOLUME COMPRIMIDO */
+/* FIX ABSOLUTO DO PLAYER (FIM DO VOLUME BUGADO) */
 #global-player { position: fixed; bottom: 0; left: 0; width: 100vw; height: 80px; background: rgba(10, 10, 10, 0.95); border-top: 1px solid #222; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 1000; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); }
 .player-info { display: flex; align-items: center; gap: 15px; width: 30%; min-width: 200px; flex-shrink: 0; }
 .player-info img { width: 50px; height: 50px; border-radius: 4px; object-fit: cover; }
-.player-controls { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.player-controls { flex: 1; max-width: 40%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .progress-container { display: flex; align-items: center; gap: 10px; width: 100%; max-width: 500px; font-size: 0.7rem; color: #aaa; }
 .progress-bar-bg { flex: 1; height: 4px; background: #333; border-radius: 2px; cursor: pointer; position: relative; }
 .progress-bar-fill { height: 100%; background: #fff; border-radius: 2px; width: 0%; transition: width 0.1s linear; }
 .progress-bar-bg:hover .progress-bar-fill { background: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.5); }
 
-/* TRAVA DE COMPRESSÃO NO VOLUME */
+/* TRAVA OBRIGATÓRIA NO VOLUME E DESLIGA O CSS FANTASMA */
 .player-volume { display: flex; align-items: center; gap: 10px; width: 30%; justify-content: flex-end; min-width: 150px; flex-shrink: 0; }
 .player-volume i { font-size: 1.5rem; flex-shrink: 0; margin-top: 2px; } 
-.player-volume input { width: 80px; accent-color: #fff; flex-shrink: 0; }
+#volume-slider { width: 80px !important; position: static !important; pointer-events: auto !important; appearance: auto !important; -webkit-appearance: auto !important; z-index: 1; margin: 0; }
 
 .ph-spinner { animation: spin 1s linear infinite; }
 @keyframes spin { 100% { transform: rotate(360deg); } }
