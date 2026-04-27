@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EchoBox</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
-    <link rel="stylesheet" href="style.css?v=11">
+    <link rel="stylesheet" href="style.css?v=12">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 <body class="site-enter">
@@ -44,8 +44,9 @@
         <div class="search-bar-container">
             <input type="text" id="search-input" class="dark-input liquid-glass" placeholder="Pesquise o artista ou obra..." autocomplete="off">
             
-            <div class="filters" style="margin-top: 25px; display: flex; flex-direction: column; gap: 10px;">
-                <div class="range-slider-wrapper">
+            <div class="filters" style="margin-top: 25px; display: flex; flex-direction: column; gap: 20px;">
+                
+                <div class="range-slider-wrapper filters-row">
                     <div class="range-values glow-text">
                         <span id="year-min-val">2000</span> - <span id="year-max-val">2026</span>
                     </div>
@@ -54,6 +55,20 @@
                     </div>
                     <input type="range" id="filter-year-min" min="1900" max="2026" value="2000">
                     <input type="range" id="filter-year-max" min="1900" max="2026" value="2026">
+                </div>
+                
+                <div class="type-filter-wrapper filters-row liquid-glass">
+                    <div class="range-values glow-text" style="font-size: 0.8rem; letter-spacing: 1px; text-transform: uppercase; color: #888; border: 0; margin-bottom: 0;">Tipo de Obra</div>
+                    <div class="type-options custom-scroll" id="filter-type">
+                        <input type="radio" id="type-album" name="search-type" value="album" checked>
+                        <label for="type-album" class="btn-ghost">Álbum</label>
+                        
+                        <input type="radio" id="type-ep" name="search-type" value="ep">
+                        <label for="type-ep" class="btn-ghost">EP</label>
+                        
+                        <input type="radio" id="type-single" name="search-type" value="single">
+                        <label for="type-single" class="btn-ghost">Single</label>
+                    </div>
                 </div>
                 
                 <button id="search-btn" class="btn-primary glow-box" style="margin-top: 15px;">Buscar</button>
@@ -79,7 +94,7 @@
         <div class="album-header liquid-glass" style="display:flex; gap:30px; padding:30px; border-radius:16px; align-items: flex-end;">
             <img id="album-view-cover" src="" style="width:220px; height:220px; object-fit:cover; border-radius:8px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
             <div>
-                <p style="font-size:0.8rem; text-transform:uppercase; letter-spacing:2px; color:#888;">Álbum / EP</p>
+                <p id="album-view-media-type" style="font-size:0.8rem; text-transform:uppercase; letter-spacing:2px; color:#fff; font-weight:700;">Álbum</p>
                 <h1 id="album-view-title" class="glow-text" style="font-size: 3rem; line-height:1.1; margin: 10px 0; letter-spacing:-1px;"></h1>
                 <h3 id="album-view-artist" style="color:#ccc; font-weight:400;"></h3>
             </div>
