@@ -54,7 +54,7 @@ const volSlider = document.getElementById('volume-slider');
 
 window.onYouTubeIframeAPIReady = () => {
     ytPlayer = new YT.Player('yt-player', {
-        height: '0', width: '0', videoId: '',
+        height: '1', width: '1', videoId: '',
         playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'fs': 0 },
         events: {
             'onReady': () => { isPlayerReady = true; ytPlayer.setVolume(volSlider.value * 100); },
