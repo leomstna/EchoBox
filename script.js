@@ -35,6 +35,7 @@ let currentAlbums = [];
 let currentPage = 1;
 const itemsPerPage = 12;
 
+// OBSERVER DE SCROLL (Para Cards e Feed)
 const scrollObserver = new IntersectionObserver((entries) => {
     let delay = 0;
     entries.forEach(entry => {
@@ -44,7 +45,7 @@ const scrollObserver = new IntersectionObserver((entries) => {
             scrollObserver.unobserve(entry.target); 
         }
     });
-}, { threshold: 0.1, rootMargin: "0px 0px -40px 0px" });
+}, { threshold: 0.05, rootMargin: "0px 0px 150px 0px" });
 
 document.querySelectorAll('.scroll-trigger').forEach(el => scrollObserver.observe(el));
 
@@ -266,7 +267,8 @@ const loadAlbumView = async (album) => {
             const myTrackData = savedData[tId] || { rating: 0, comment: '' };
             
             const div = document.createElement('div');
-            div.className = 'track-row liquid-glass'; // Tirei o trigger de animação pra não parecer que tem só 2 músicas
+            // REMOVIDO O TRIGGER DE SCROLL DAS FAIXAS AQUI
+            div.className = 'track-row liquid-glass'; 
             div.innerHTML = `
                 <div class="track-info">
                     <span style="color:#666; font-size:0.8rem; width:15px;">${index + 1}</span>
@@ -511,10 +513,10 @@ const openPublicProfile = async (uid, userData) => {
 
             const div = document.createElement('div'); div.className = 'rated-album-mini'; div.style.animationDelay = `${animDelay}s`;
             div.innerHTML = `
-                <img src="${data.image}" style="width: 100px; height: 100px; border-radius: 8px; object-fit: cover; border: 1px solid #333; transition: border-color 0.2s;">
-                <p style="font-size: 0.7rem; color: #fff; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px;" title="${data.name}">${data.name}</p>
+                <img src="${data.image}" style="width: 110px; height: 110px; border-radius: 8px; object-fit: cover; border: 1px solid #333; transition: border-color 0.2s;">
+                <p style="font-size: 0.75rem; color: #fff; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px;" title="${data.name}">${data.name}</p>
                 <p style="font-size: 0.6rem; color: #aaa; text-transform:uppercase; letter-spacing:1px; margin-top: 2px;">${typeLabel}</p>
-                <p style="font-size: 0.8rem; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); white-space: nowrap; margin-top: 2px;">${'★'.repeat(data.rating || 0)}${'☆'.repeat(5 - (data.rating || 0))}</p>
+                <p style="font-size: 0.75rem; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); white-space: nowrap; margin-top: 2px;">${'★'.repeat(data.rating || 0)}${'☆'.repeat(5 - (data.rating || 0))}</p>
             `;
             div.addEventListener('click', () => { publicModal.style.display = 'none'; loadAlbumView(data); });
             container.appendChild(div); animDelay += 0.08; 
@@ -559,10 +561,10 @@ navPfp.addEventListener('click', async () => {
 
             const div = document.createElement('div'); div.className = 'rated-album-mini'; div.style.animationDelay = `${animDelay}s`;
             div.innerHTML = `
-                <img src="${data.image}" style="width: 100px; height: 100px; border-radius: 8px; object-fit: cover; border: 1px solid #333; transition: border-color 0.2s;">
-                <p style="font-size: 0.7rem; color: #fff; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px;" title="${data.name}">${data.name}</p>
+                <img src="${data.image}" style="width: 110px; height: 110px; border-radius: 8px; object-fit: cover; border: 1px solid #333; transition: border-color 0.2s;">
+                <p style="font-size: 0.75rem; color: #fff; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px;" title="${data.name}">${data.name}</p>
                 <p style="font-size: 0.6rem; color: #aaa; text-transform:uppercase; letter-spacing:1px; margin-top: 2px;">${typeLabel}</p>
-                <p style="font-size: 0.8rem; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); white-space: nowrap; margin-top: 2px;">${'★'.repeat(data.rating || 0)}${'☆'.repeat(5 - (data.rating || 0))}</p>
+                <p style="font-size: 0.75rem; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); white-space: nowrap; margin-top: 2px;">${'★'.repeat(data.rating || 0)}${'☆'.repeat(5 - (data.rating || 0))}</p>
             `;
             div.addEventListener('click', () => { modal.style.display = 'none'; loadAlbumView(data); });
             ratedContainer.appendChild(div); animDelay += 0.08; 
