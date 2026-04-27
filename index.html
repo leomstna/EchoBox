@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EchoBox</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
-    <link rel="stylesheet" href="style.css?v=13">
+    <link rel="stylesheet" href="style.css?v=14">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 <body class="site-enter">
@@ -34,43 +34,43 @@
         </div>
     </nav>
 
-    <header id="home" class="hero fade-in-up section-page">
+    <header id="home" class="hero fade-in-up section-page scroll-trigger">
         <p class="subtitle">A PLATAFORMA</p>
         <h1 class="glow-text" style="font-size: 4rem; line-height: 1.1; letter-spacing: -2px; margin-bottom: 20px;">Sua vida.<br>Sua trilha sonora.</h1>
         <p class="desc">Catalogue, avalie e descubra álbuns na rede.</p>
     </header>
 
-    <main id="search-section" class="fade-in-up section-page" style="animation-delay: 0.1s;">
+    <main id="search-section" class="section-page scroll-trigger" style="animation-delay: 0.1s;">
         <div class="search-bar-container">
-            <input type="text" id="search-input" class="dark-input liquid-glass" placeholder="Pesquise o artista ou obra..." autocomplete="off">
+            <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
+                <input type="text" id="search-input" class="dark-input liquid-glass" placeholder="Pesquise o artista ou obra..." autocomplete="off">
+                <button id="toggle-filters-btn" class="btn-ghost liquid-glass" style="height: 48px; width: 55px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center;"><i class="ph ph-sliders"></i></button>
+                <button id="search-btn" class="btn-primary glow-box" style="height: 48px; padding: 0 30px;">Buscar</button>
+            </div>
             
-            <div class="filters" style="margin-top: 25px; display: flex; flex-direction: column; gap: 20px;">
+            <div id="advanced-filters" class="filters liquid-glass" style="margin-top: 15px; display: none; flex-direction: column; gap: 20px; padding: 20px; border-radius: 12px;">
                 <div class="range-slider-wrapper filters-row">
-                    <div class="range-values glow-text">
+                    <div class="range-values glow-text" style="font-size: 1rem;">
                         <span id="year-min-val">2000</span> - <span id="year-max-val">2026</span>
                     </div>
-                    <div class="slider-track liquid-glass">
+                    <div class="slider-track" style="top: 35px;">
                         <div class="slider-fill" id="slider-fill"></div>
                     </div>
-                    <input type="range" id="filter-year-min" min="1900" max="2026" value="2000">
-                    <input type="range" id="filter-year-max" min="1900" max="2026" value="2026">
+                    <input type="range" id="filter-year-min" min="1900" max="2026" value="2000" style="top: 28px;">
+                    <input type="range" id="filter-year-max" min="1900" max="2026" value="2026" style="top: 28px;">
                 </div>
                 
-                <div class="type-filter-wrapper filters-row liquid-glass">
-                    <div class="range-values glow-text" style="font-size: 0.8rem; letter-spacing: 1px; text-transform: uppercase; color: #888; border: 0; margin-bottom: 0;">Tipo de Obra</div>
-                    <div class="type-options custom-scroll" id="filter-type">
+                <div class="type-filter-wrapper filters-row" style="margin-top: 15px; padding: 0; display: flex; justify-content: space-between; align-items: center; border: none;">
+                    <div class="glow-text" style="font-size: 0.8rem; letter-spacing: 1px; text-transform: uppercase; color: #888;">Tipo de Obra</div>
+                    <div class="type-options" id="filter-type">
                         <input type="radio" id="type-album" name="search-type" value="album" checked>
                         <label for="type-album" class="btn-ghost">Álbum</label>
-                        
                         <input type="radio" id="type-ep" name="search-type" value="ep">
                         <label for="type-ep" class="btn-ghost">EP</label>
-                        
                         <input type="radio" id="type-single" name="search-type" value="single">
                         <label for="type-single" class="btn-ghost">Single</label>
                     </div>
                 </div>
-                
-                <button id="search-btn" class="btn-primary glow-box" style="margin-top: 15px;">Buscar</button>
             </div>
         </div>
 
@@ -87,7 +87,7 @@
         </div>
     </main>
 
-    <main id="album-view-section" class="fade-in-up section-page" style="display: none; max-width: 1000px; margin: 0 auto; padding: 0 20px 150px 20px;">
+    <main id="album-view-section" class="section-page scroll-trigger" style="display: none; max-width: 1000px; margin: 0 auto; padding: 0 20px 150px 20px;">
         <button id="back-to-explore" class="btn-ghost" style="margin-bottom: 20px; font-size: 1rem; border: 1px solid #333; padding: 5px 15px; border-radius: 5px;"><i class="ph ph-arrow-left"></i> Voltar</button>
         
         <div class="album-header liquid-glass" style="display:flex; gap:30px; padding:30px; border-radius:16px; align-items: flex-end;">
@@ -110,7 +110,7 @@
         </div>
     </main>
 
-    <main id="network-section" class="fade-in-up section-page" style="display: none;">
+    <main id="network-section" class="section-page scroll-trigger" style="display: none;">
         <h2 class="glow-text" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">Comunidade</h2>
         <input type="text" id="user-search-input" class="dark-input liquid-glass" placeholder="Buscar perfil por nome..." style="max-width: 400px; margin-bottom: 30px;">
         <div id="users-grid" class="grid-container" style="margin-bottom: 50px;"></div>
@@ -142,7 +142,7 @@
             </div>
         </div>
         <div class="player-volume">
-            <i class="ph ph-speaker-high" style="color:#aaa;"></i>
+            <i class="ph ph-speaker-high" style="color:#aaa; font-size: 1.2rem; margin-top: 2px; flex-shrink: 0;"></i>
             <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.5">
         </div>
     </div>
