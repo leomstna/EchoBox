@@ -35,7 +35,7 @@ let currentAlbums = [];
 let currentPage = 1;
 const itemsPerPage = 12;
 
-// --- OBSERVER PARA ANIMAÇÕES DE SCROLL (COM DELAY ESCADINHA) ---
+// --- OBSERVER PARA ANIMAÇÕES DE SCROLL ---
 const scrollObserver = new IntersectionObserver((entries) => {
     let delay = 0;
     entries.forEach(entry => {
@@ -43,11 +43,11 @@ const scrollObserver = new IntersectionObserver((entries) => {
             setTimeout(() => {
                 entry.target.classList.add('scroll-animated');
             }, delay);
-            delay += 80; // Delay em cascata para não subir tudo igual robô
+            delay += 80;
             scrollObserver.unobserve(entry.target); 
         }
     });
-}, { threshold: 0.1, rootMargin: "0px 0px -30px 0px" });
+}, { threshold: 0.15, rootMargin: "0px 0px -50px 0px" });
 
 document.querySelectorAll('.scroll-trigger').forEach(el => scrollObserver.observe(el));
 
@@ -113,8 +113,8 @@ const volSlider = document.getElementById('volume-slider');
 
 window.onYouTubeIframeAPIReady = () => {
     ytPlayer = new YT.Player('yt-player', {
-        height: '1', width: '1', videoId: '',
-        playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'fs': 0 },
+        height: '10', width: '10', videoId: '',
+        playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'fs': 0, 'origin': window.location.origin },
         events: {
             'onReady': () => { isPlayerReady = true; ytPlayer.setVolume(volSlider.value * 100); },
             'onStateChange': onPlayerStateChange
@@ -241,8 +241,6 @@ const loadAlbumView = async (album) => {
             const docSnap = await getDoc(doc(db, "users", currentUser.uid, "ratings", safeId));
             if(docSnap.exists()) {
                 if (docSnap.data().tracks) savedData = docSnap.data().tracks;
-                
-                // Preenche as estrelas gerais do álbum que estão no topo
                 const overallRating = docSnap.data().rating || 0;
                 const albumStars = Array.from(document.querySelectorAll('#album-view-stars i'));
                 albumStars.forEach((s, i) => {
@@ -252,13 +250,10 @@ const loadAlbumView = async (album) => {
             }
         }
         
-        // Logica para salvar as estrelas gerais do álbum de dentro do view
         const albumStarsArray = Array.from(document.querySelectorAll('#album-view-stars i'));
         albumStarsArray.forEach((star, index) => {
-            // Remove listeners antigos criando um clone do node para evitar sobreposição
             const newStar = star.cloneNode(true);
             star.parentNode.replaceChild(newStar, star);
-            
             newStar.addEventListener('click', async () => {
                 if(!currentUser) return alert('Faça login.');
                 const currentStarsNodes = Array.from(document.querySelectorAll('#album-view-stars i'));
@@ -266,7 +261,7 @@ const loadAlbumView = async (album) => {
                 const rating = index + 1;
                 const safeId = album.name.replace(/[^a-zA-Z0-9]/g, ''); 
                 await setDoc(doc(db, "users", currentUser.uid, "ratings", safeId), {
-                    name: album.name, artist: album.artist, image: album.image || 'https://via.placeholder.com/200', rating: rating, timestamp: new Date(), type: originalType
+                    name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: rating, timestamp: new Date(), type: originalType
                 }, { merge: true });
             });
         });
@@ -279,7 +274,7 @@ const loadAlbumView = async (album) => {
             const myTrackData = savedData[tId] || { rating: 0, comment: '' };
             
             const div = document.createElement('div');
-            div.className = 'track-row liquid-glass anim-slide-left scroll-trigger'; 
+            div.className = 'track-row liquid-glass scroll-trigger'; 
             div.innerHTML = `
                 <div class="track-info">
                     <span style="color:#666; font-size:0.8rem; width:15px;">${index + 1}</span>
@@ -345,7 +340,7 @@ const loadAlbumView = async (album) => {
                     const rating = sIndex + 1;
                     const safeId = album.name.replace(/[^a-zA-Z0-9]/g, ''); 
                     await setDoc(doc(db, "users", currentUser.uid, "ratings", safeId), {
-                        name: album.name, artist: album.artist, image: album.image || 'https://via.placeholder.com/200', timestamp: new Date(), type: originalType,
+                        name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', timestamp: new Date(), type: originalType,
                         tracks: { [tId]: { rating: rating, comment: div.querySelector('.track-comment').value } }
                     }, { merge: true });
                 });
@@ -359,7 +354,7 @@ const loadAlbumView = async (album) => {
                     const safeId = album.name.replace(/[^a-zA-Z0-9]/g, '');
                     const currentStars = Array.from(div.querySelectorAll('.track-stars .ph-fill')).length;
                     await setDoc(doc(db, "users", currentUser.uid, "ratings", safeId), {
-                        name: album.name, artist: album.artist, image: album.image || 'https://via.placeholder.com/200', timestamp: new Date(), type: originalType,
+                        name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', timestamp: new Date(), type: originalType,
                         tracks: { [tId]: { rating: currentStars, comment: e.target.value } }
                     }, { merge: true });
                 }, 1000);
@@ -399,7 +394,7 @@ const loadFriendsFeed = async () => {
                 const rData = rDoc.data();
                 if(rData.timestamp) {
                     allActivities.push({
-                        friendName: pData.name || 'Anônimo', friendPfp: pData.photoURL || 'https://via.placeholder.com/40',
+                        friendName: pData.name || 'Anônimo', friendPfp: pData.photoURL || 'https://placehold.co/40x40/1a1a1a/888888?text=U',
                         timeMs: rData.timestamp.toMillis ? rData.timestamp.toMillis() : 0, ...rData
                     });
                 }
@@ -420,7 +415,7 @@ const loadFriendsFeed = async () => {
             else if (originalType === 'ep') typeLabel = 'EP';
 
             const div = document.createElement('div');
-            div.className = 'feed-item liquid-glass anim-slide-up scroll-trigger'; 
+            div.className = 'feed-item liquid-glass scroll-trigger'; 
             div.style.marginBottom = '15px'; div.style.borderRadius = '12px';
             
             let highlightComment = '';
@@ -456,10 +451,10 @@ const renderUsers = (usersList) => {
         const data = userObj.data;
         const uid = userObj.id;
         const userCard = document.createElement('div');
-        userCard.className = 'user-card liquid-glass anim-zoom scroll-trigger'; 
+        userCard.className = 'user-card liquid-glass scroll-trigger'; 
         userCard.innerHTML = `
             <div class="user-info-click" style="display:flex; align-items:center; gap:10px; width: 100%;">
-                <div class="pfp-container-mini"><img src="${data.photoURL || 'https://via.placeholder.com/50'}"></div>
+                <div class="pfp-container-mini"><img src="${data.photoURL || 'https://placehold.co/50x50/1a1a1a/888888?text=U'}"></div>
                 <div>
                     <h4 class="glow-text" style="color:#fff;">${data.name || 'Anônimo'}</h4>
                     <p style="font-size:0.7rem; color:#aaa;">${data.bio ? data.bio.substring(0, 30) + '...' : 'Sem biografia'}</p>
@@ -508,7 +503,7 @@ if(document.getElementById('user-search-input')) {
 const openPublicProfile = async (uid, userData) => {
     publicModal.style.display = 'flex';
     document.getElementById('public-name').innerText = userData.name || 'Anônimo';
-    document.getElementById('public-pfp').src = userData.photoURL || 'https://via.placeholder.com/80';
+    document.getElementById('public-pfp').src = userData.photoURL || 'https://placehold.co/80x80/1a1a1a/888888?text=U';
     document.getElementById('public-bio').innerText = userData.bio || 'Este usuário não possui biografia.';
     const container = document.getElementById('public-rated-albums');
     container.innerHTML = '<p style="color: #888; font-size: 0.8rem;">Buscando obras...</p>';
@@ -636,7 +631,7 @@ const renderPage = () => {
 
     pageData.forEach(album => {
         const card = document.createElement('div');
-        card.className = 'album-card liquid-glass anim-slide-up scroll-trigger'; 
+        card.className = 'album-card liquid-glass scroll-trigger'; 
         
         const originalType = album.type || 'album';
         let typeLabel = 'Álbum';
@@ -644,7 +639,7 @@ const renderPage = () => {
         else if (originalType === 'ep') typeLabel = 'EP';
 
         card.innerHTML = `
-            <img src="${album.image || 'https://via.placeholder.com/200'}" alt="Capa" class="capa-click">
+            <img src="${album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa'}" alt="Capa" class="capa-click">
             <div class="album-title glow-text capa-click">${album.name}</div>
             <div class="album-artist">${album.artist}</div>
             <div class="rating-ui">
@@ -668,7 +663,7 @@ const renderPage = () => {
                 const rating = index + 1;
                 const safeId = album.name.replace(/[^a-zA-Z0-9]/g, ''); 
                 await setDoc(doc(db, "users", currentUser.uid, "ratings", safeId), {
-                    name: album.name, artist: album.artist, image: album.image || 'https://via.placeholder.com/200', rating: rating, timestamp: new Date(), type: originalType
+                    name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: rating, timestamp: new Date(), type: originalType
                 }, { merge: true });
             });
         });
