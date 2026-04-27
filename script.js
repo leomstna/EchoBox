@@ -35,6 +35,26 @@ let currentAlbums = [];
 let currentPage = 1;
 const itemsPerPage = 12;
 
+// --- OBSERVER PARA ANIMAÇÕES DE SCROLL ---
+const scrollObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('scroll-animated');
+            scrollObserver.unobserve(entry.target); 
+        }
+    });
+}, { threshold: 0.1 });
+
+// Observa os elementos estáticos iniciais
+document.querySelectorAll('.scroll-trigger').forEach(el => scrollObserver.observe(el));
+
+// --- TOGGLE DE FILTROS ---
+document.getElementById('toggle-filters-btn').addEventListener('click', () => {
+    const filterDiv = document.getElementById('advanced-filters');
+    filterDiv.style.display = filterDiv.style.display === 'none' ? 'flex' : 'none';
+});
+
+// --- LOGICA DO SLIDER DUPLO ---
 const minSlider = document.getElementById('filter-year-min');
 const maxSlider = document.getElementById('filter-year-max');
 const minValText = document.getElementById('year-min-val');
@@ -55,23 +75,17 @@ function updateSlider() {
 }
 
 minSlider.addEventListener('input', () => {
-    if (parseInt(minSlider.value) > parseInt(maxSlider.value) - 1) {
-        minSlider.value = parseInt(maxSlider.value) - 1;
-    }
-    minValText.innerText = minSlider.value;
-    updateSlider();
+    if (parseInt(minSlider.value) > parseInt(maxSlider.value) - 1) minSlider.value = parseInt(maxSlider.value) - 1;
+    minValText.innerText = minSlider.value; updateSlider();
 });
 
 maxSlider.addEventListener('input', () => {
-    if (parseInt(maxSlider.value) < parseInt(minSlider.value) + 1) {
-        maxSlider.value = parseInt(minSlider.value) + 1;
-    }
-    maxValText.innerText = maxSlider.value;
-    updateSlider();
+    if (parseInt(maxSlider.value) < parseInt(minSlider.value) + 1) maxSlider.value = parseInt(minSlider.value) + 1;
+    maxValText.innerText = maxSlider.value; updateSlider();
 });
 updateSlider();
 
-// --- MOTOR INVISÍVEL DO YOUTUBE MUSIC (CORRIGIDO) ---
+// --- MOTOR INVISÍVEL DO YOUTUBE MUSIC ---
 let ytPlayer = null;
 let isPlayerReady = false;
 let currentTrackId = null;
@@ -88,7 +102,6 @@ const pTimeCurr = document.getElementById('player-time-current');
 const pTimeTot = document.getElementById('player-time-total');
 const volSlider = document.getElementById('volume-slider');
 
-// DECLARA A FUNÇÃO ANTES DE INJETAR O YOUTUBE
 window.onYouTubeIframeAPIReady = () => {
     ytPlayer = new YT.Player('yt-player', {
         height: '1', width: '1', videoId: '',
@@ -100,7 +113,6 @@ window.onYouTubeIframeAPIReady = () => {
     });
 };
 
-// INJEÇÃO DINÂMICA DA API DO YOUTUBE (Evita o Bug de Carregamento)
 const tag = document.createElement('script');
 tag.src = "https://www.youtube.com/iframe_api";
 const firstScriptTag = document.getElementsByTagName('script')[0];
@@ -109,10 +121,7 @@ firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 function onPlayerStateChange(event) {
     if (event.data === YT.PlayerState.PLAYING) {
         pPlayBtn.classList.replace('ph-play-circle', 'ph-pause-circle');
-        if (currentPlayBtnUI) {
-            currentPlayBtnUI.classList.remove('ph-spinner');
-            currentPlayBtnUI.classList.add('ph-pause-circle');
-        }
+        if (currentPlayBtnUI) { currentPlayBtnUI.classList.remove('ph-spinner'); currentPlayBtnUI.classList.add('ph-pause-circle'); }
         clearInterval(progressInterval);
         progressInterval = setInterval(updateProgressBar, 500);
     } else if (event.data === YT.PlayerState.PAUSED) {
@@ -123,8 +132,7 @@ function onPlayerStateChange(event) {
         pPlayBtn.classList.replace('ph-pause-circle', 'ph-play-circle');
         if (currentPlayBtnUI) currentPlayBtnUI.classList.replace('ph-pause-circle', 'ph-play-circle');
         clearInterval(progressInterval);
-        pBarFill.style.width = '0%';
-        pTimeCurr.innerText = '0:00';
+        pBarFill.style.width = '0%'; pTimeCurr.innerText = '0:00';
     }
 }
 
@@ -135,23 +143,17 @@ function updateProgressBar() {
     if(duration > 0) {
         const progress = (current / duration) * 100;
         pBarFill.style.width = `${progress}%`;
-        
-        let curMins = Math.floor(current / 60);
-        let curSecs = Math.floor(current % 60);
+        let curMins = Math.floor(current / 60); let curSecs = Math.floor(current % 60);
         pTimeCurr.innerText = `${curMins}:${curSecs < 10 ? '0'+curSecs : curSecs}`;
-        
-        let durMins = Math.floor(duration / 60);
-        let durSecs = Math.floor(duration % 60);
+        let durMins = Math.floor(duration / 60); let durSecs = Math.floor(duration % 60);
         pTimeTot.innerText = `${durMins}:${durSecs < 10 ? '0'+durSecs : durSecs}`;
     }
 }
 
 volSlider.addEventListener('input', (e) => { if(isPlayerReady) ytPlayer.setVolume(e.target.value * 100); });
-
 document.getElementById('progress-bar-bg').addEventListener('click', (e) => {
     if(!isPlayerReady || !currentTrackId) return;
-    const rect = e.target.getBoundingClientRect();
-    const percent = (e.clientX - rect.left) / rect.width;
+    const rect = e.target.getBoundingClientRect(); const percent = (e.clientX - rect.left) / rect.width;
     ytPlayer.seekTo(ytPlayer.getDuration() * percent, true);
 });
 
@@ -162,34 +164,39 @@ pPlayBtn.addEventListener('click', () => {
     }
 });
 
+// --- FUNÇÃO PARA ANIMAR ESTRELAS (STAGGERED + EXPLOSÃO) ---
+const animateStars = (starArray, targetIndex) => {
+    starArray.forEach((s, i) => {
+        s.classList.remove('star-animate', 'star-explode');
+        void s.offsetWidth; // Força o reflow do CSS para reiniciar a animação
+        if (i <= targetIndex) {
+            setTimeout(() => {
+                if (i === 4 && targetIndex === 4) s.classList.add('star-explode');
+                else s.classList.add('star-animate');
+                s.style.color = '#fff'; s.classList.replace('ph', 'ph-fill');
+            }, i * 80); // Atraso em escadinha
+        } else {
+            s.style.color = '#444'; s.classList.replace('ph-fill', 'ph');
+        }
+    });
+};
+
 const showSection = (id) => {
     const overlay = document.getElementById('page-transition');
     const sections = document.querySelectorAll('.section-page');
-    
-    overlay.style.display = 'flex';
-    void overlay.offsetWidth; 
-    overlay.style.opacity = '1';
-
+    overlay.style.display = 'flex'; void overlay.offsetWidth; overlay.style.opacity = '1';
     setTimeout(() => {
         sections.forEach(s => s.style.display = 'none');
         if(id === 'home') { document.getElementById('home').style.display = 'block'; document.getElementById('search-section').style.display = 'block'; }
         else document.getElementById(id).style.display = 'block';
-        
         window.scrollTo({ top: 0, behavior: 'instant' });
-        
-        overlay.style.opacity = '0';
-        setTimeout(() => { overlay.style.display = 'none'; }, 300);
+        overlay.style.opacity = '0'; setTimeout(() => { overlay.style.display = 'none'; }, 300);
     }, 300);
 };
 
 document.getElementById('link-home').addEventListener('click', (e) => { e.preventDefault(); showSection('home'); });
 document.getElementById('back-to-explore').addEventListener('click', () => showSection('search-section'));
-
-document.getElementById('link-explorar').addEventListener('click', (e) => {
-    e.preventDefault(); showSection('search-section');
-    if (!searchInput.value.trim()) { setTimeout(() => loadTrending(), 400); } 
-    else { searchInput.focus(); }
-});
+document.getElementById('link-explorar').addEventListener('click', (e) => { e.preventDefault(); showSection('search-section'); if (!searchInput.value.trim()) { setTimeout(() => loadTrending(), 400); } else { searchInput.focus(); } });
 
 const loadAlbumView = async (album) => {
     showSection('album-view-section');
@@ -215,9 +222,7 @@ const loadAlbumView = async (album) => {
         const res = await fetch(url);
         const data = await res.json();
         let tracks = data.results.filter(t => t.wrapperType === 'track');
-        if (originalType === 'single' || isNaN(album.id)) {
-            tracks = tracks.filter(t => (t.collectionName && t.collectionName.includes(album.name)) || (t.trackName && t.trackName.includes(album.name)));
-        }
+        if (originalType === 'single' || isNaN(album.id)) tracks = tracks.filter(t => (t.collectionName && t.collectionName.includes(album.name)) || (t.trackName && t.trackName.includes(album.name)));
 
         let savedData = {};
         if(currentUser) {
@@ -234,11 +239,11 @@ const loadAlbumView = async (album) => {
             const myTrackData = savedData[tId] || { rating: 0, comment: '' };
             
             const div = document.createElement('div');
-            div.className = 'track-row liquid-glass';
+            div.className = 'track-row liquid-glass scroll-trigger'; // Anima no scroll
             div.innerHTML = `
                 <div class="track-info">
                     <span style="color:#666; font-size:0.8rem; width:15px;">${index + 1}</span>
-                    <i class="ph ph-play-circle play-btn"></i>
+                    <i class="ph ph-play-circle play-btn" id="btn-track-${tId}"></i>
                     <div class="track-info-text">
                         <div class="t-name">${track.trackName}</div>
                         <div style="color:#888; font-size:0.7rem;">${album.artist}</div>
@@ -252,6 +257,7 @@ const loadAlbumView = async (album) => {
                 </div>
             `;
             trackContainer.appendChild(div);
+            scrollObserver.observe(div); // Coloca o observer na musica
 
             const playBtn = div.querySelector('.play-btn');
             playBtn.addEventListener('click', async () => {
@@ -262,14 +268,9 @@ const loadAlbumView = async (album) => {
                     if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
                     else ytPlayer.playVideo();
                 } else {
-                    if (currentPlayBtnUI) {
-                        currentPlayBtnUI.classList.remove('ph-spinner');
-                        currentPlayBtnUI.classList.add('ph-play-circle');
-                        currentPlayBtnUI.classList.remove('ph-pause-circle');
-                    }
-                    currentPlayBtnUI = playBtn;
-                    
-                    playBtn.classList.replace('ph-play-circle', 'ph-spinner');
+                    if (currentPlayBtnUI) { currentPlayBtnUI.classList.remove('ph-spinner'); currentPlayBtnUI.classList.add('ph-play-circle'); currentPlayBtnUI.classList.remove('ph-pause-circle'); }
+                    currentPlayBtnUI = playBtn; 
+                    playBtn.classList.replace('ph-play-circle', 'ph-spinner'); 
                     playBtn.classList.remove('ph-pause-circle');
                     
                     try {
@@ -278,17 +279,10 @@ const loadAlbumView = async (album) => {
                         const ytData = await ytRes.json();
                         
                         if(ytData.videoId) {
-                            currentTrackId = tId;
-                            ytPlayer.loadVideoById(ytData.videoId);
+                            currentTrackId = tId; ytPlayer.loadVideoById(ytData.videoId);
                             pTitle.innerText = track.trackName; pArtist.innerText = album.artist; pCover.src = album.image;
-                        } else {
-                            alert("Faixa não encontrada no YouTube Music.");
-                            playBtn.classList.replace('ph-spinner', 'ph-play-circle');
-                        }
-                    } catch(e) {
-                        alert("Erro ao conectar com o servidor musical.");
-                        playBtn.classList.replace('ph-spinner', 'ph-play-circle');
-                    }
+                        } else { alert("Faixa não encontrada no YouTube Music."); playBtn.classList.replace('ph-spinner', 'ph-play-circle'); }
+                    } catch(e) { alert("Erro ao conectar com o servidor musical."); playBtn.classList.replace('ph-spinner', 'ph-play-circle'); }
                 }
             });
 
@@ -296,10 +290,7 @@ const loadAlbumView = async (album) => {
             stars.forEach((star, sIndex) => {
                 star.addEventListener('click', async () => {
                     if(!currentUser) return alert('Faça login.');
-                    stars.forEach((s, i) => {
-                        if (i <= sIndex) { s.style.color = '#fff'; s.classList.replace('ph', 'ph-fill'); } 
-                        else { s.style.color = '#444'; s.classList.replace('ph-fill', 'ph'); }
-                    });
+                    animateStars(stars, sIndex); 
                     const rating = sIndex + 1;
                     const safeId = album.name.replace(/[^a-zA-Z0-9]/g, ''); 
                     await setDoc(doc(db, "users", currentUser.uid, "ratings", safeId), {
@@ -378,7 +369,7 @@ const loadFriendsFeed = async () => {
             else if (originalType === 'ep') typeLabel = 'EP';
 
             const div = document.createElement('div');
-            div.className = 'feed-item liquid-glass';
+            div.className = 'feed-item liquid-glass scroll-trigger'; // Anima no scroll
             div.style.marginBottom = '15px'; div.style.borderRadius = '12px';
             
             let highlightComment = '';
@@ -400,6 +391,7 @@ const loadFriendsFeed = async () => {
             div.querySelector('.cover').addEventListener('click', () => loadAlbumView(act));
             div.querySelector('.feed-title').addEventListener('click', () => loadAlbumView(act));
             feed.appendChild(div);
+            scrollObserver.observe(div); // Coloca o observer
         });
     } catch(e) { feed.innerHTML = '<p style="color:red;">Erro ao puxar o feed.</p>'; }
 };
@@ -413,7 +405,7 @@ const renderUsers = (usersList) => {
         const data = userObj.data;
         const uid = userObj.id;
         const userCard = document.createElement('div');
-        userCard.className = 'user-card fade-in-up liquid-glass';
+        userCard.className = 'user-card fade-in-up liquid-glass scroll-trigger'; // Anima no scroll
         userCard.innerHTML = `
             <div class="user-info-click" style="display:flex; align-items:center; gap:10px; width: 100%;">
                 <div class="pfp-container-mini"><img src="${data.photoURL || 'https://via.placeholder.com/50'}"></div>
@@ -425,6 +417,7 @@ const renderUsers = (usersList) => {
             <button class="btn-follow" data-id="${uid}">Seguir</button>
         `;
         usersGrid.appendChild(userCard);
+        scrollObserver.observe(userCard); // Coloca o observer
         userCard.querySelector('.user-info-click').addEventListener('click', () => openPublicProfile(uid, data));
     });
 
@@ -551,28 +544,20 @@ document.getElementById('edit-pfp-file').addEventListener('change', function(e) 
             document.getElementById('crop-image').src = event.target.result;
             cropModal.style.display = 'flex';
             if (cropper) cropper.destroy();
-            cropper = new Cropper(document.getElementById('crop-image'), {
-                aspectRatio: 1,
-                viewMode: 1,
-                background: false
-            });
+            cropper = new Cropper(document.getElementById('crop-image'), { aspectRatio: 1, viewMode: 1, background: false });
         };
         reader.readAsDataURL(file);
     }
     e.target.value = ''; 
 });
 
-document.getElementById('close-crop-modal').addEventListener('click', () => {
-    cropModal.style.display = 'none';
-    if (cropper) cropper.destroy();
-});
+document.getElementById('close-crop-modal').addEventListener('click', () => { cropModal.style.display = 'none'; if (cropper) cropper.destroy(); });
 
 document.getElementById('save-crop-btn').addEventListener('click', () => {
     if (cropper) {
         const canvas = cropper.getCroppedCanvas({ width: 250, height: 250 });
         document.getElementById('modal-pfp').src = canvas.toDataURL('image/jpeg');
-        cropModal.style.display = 'none';
-        cropper.destroy();
+        cropModal.style.display = 'none'; cropper.destroy();
     }
 });
 
@@ -600,7 +585,7 @@ const renderPage = () => {
 
     pageData.forEach(album => {
         const card = document.createElement('div');
-        card.className = 'album-card fade-in-up liquid-glass';
+        card.className = 'album-card fade-in-up liquid-glass scroll-trigger'; 
         
         const originalType = album.type || 'album';
         let typeLabel = 'Álbum';
@@ -619,6 +604,7 @@ const renderPage = () => {
             </div>
         `;
         albumGrid.appendChild(card);
+        scrollObserver.observe(card);
 
         card.querySelectorAll('.capa-click').forEach(el => el.addEventListener('click', () => loadAlbumView(album)));
 
@@ -627,10 +613,7 @@ const renderPage = () => {
             star.addEventListener('click', async (e) => {
                 e.stopPropagation(); 
                 if(!currentUser) return alert('Faça login para avaliar esta obra.'); 
-                stars.forEach((s, i) => {
-                    if (i <= index) { s.style.color = '#fff'; s.classList.replace('ph', 'ph-fill'); } 
-                    else { s.style.color = '#444'; s.classList.replace('ph-fill', 'ph'); }
-                });
+                animateStars(stars, index); // CHAMA A ANIMAÇÃO DA ESCADINHA E EXPLOSÃO
                 const rating = index + 1;
                 const safeId = album.name.replace(/[^a-zA-Z0-9]/g, ''); 
                 await setDoc(doc(db, "users", currentUser.uid, "ratings", safeId), {
@@ -654,12 +637,9 @@ searchBtn.addEventListener('click', async () => {
         const selectedType = document.querySelector('input[name="search-type"]:checked').value;
         const response = await fetch(`https://api-musicbox-m275.onrender.com/search?q=${encodeURIComponent(rawQuery)}&type=${selectedType}`);
         
-        if (!response.ok) {
-            throw new Error('A API devolveu um erro escondido.');
-        }
+        if (!response.ok) throw new Error('A API devolveu um erro escondido.');
 
         let data = await response.json();
-        
         loadingText.style.display = 'none';
         
         if (data.error || !data || data.length === 0) { 
