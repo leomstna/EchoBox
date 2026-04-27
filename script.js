@@ -35,19 +35,17 @@ let currentAlbums = [];
 let currentPage = 1;
 const itemsPerPage = 12;
 
-// --- OBSERVER PARA ANIMAÇÕES DE SCROLL ---
+// --- OBSERVER PARA ANIMAÇÕES DE SCROLL (Manteiga) ---
 const scrollObserver = new IntersectionObserver((entries) => {
     let delay = 0;
     entries.forEach(entry => {
         if (entry.isIntersecting) {
-            setTimeout(() => {
-                entry.target.classList.add('scroll-animated');
-            }, delay);
-            delay += 80;
+            setTimeout(() => { entry.target.classList.add('scroll-animated'); }, delay);
+            delay += 50; // Sobe os cards 50ms depois do outro em cascata
             scrollObserver.unobserve(entry.target); 
         }
     });
-}, { threshold: 0.15, rootMargin: "0px 0px -50px 0px" });
+}, { threshold: 0.1, rootMargin: "0px 0px -40px 0px" });
 
 document.querySelectorAll('.scroll-trigger').forEach(el => scrollObserver.observe(el));
 
@@ -94,7 +92,7 @@ useYearFilter.addEventListener('change', (e) => {
     }
 });
 
-// --- MOTOR INVISÍVEL DO YOUTUBE MUSIC ---
+// --- MOTOR INVISÍVEL DO YOUTUBE MUSIC (LIMPO DE ERROS DE CONSOLE) ---
 let ytPlayer = null;
 let isPlayerReady = false;
 let currentTrackId = null;
@@ -113,10 +111,10 @@ const volSlider = document.getElementById('volume-slider');
 
 window.onYouTubeIframeAPIReady = () => {
     ytPlayer = new YT.Player('yt-player', {
-        height: '10', width: '10', videoId: '',
+        height: '1', width: '1', videoId: 'M7lc1UVf-VE', // Dummy video oficial da API só pro erro sumir
         playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'fs': 0, 'origin': window.location.origin },
         events: {
-            'onReady': () => { isPlayerReady = true; ytPlayer.setVolume(volSlider.value * 100); },
+            'onReady': () => { isPlayerReady = true; ytPlayer.setVolume(volSlider.value * 100); ytPlayer.pauseVideo(); },
             'onStateChange': onPlayerStateChange
         }
     });
@@ -188,7 +186,7 @@ const animateStars = (starArray, targetIndex) => {
             s.classList.replace('ph', 'ph-fill');
             if (i === 4 && targetIndex === 4) s.classList.add('star-explode');
             else s.classList.add('star-animate');
-        }, i * 100);
+        }, i * 80); // Fica super suave
     }
 };
 
@@ -681,15 +679,17 @@ searchBtn.addEventListener('click', async () => {
 
     try {
         const selectedType = document.querySelector('input[name="search-type"]:checked').value;
-        const response = await fetch(`https://api-musicbox-m275.onrender.com/search?q=${encodeURIComponent(rawQuery)}&type=${selectedType}`);
         
-        if (!response.ok) throw new Error('A API devolveu um erro escondido.');
+        let fetchUrl = `https://api-musicbox-m275.onrender.com/search?q=${encodeURIComponent(rawQuery)}&type=${selectedType}`;
+        const response = await fetch(fetchUrl);
+        
+        if (!response.ok) throw new Error('A API devolveu um erro.');
 
         let data = await response.json();
         loadingText.style.display = 'none';
         
         if (data.error || !data || data.length === 0) { 
-            albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registro encontrado para este tipo de obra.</p>'; 
+            albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registro encontrado.</p>'; 
             return; 
         }
 
