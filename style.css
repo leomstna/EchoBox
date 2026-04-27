@@ -8,7 +8,7 @@ body { background-color: #050505; color: #ededed; overflow-x: hidden; }
 .section-page { transition: opacity 0.3s ease; }
 
 /* OBSERVER SCROLL ANIMATIONS */
-.scroll-trigger { opacity: 0; transform: translateY(30px); transition: opacity 0.6s ease-out, transform 0.6s ease-out; }
+.scroll-trigger { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease-out, transform 0.5s ease-out; }
 .scroll-animated { opacity: 1; transform: translateY(0); }
 
 .custom-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
@@ -57,7 +57,6 @@ textarea.dark-input { resize: none; max-height: 80px; }
 .filters-row { position: relative; width: 100%; }
 
 .range-slider-wrapper { margin-top: 10px; }
-.range-values { text-align: center; font-size: 1.5rem; font-weight: 700; margin-bottom: 15px; color: #fff; }
 .slider-track { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 5px; position: absolute; z-index: 1; pointer-events: none; }
 .slider-fill { height: 100%; background: #fff; border-radius: 5px; position: absolute; z-index: 2; box-shadow: 0 0 10px rgba(255,255,255,0.5); }
 input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; position: absolute; left: 0; background: transparent; pointer-events: none; z-index: 3; }
@@ -83,7 +82,7 @@ input[type=range]::-moz-range-thumb { appearance: none; height: 20px; width: 20p
 .track-info { display: flex; align-items: center; gap: 15px; flex: 1; }
 .track-info-text { display: flex; flex-direction: column; max-width: 250px; }
 .track-info-text .t-name { color:#fff; font-size:0.9rem; font-weight:600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.play-btn { cursor: pointer; font-size: 1.8rem; color: #aaa; transition: 0.2s; background: transparent !important; border: none; outline: none; border-radius: 50%; } /* FIX BOLINHA BRANCA */
+.play-btn { cursor: pointer; font-size: 1.8rem; color: #aaa; transition: 0.2s; background: transparent !important; border: none !important; outline: none !important; }
 .play-btn:hover, .play-btn.playing { color: #fff; text-shadow: 0 0 10px rgba(255, 255, 255, 0.8); }
 .track-actions { display: flex; align-items: center; gap: 15px; flex: 1.5; justify-content: flex-end; }
 .track-comment { background: transparent; border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: 5px; width: 60%; outline: none; font-size: 0.8rem; }
@@ -134,7 +133,7 @@ input[type=range]::-moz-range-thumb { appearance: none; height: 20px; width: 20p
 .progress-bar-fill { height: 100%; background: #fff; border-radius: 2px; width: 0%; transition: width 0.1s linear; }
 .progress-bar-bg:hover .progress-bar-fill { background: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.5); }
 .player-volume { display: flex; align-items: center; gap: 10px; width: 200px; justify-content: flex-end; }
-.player-volume i { font-size: 1.5rem; flex-shrink: 0; margin-top: 2px; } /* FIX ICONE ESPREMIDO */
+.player-volume i { font-size: 1.5rem; flex-shrink: 0; margin-top: 2px; } 
 .player-volume input { width: 80px; accent-color: #fff; }
 
 .ph-spinner { animation: spin 1s linear infinite; }
