@@ -24,6 +24,7 @@ const userMenu = document.getElementById('user-menu');
 const navPfp = document.getElementById('nav-pfp');
 const modal = document.getElementById('profile-modal');
 const publicModal = document.getElementById('public-profile-modal');
+const cropModal = document.getElementById('crop-modal');
 const searchBtn = document.getElementById('search-btn');
 const searchInput = document.getElementById('search-input');
 const albumGrid = document.getElementById('album-grid');
@@ -34,6 +35,44 @@ let allUsersData = [];
 let currentAlbums = [];
 let currentPage = 1;
 const itemsPerPage = 12;
+
+// --- LOGICA DO SLIDER DUPLO ---
+const minSlider = document.getElementById('filter-year-min');
+const maxSlider = document.getElementById('filter-year-max');
+const minValText = document.getElementById('year-min-val');
+const maxValText = document.getElementById('year-max-val');
+const sliderFill = document.getElementById('slider-fill');
+
+function updateSlider() {
+    let min = parseInt(minSlider.min);
+    let max = parseInt(minSlider.max);
+    let val1 = parseInt(minSlider.value);
+    let val2 = parseInt(maxSlider.value);
+    
+    let percent1 = ((val1 - min) / (max - min)) * 100;
+    let percent2 = ((val2 - min) / (max - min)) * 100;
+    
+    sliderFill.style.left = percent1 + "%";
+    sliderFill.style.width = (percent2 - percent1) + "%";
+}
+
+minSlider.addEventListener('input', () => {
+    if (parseInt(minSlider.value) > parseInt(maxSlider.value) - 1) {
+        minSlider.value = parseInt(maxSlider.value) - 1;
+    }
+    minValText.innerText = minSlider.value;
+    updateSlider();
+});
+
+maxSlider.addEventListener('input', () => {
+    if (parseInt(maxSlider.value) < parseInt(minSlider.value) + 1) {
+        maxSlider.value = parseInt(minSlider.value) + 1;
+    }
+    maxValText.innerText = maxSlider.value;
+    updateSlider();
+});
+updateSlider(); // Inicializar
+// -----------------------------
 
 // --- MOTOR INVISÍVEL DO YOUTUBE MUSIC ---
 let ytPlayer = null;
@@ -52,6 +91,7 @@ const pTimeCurr = document.getElementById('player-time-current');
 const pTimeTot = document.getElementById('player-time-total');
 const volSlider = document.getElementById('volume-slider');
 
+// BURLA DO 1 PIXEL INVISIVEL
 window.onYouTubeIframeAPIReady = () => {
     ytPlayer = new YT.Player('yt-player', {
         height: '1', width: '1', videoId: '',
@@ -119,7 +159,7 @@ pPlayBtn.addEventListener('click', () => {
     }
 });
 
-// --- NAVEGAÇÃO COM FADE LIMPO ---
+// --- NAVEGAÇÃO ---
 const showSection = (id) => {
     const overlay = document.getElementById('page-transition');
     const sections = document.querySelectorAll('.section-page');
@@ -157,7 +197,7 @@ const loadAlbumView = async (album) => {
     document.getElementById('album-view-artist').innerText = album.artist;
     
     const trackContainer = document.getElementById('tracklist-container');
-    trackContainer.innerHTML = '<p class="pulse-text">Buscando faixas na base de dados<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span></p>';
+    trackContainer.innerHTML = '<p class="pulse-text">Buscando faixas<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span></p>';
     
     try {
         let url = `https://itunes.apple.com/lookup?id=${album.id}&entity=song`;
@@ -178,7 +218,7 @@ const loadAlbumView = async (album) => {
         }
         
         trackContainer.innerHTML = '';
-        if(tracks.length === 0) { trackContainer.innerHTML = '<p style="color:#aaa;">Nenhuma faixa individual encontrada para este registro.</p>'; return; }
+        if(tracks.length === 0) { trackContainer.innerHTML = '<p style="color:#aaa;">Nenhuma faixa encontrada para este registro.</p>'; return; }
 
         tracks.forEach((track, index) => {
             const tId = String(track.trackId);
@@ -237,7 +277,7 @@ const loadAlbumView = async (album) => {
                             playBtn.classList.replace('ph-spinner', 'ph-play-circle');
                         }
                     } catch(e) {
-                        alert("Erro ao conectar com o servidor musical.");
+                        alert("Erro ao conectar com o servidor.");
                         playBtn.classList.replace('ph-spinner', 'ph-play-circle');
                     }
                 }
@@ -455,7 +495,7 @@ onAuthStateChanged(auth, async (user) => {
     } else { loginBtn.style.display = 'block'; userMenu.style.display = 'none'; }
 });
 
-// --- SEU PERFIL ---
+// --- SEU PERFIL E CROPPER (RECORTAR FOTO) ---
 navPfp.addEventListener('click', async () => {
     modal.style.display = 'flex';
     const ratedContainer = document.getElementById('user-rated-albums');
@@ -481,9 +521,38 @@ navPfp.addEventListener('click', async () => {
 
 document.getElementById('close-modal').addEventListener('click', () => modal.style.display = 'none');
 
+let cropper;
 document.getElementById('edit-pfp-file').addEventListener('change', function(e) {
     const file = e.target.files[0];
-    if (file) { const reader = new FileReader(); reader.onload = function(event) { document.getElementById('modal-pfp').src = event.target.result; }; reader.readAsDataURL(file); }
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            document.getElementById('crop-image').src = event.target.result;
+            cropModal.style.display = 'flex';
+            if (cropper) cropper.destroy();
+            cropper = new Cropper(document.getElementById('crop-image'), {
+                aspectRatio: 1,
+                viewMode: 1,
+                background: false
+            });
+        };
+        reader.readAsDataURL(file);
+    }
+    e.target.value = ''; 
+});
+
+document.getElementById('close-crop-modal').addEventListener('click', () => {
+    cropModal.style.display = 'none';
+    if (cropper) cropper.destroy();
+});
+
+document.getElementById('save-crop-btn').addEventListener('click', () => {
+    if (cropper) {
+        const canvas = cropper.getCroppedCanvas({ width: 250, height: 250 });
+        document.getElementById('modal-pfp').src = canvas.toDataURL('image/jpeg');
+        cropModal.style.display = 'none';
+        cropper.destroy();
+    }
 });
 
 document.getElementById('save-profile').addEventListener('click', async () => {
@@ -557,15 +626,15 @@ searchBtn.addEventListener('click', async () => {
     loadingText.style.display = 'block'; albumGrid.innerHTML = ''; document.getElementById('pagination-controls').style.display = 'none';
 
     try {
-        const type = filterType.value;
+        const type = 'album';
         const response = await fetch(`https://api-musicbox-m275.onrender.com/search?q=${encodeURIComponent(rawQuery)}&type=${type}`);
         let data = await response.json();
         
         loadingText.style.display = 'none';
         if (!data || data.length === 0) { albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registro encontrado.</p>'; return; }
 
-        const minYear = parseInt(document.getElementById('filter-year-min').value) || 0;
-        const maxYear = parseInt(document.getElementById('filter-year-max').value) || 9999;
+        const minYear = parseInt(minSlider.value) || 0;
+        const maxYear = parseInt(maxSlider.value) || 9999;
         
         if (minYear > 0 || maxYear < 9999) {
             data = data.filter(album => {
