@@ -105,7 +105,6 @@ function updateProgressBar() {
 
 volSlider.addEventListener('input', (e) => { if(isPlayerReady) ytPlayer.setVolume(e.target.value * 100); });
 
-// Deixa clicar na barra para avançar a música
 document.getElementById('progress-bar-bg').addEventListener('click', (e) => {
     if(!isPlayerReady || !currentTrackId) return;
     const rect = e.target.getBoundingClientRect();
@@ -207,7 +206,7 @@ const loadAlbumView = async (album) => {
 
             const playBtn = div.querySelector('.play-btn');
             playBtn.addEventListener('click', async () => {
-                if(!isPlayerReady) return alert("O reprodutor está a iniciar, aguarda um momento.");
+                if(!isPlayerReady) return alert("O reprodutor está iniciando, aguarde um momento.");
                 globalPlayer.style.display = 'flex';
                 
                 if (currentTrackId === tId) {
@@ -217,11 +216,12 @@ const loadAlbumView = async (album) => {
                     if (currentPlayBtnUI) {
                         currentPlayBtnUI.classList.remove('ph-spinner');
                         currentPlayBtnUI.classList.add('ph-play-circle');
+                        currentPlayBtnUI.classList.remove('ph-pause-circle');
                     }
                     currentPlayBtnUI = playBtn;
                     
-                    // Coloca em loading
                     playBtn.classList.replace('ph-play-circle', 'ph-spinner');
+                    playBtn.classList.remove('ph-pause-circle');
                     
                     try {
                         const searchUrl = `https://api-musicbox-m275.onrender.com/yt-search?track=${encodeURIComponent(track.trackName)}&artist=${encodeURIComponent(album.artist)}`;
@@ -233,7 +233,7 @@ const loadAlbumView = async (album) => {
                             ytPlayer.loadVideoById(ytData.videoId);
                             pTitle.innerText = track.trackName; pArtist.innerText = album.artist; pCover.src = album.image;
                         } else {
-                            alert("Faixa não encontrada no catálogo completo.");
+                            alert("Faixa não encontrada no YouTube Music.");
                             playBtn.classList.replace('ph-spinner', 'ph-play-circle');
                         }
                     } catch(e) {
@@ -243,7 +243,6 @@ const loadAlbumView = async (album) => {
                 }
             });
 
-            // Salvar estrelas
             const stars = Array.from(div.querySelectorAll('.track-stars i'));
             stars.forEach((star, sIndex) => {
                 star.addEventListener('click', async () => {
@@ -261,7 +260,6 @@ const loadAlbumView = async (album) => {
                 });
             });
 
-            // Salvar comentario
             let timeout = null;
             div.querySelector('.track-comment').addEventListener('input', (e) => {
                 clearTimeout(timeout);
