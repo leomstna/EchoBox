@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EchoBox</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
-    <link rel="stylesheet" href="style.css?v=15">
+    <link rel="stylesheet" href="style.css?v=16">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 <body class="site-enter">
@@ -34,13 +34,13 @@
         </div>
     </nav>
 
-    <header id="home" class="hero fade-in-up section-page scroll-trigger">
+    <header id="home" class="hero fade-in-up section-page anim-slide-up scroll-trigger">
         <p class="subtitle">A PLATAFORMA</p>
         <h1 class="glow-text" style="font-size: 4rem; line-height: 1.1; letter-spacing: -2px; margin-bottom: 20px;">Sua vida.<br>Sua trilha sonora.</h1>
         <p class="desc">Catalogue, avalie e descubra álbuns na rede.</p>
     </header>
 
-    <main id="search-section" class="section-page scroll-trigger" style="animation-delay: 0.1s;">
+    <main id="search-section" class="section-page anim-slide-up scroll-trigger" style="animation-delay: 0.1s;">
         <div class="search-bar-container">
             <div style="display: flex; gap: 10px; align-items: center; width: 100%; margin-bottom: 15px;">
                 <input type="text" id="search-input" class="dark-input liquid-glass" placeholder="Pesquise o artista ou obra..." autocomplete="off">
@@ -50,7 +50,9 @@
             <div class="filters-container liquid-glass" style="padding: 15px 20px; border-radius: 12px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
                     <div class="type-options" id="filter-type">
-                        <input type="radio" id="type-album" name="search-type" value="album" checked>
+                        <input type="radio" id="type-all" name="search-type" value="all" checked>
+                        <label for="type-all" class="btn-ghost">Todos</label>
+                        <input type="radio" id="type-album" name="search-type" value="album">
                         <label for="type-album" class="btn-ghost">Álbum</label>
                         <input type="radio" id="type-ep" name="search-type" value="ep">
                         <label for="type-ep" class="btn-ghost">EP</label>
@@ -58,22 +60,25 @@
                         <label for="type-single" class="btn-ghost">Single</label>
                     </div>
                     
-                    <div style="display: flex; align-items: center; gap: 15px; flex: 1; max-width: 400px;">
-                        <label style="display: flex; align-items: center; gap: 5px; color: #888; font-size: 0.8rem; cursor: pointer; white-space: nowrap;">
-                            <input type="checkbox" id="use-year-filter" style="accent-color: #fff; width: 16px; height: 16px;"> 
-                            Filtrar Ano
-                        </label>
+                    <div style="display: flex; align-items: center; gap: 15px; flex: 1; max-width: 400px; justify-content: flex-end;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <label class="switch">
+                                <input type="checkbox" id="use-year-filter">
+                                <span class="slider-toggle"></span>
+                            </label>
+                            <span style="color: #aaa; font-size: 0.8rem; text-transform: uppercase;">Filtrar Ano</span>
+                        </div>
                         
-                        <div class="range-slider-wrapper" id="slider-wrapper" style="opacity: 0.3; pointer-events: none; flex: 1;">
+                        <div class="range-slider-wrapper" id="slider-wrapper" style="opacity: 0.3; pointer-events: none; flex: 1; margin-top: 0;">
                             <div class="range-values glow-text" style="font-size: 0.9rem; margin-bottom: 5px; text-align: center;">
                                 <span id="year-min-val">1900</span> - <span id="year-max-val">2026</span>
                             </div>
-                            <div style="position: relative; height: 30px;">
-                                <div class="slider-track" style="top: 12px;">
+                            <div style="position: relative; height: 20px;">
+                                <div class="slider-track" style="top: 8px;">
                                     <div class="slider-fill" id="slider-fill"></div>
                                 </div>
-                                <input type="range" id="filter-year-min" min="1900" max="2026" value="1900" style="top: 5px;">
-                                <input type="range" id="filter-year-max" min="1900" max="2026" value="2026" style="top: 5px;">
+                                <input type="range" id="filter-year-min" min="1900" max="2026" value="1900" style="top: 1px;">
+                                <input type="range" id="filter-year-max" min="1900" max="2026" value="2026" style="top: 1px;">
                             </div>
                         </div>
                     </div>
@@ -94,19 +99,26 @@
         </div>
     </main>
 
-    <main id="album-view-section" class="section-page scroll-trigger" style="display: none; max-width: 1000px; margin: 0 auto; padding: 0 20px 150px 20px;">
+    <main id="album-view-section" class="section-page" style="display: none; max-width: 1000px; margin: 0 auto; padding: 0 20px 150px 20px;">
         <button id="back-to-explore" class="btn-ghost" style="margin-bottom: 20px; font-size: 1rem; border: 1px solid #333; padding: 5px 15px; border-radius: 5px;"><i class="ph ph-arrow-left"></i> Voltar</button>
         
-        <div class="album-header liquid-glass scroll-trigger" style="display:flex; gap:30px; padding:30px; border-radius:16px; align-items: flex-end;">
+        <div class="album-header liquid-glass anim-slide-up scroll-trigger" style="display:flex; gap:30px; padding:30px; border-radius:16px; align-items: flex-end;">
             <img id="album-view-cover" src="" style="width:220px; height:220px; object-fit:cover; border-radius:8px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
             <div>
                 <p id="album-view-media-type" style="font-size:0.8rem; text-transform:uppercase; letter-spacing:2px; color:#fff; font-weight:700;">Álbum</p>
                 <h1 id="album-view-title" class="glow-text" style="font-size: 3rem; line-height:1.1; margin: 10px 0; letter-spacing:-1px;"></h1>
                 <h3 id="album-view-artist" style="color:#ccc; font-weight:400;"></h3>
+                
+                <div style="margin-top: 15px; display: flex; align-items: center; gap: 15px;">
+                    <span style="font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 1px;">Sua Nota:</span>
+                    <div class="stars" id="album-view-stars">
+                        <i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div style="margin-top: 40px;" class="scroll-trigger">
+        <div style="margin-top: 40px;">
             <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #222; padding-bottom: 10px; margin-bottom: 15px; color:#888; font-size:0.8rem; text-transform:uppercase;">
                 <span># Título</span>
                 <span>Avaliação & Notas Pessoais</span>
@@ -117,12 +129,12 @@
         </div>
     </main>
 
-    <main id="network-section" class="section-page scroll-trigger" style="display: none;">
-        <h2 class="glow-text" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">Comunidade</h2>
-        <input type="text" id="user-search-input" class="dark-input liquid-glass" placeholder="Buscar perfil por nome..." style="max-width: 400px; margin-bottom: 30px;">
+    <main id="network-section" class="section-page" style="display: none;">
+        <h2 class="glow-text anim-slide-up scroll-trigger" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">Comunidade</h2>
+        <input type="text" id="user-search-input" class="dark-input liquid-glass anim-slide-up scroll-trigger" placeholder="Buscar perfil por nome..." style="max-width: 400px; margin-bottom: 30px;">
         <div id="users-grid" class="grid-container" style="margin-bottom: 50px;"></div>
 
-        <h2 class="glow-text scroll-trigger" style="margin-top: 50px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">Atividade dos Amigos</h2>
+        <h2 class="glow-text anim-slide-up scroll-trigger" style="margin-top: 50px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">Atividade dos Amigos</h2>
         <div id="friends-feed" style="max-width: 800px; margin: 0 auto 120px auto;">
             <p style="color:#aaa;">As avaliações recentes aparecerão aqui.</p>
         </div>
@@ -131,25 +143,25 @@
     <div id="global-player" class="liquid-glass" style="display: none;">
         <div class="player-info">
             <img id="player-cover" src="https://via.placeholder.com/50">
-            <div>
-                <div id="player-title" style="color: #fff; font-size: 0.9rem; font-weight: 600;">Título</div>
-                <div id="player-artist" style="color: #aaa; font-size: 0.7rem;">Artista</div>
+            <div style="overflow: hidden;">
+                <div id="player-title" style="color: #fff; font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Título</div>
+                <div id="player-artist" style="color: #aaa; font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Artista</div>
             </div>
         </div>
         <div class="player-controls">
             <div style="display: flex; gap: 20px; align-items: center; justify-content: center; margin-bottom: 5px;">
-                <i id="player-play-btn" class="ph ph-play-circle play-btn" style="color:#fff; font-size: 2.2rem;"></i>
+                <i id="player-play-btn" class="ph ph-play-circle" style="color:#fff; font-size: 2.2rem; cursor: pointer; transition: 0.2s;"></i>
             </div>
             <div class="progress-container">
-                <span id="player-time-current">0:00</span>
+                <span id="player-time-current" style="width: 30px; text-align: right;">0:00</span>
                 <div class="progress-bar-bg" id="progress-bar-bg">
                     <div class="progress-bar-fill" id="progress-bar-fill"></div>
                 </div>
-                <span id="player-time-total">0:00</span>
+                <span id="player-time-total" style="width: 30px;">0:00</span>
             </div>
         </div>
         <div class="player-volume">
-            <i class="ph ph-speaker-high" style="color:#aaa; font-size: 1.2rem; margin-top: 2px; flex-shrink: 0;"></i>
+            <i class="ph ph-speaker-high" style="color:#aaa; font-size: 1.2rem;"></i>
             <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.5">
         </div>
     </div>
