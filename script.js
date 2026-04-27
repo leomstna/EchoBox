@@ -17,7 +17,6 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
-// DOM
 const loginBtn = document.getElementById('login-btn');
 const logoutBtn = document.getElementById('logout-btn');
 const userMenu = document.getElementById('user-menu');
@@ -36,7 +35,6 @@ let currentAlbums = [];
 let currentPage = 1;
 const itemsPerPage = 12;
 
-// --- LOGICA DO SLIDER DUPLO ---
 const minSlider = document.getElementById('filter-year-min');
 const maxSlider = document.getElementById('filter-year-max');
 const minValText = document.getElementById('year-min-val');
@@ -73,7 +71,7 @@ maxSlider.addEventListener('input', () => {
 });
 updateSlider();
 
-// --- MOTOR INVISÍVEL DO YOUTUBE MUSIC (DESIGN BURLADO) ---
+// --- MOTOR INVISÍVEL DO YOUTUBE MUSIC (CORRIGIDO) ---
 let ytPlayer = null;
 let isPlayerReady = false;
 let currentTrackId = null;
@@ -90,7 +88,7 @@ const pTimeCurr = document.getElementById('player-time-current');
 const pTimeTot = document.getElementById('player-time-total');
 const volSlider = document.getElementById('volume-slider');
 
-// DIMENSÕES 1x1 PARA PREVENIR BLOQUEIO DO YOUTUBE
+// DECLARA A FUNÇÃO ANTES DE INJETAR O YOUTUBE
 window.onYouTubeIframeAPIReady = () => {
     ytPlayer = new YT.Player('yt-player', {
         height: '1', width: '1', videoId: '',
@@ -101,6 +99,12 @@ window.onYouTubeIframeAPIReady = () => {
         }
     });
 };
+
+// INJEÇÃO DINÂMICA DA API DO YOUTUBE (Evita o Bug de Carregamento)
+const tag = document.createElement('script');
+tag.src = "https://www.youtube.com/iframe_api";
+const firstScriptTag = document.getElementsByTagName('script')[0];
+firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
 function onPlayerStateChange(event) {
     if (event.data === YT.PlayerState.PLAYING) {
@@ -158,7 +162,6 @@ pPlayBtn.addEventListener('click', () => {
     }
 });
 
-// --- NAVEGAÇÃO ---
 const showSection = (id) => {
     const overlay = document.getElementById('page-transition');
     const sections = document.querySelectorAll('.section-page');
@@ -188,14 +191,12 @@ document.getElementById('link-explorar').addEventListener('click', (e) => {
     else { searchInput.focus(); }
 });
 
-// --- CARREGA DETALHES DO ÁLBUM ---
 const loadAlbumView = async (album) => {
     showSection('album-view-section');
     document.getElementById('album-view-cover').src = album.image;
     document.getElementById('album-view-title').innerText = album.name;
     document.getElementById('album-view-artist').innerText = album.artist;
     
-    // Atualiza o subtítulo do tipo de mídia (Álbum, EP, Single)
     const mediaTypeText = document.getElementById('album-view-media-type');
     const originalType = album.type || 'album';
     if (originalType === 'single') mediaTypeText.innerText = 'Single';
@@ -207,8 +208,6 @@ const loadAlbumView = async (album) => {
     
     try {
         let url = `https://itunes.apple.com/lookup?id=${album.id}&entity=song`;
-        
-        // Se for Single ou busca antiga sem ID, usa o motor de busca por texto
         if (originalType === 'single' || !album.id || isNaN(album.id)) {
             url = `https://itunes.apple.com/search?term=${encodeURIComponent(album.name + ' ' + album.artist)}&entity=song&limit=25`;
         }
@@ -216,13 +215,8 @@ const loadAlbumView = async (album) => {
         const res = await fetch(url);
         const data = await res.json();
         let tracks = data.results.filter(t => t.wrapperType === 'track');
-        
-        // Refina a busca por texto se necessário
         if (originalType === 'single' || isNaN(album.id)) {
-            tracks = tracks.filter(t => 
-                (t.collectionName && t.collectionName.includes(album.name)) || 
-                (t.trackName && t.trackName.includes(album.name))
-            );
+            tracks = tracks.filter(t => (t.collectionName && t.collectionName.includes(album.name)) || (t.trackName && t.trackName.includes(album.name)));
         }
 
         let savedData = {};
@@ -298,7 +292,6 @@ const loadAlbumView = async (album) => {
                 }
             });
 
-            // Salvar estrelas (CORES METIDAS PRA BRANCO)
             const stars = Array.from(div.querySelectorAll('.track-stars i'));
             stars.forEach((star, sIndex) => {
                 star.addEventListener('click', async () => {
@@ -316,7 +309,6 @@ const loadAlbumView = async (album) => {
                 });
             });
 
-            // Salvar comentario
             let timeout = null;
             div.querySelector('.track-comment').addEventListener('input', (e) => {
                 clearTimeout(timeout);
@@ -334,7 +326,6 @@ const loadAlbumView = async (album) => {
     } catch(e) { trackContainer.innerHTML = '<p style="color:red;">Erro de conexão com o catálogo musical.</p>'; }
 };
 
-// --- TRENDING ---
 const loadTrending = async () => {
     loadingText.style.display = 'block'; albumGrid.innerHTML = ''; document.getElementById('pagination-controls').style.display = 'none';
     try {
@@ -346,7 +337,6 @@ const loadTrending = async () => {
     } catch (error) { loadingText.style.display = 'none'; albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333;">Conexão falhou.</p>'; }
 };
 
-// --- COMUNIDADE ---
 const loadFriendsFeed = async () => {
     if(!currentUser) return;
     const feed = document.getElementById('friends-feed');
@@ -471,7 +461,6 @@ if(document.getElementById('user-search-input')) {
     });
 }
 
-// --- VER PERFIL PÚBLICO ---
 const openPublicProfile = async (uid, userData) => {
     publicModal.style.display = 'flex';
     document.getElementById('public-name').innerText = userData.name || 'Anônimo';
@@ -504,7 +493,6 @@ const openPublicProfile = async (uid, userData) => {
 };
 document.getElementById('close-public-modal').addEventListener('click', () => publicModal.style.display = 'none');
 
-// --- AUTENTICAÇÃO ---
 loginBtn.addEventListener('click', () => signInWithPopup(auth, provider));
 logoutBtn.addEventListener('click', () => { signOut(auth).then(() => { albumGrid.innerHTML = ''; document.getElementById('pagination-controls').style.display = 'none'; }); });
 
@@ -523,7 +511,6 @@ onAuthStateChanged(auth, async (user) => {
     } else { loginBtn.style.display = 'block'; userMenu.style.display = 'none'; }
 });
 
-// --- SEU PERFIL E CROPPER ---
 navPfp.addEventListener('click', async () => {
     modal.style.display = 'flex';
     const ratedContainer = document.getElementById('user-rated-albums');
@@ -599,7 +586,6 @@ document.getElementById('save-profile').addEventListener('click', async () => {
     } catch (error) { alert("Falha na gravação."); document.getElementById('save-profile').innerText = "Salvar Modificações"; }
 });
 
-// --- RENDERIZAÇÃO DA PAGINAÇÃO ---
 const renderPage = () => {
     albumGrid.innerHTML = '';
     const start = (currentPage - 1) * itemsPerPage;
@@ -636,7 +622,6 @@ const renderPage = () => {
 
         card.querySelectorAll('.capa-click').forEach(el => el.addEventListener('click', () => loadAlbumView(album)));
 
-        // Salvar estrelas do card (CORES METIDAS PRA BRANCO)
         const stars = Array.from(card.querySelectorAll('.card-stars i'));
         stars.forEach((star, index) => {
             star.addEventListener('click', async (e) => {
@@ -659,7 +644,6 @@ const renderPage = () => {
 document.getElementById('prev-page').addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderPage(); document.getElementById('search-section').scrollIntoView({ behavior: 'instant' }); } });
 document.getElementById('next-page').addEventListener('click', () => { if ((currentPage * itemsPerPage) < currentAlbums.length) { currentPage++; renderPage(); document.getElementById('search-section').scrollIntoView({ behavior: 'instant' }); } });
 
-// --- SISTEMA DE BUSCA (ATUALIZADO COM TIPO DE OBRA) ---
 searchBtn.addEventListener('click', async () => {
     let rawQuery = searchInput.value.trim();
     if (!rawQuery) { loadTrending(); return; }
@@ -667,10 +651,7 @@ searchBtn.addEventListener('click', async () => {
     loadingText.style.display = 'block'; albumGrid.innerHTML = ''; document.getElementById('pagination-controls').style.display = 'none';
 
     try {
-        // Captura o tipo de obra selecionado nos botões de rádio
         const selectedType = document.querySelector('input[name="search-type"]:checked').value;
-        
-        // Envia a busca incluindo o tipo para o servidor do Render
         const response = await fetch(`https://api-musicbox-m275.onrender.com/search?q=${encodeURIComponent(rawQuery)}&type=${selectedType}`);
         
         if (!response.ok) {
@@ -686,7 +667,6 @@ searchBtn.addEventListener('click', async () => {
             return; 
         }
 
-        // Filtro local de anos (mantido)
         const minYear = parseInt(minSlider.value) || 0;
         const maxYear = parseInt(maxSlider.value) || 9999;
         
