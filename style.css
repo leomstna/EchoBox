@@ -14,6 +14,10 @@ body { background-color: #050505; color: #ededed; overflow-x: hidden; }
 }
 .section-page { transition: opacity 0.3s ease; }
 
+/* Animação de Carregamento da Música */
+.ph-spinner { animation: spin 1s linear infinite; }
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
 /* SCROLLBAR PREMIUM */
 .custom-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
 .custom-scroll::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
