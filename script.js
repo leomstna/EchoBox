@@ -707,9 +707,9 @@ searchBtn.addEventListener('click', async () => {
             const minYear = parseInt(minSlider.value) || 0;
             const maxYear = parseInt(maxSlider.value) || 9999;
             data = data.filter(album => {
+                if (!useYear) return true;
                 const year = parseInt(album.year);
-                // BUG CORRIGIDO: TRATAMENTO DO NaN PARA NÃO APAGAR OBRAS SEM DATA
-                if (isNaN(year)) return false; 
+                if (isNaN(year)) return true; // Se não souber o ano, mostra assim mesmo
                 return year >= minYear && year <= maxYear;
             });
         }
