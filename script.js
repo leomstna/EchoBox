@@ -35,7 +35,6 @@ let currentAlbums = [];
 let currentPage = 1;
 const itemsPerPage = 12;
 
-// OBSERVER DE SCROLL (Para Cards e Feed)
 const scrollObserver = new IntersectionObserver((entries) => {
     let delay = 0;
     entries.forEach(entry => {
@@ -198,7 +197,7 @@ const showSection = (id) => {
 
 document.getElementById('link-home').addEventListener('click', (e) => { e.preventDefault(); showSection('home'); });
 document.getElementById('back-to-explore').addEventListener('click', () => showSection('search-section'));
-document.getElementById('link-explorar').addEventListener('click', (e) => { e.preventDefault(); showSection('search-section'); if (!searchInput.value.trim()) { setTimeout(() => loadTrending(), 400); } else { searchInput.focus(); } });
+document.getElementById('link-explorar').addEventListener('click', (e) => { e.preventDefault(); showSection('search-section'); if (!searchInput.value.trim()) { loadTrending(); } else { searchInput.focus(); } });
 
 const loadAlbumView = async (album) => {
     showSection('album-view-section');
@@ -228,8 +227,8 @@ const loadAlbumView = async (album) => {
 
         let savedData = {};
         if(currentUser) {
-            const safeId = album.name.replace(/[^a-zA-Z0-9]/g, ''); 
-            const docSnap = await getDoc(doc(db, "users", currentUser.uid, "ratings", safeId));
+            // BUG CORRIGIDO AQUI: USANDO String(album.id) PARA EVITAR COLISÕES DE NOMES NO BANCO
+            const docSnap = await getDoc(doc(db, "users", currentUser.uid, "ratings", String(album.id)));
             if(docSnap.exists()) {
                 if (docSnap.data().tracks) savedData = docSnap.data().tracks;
                 
@@ -239,6 +238,10 @@ const loadAlbumView = async (album) => {
                     if (i < overallRating) { s.style.color = '#fff'; s.classList.replace('ph', 'ph-fill'); } 
                     else { s.style.color = '#444'; s.classList.replace('ph-fill', 'ph'); }
                 });
+            } else {
+                // Reseta as estrelas gerais se não tiver nota
+                const albumStars = Array.from(document.querySelectorAll('#album-view-stars i'));
+                albumStars.forEach((s) => { s.style.color = '#444'; s.classList.replace('ph-fill', 'ph'); });
             }
         }
         
@@ -252,9 +255,9 @@ const loadAlbumView = async (album) => {
                 const currentStarsNodes = Array.from(document.querySelectorAll('#album-view-stars i'));
                 animateStars(currentStarsNodes, index);
                 const rating = index + 1;
-                const safeId = album.name.replace(/[^a-zA-Z0-9]/g, ''); 
-                await setDoc(doc(db, "users", currentUser.uid, "ratings", safeId), {
-                    name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: rating, timestamp: new Date(), type: originalType
+                // BUG CORRIGIDO AQUI: ADICIONANDO ID NO SETDOC
+                await setDoc(doc(db, "users", currentUser.uid, "ratings", String(album.id)), {
+                    id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: rating, timestamp: new Date(), type: originalType
                 }, { merge: true });
             });
         });
@@ -267,8 +270,7 @@ const loadAlbumView = async (album) => {
             const myTrackData = savedData[tId] || { rating: 0, comment: '' };
             
             const div = document.createElement('div');
-            // REMOVIDO O TRIGGER DE SCROLL DAS FAIXAS AQUI
-            div.className = 'track-row liquid-glass'; 
+            div.className = 'track-row liquid-glass scroll-trigger'; 
             div.innerHTML = `
                 <div class="track-info">
                     <span style="color:#666; font-size:0.8rem; width:15px;">${index + 1}</span>
@@ -286,6 +288,7 @@ const loadAlbumView = async (album) => {
                 </div>
             `;
             trackContainer.appendChild(div);
+            scrollObserver.observe(div); 
 
             const playBtn = div.querySelector('.play-btn');
             playBtn.addEventListener('click', async () => {
@@ -331,9 +334,8 @@ const loadAlbumView = async (album) => {
                     if(!currentUser) return alert('Faça login.');
                     animateStars(stars, sIndex);
                     const rating = sIndex + 1;
-                    const safeId = album.name.replace(/[^a-zA-Z0-9]/g, ''); 
-                    await setDoc(doc(db, "users", currentUser.uid, "ratings", safeId), {
-                        name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', timestamp: new Date(), type: originalType,
+                    await setDoc(doc(db, "users", currentUser.uid, "ratings", String(album.id)), {
+                        id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', timestamp: new Date(), type: originalType,
                         tracks: { [tId]: { rating: rating, comment: div.querySelector('.track-comment').value } }
                     }, { merge: true });
                 });
@@ -344,10 +346,9 @@ const loadAlbumView = async (album) => {
                 clearTimeout(timeout);
                 timeout = setTimeout(async () => {
                     if(!currentUser) return;
-                    const safeId = album.name.replace(/[^a-zA-Z0-9]/g, '');
                     const currentStars = Array.from(div.querySelectorAll('.track-stars .ph-fill')).length;
-                    await setDoc(doc(db, "users", currentUser.uid, "ratings", safeId), {
-                        name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', timestamp: new Date(), type: originalType,
+                    await setDoc(doc(db, "users", currentUser.uid, "ratings", String(album.id)), {
+                        id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', timestamp: new Date(), type: originalType,
                         tracks: { [tId]: { rating: currentStars, comment: e.target.value } }
                     }, { merge: true });
                 }, 1000);
@@ -357,14 +358,23 @@ const loadAlbumView = async (album) => {
 };
 
 const loadTrending = async () => {
+    loadingText.innerHTML = 'Buscando registros<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span>';
     loadingText.style.display = 'block'; albumGrid.innerHTML = ''; document.getElementById('pagination-controls').style.display = 'none';
+    
+    // BUG CORRIGIDO AQUI: AVISO SE O RENDER TIVER HIBERNANDO
+    let timeoutAlert = setTimeout(() => { loadingText.innerHTML = 'O servidor Render está acordando da hibernação. Aguenta aí (pode levar até 1 minuto)...'; }, 5000);
+
     try {
         const response = await fetch(`https://api-musicbox-m275.onrender.com/trending`);
+        clearTimeout(timeoutAlert);
         const data = await response.json();
         loadingText.style.display = 'none';
         if (!data || data.length === 0) { albumGrid.innerHTML = '<p style="text-align:center; color:#666;">Nenhum lançamento encontrado.</p>'; return; }
         currentAlbums = data; currentPage = 1; renderPage();
-    } catch (error) { loadingText.style.display = 'none'; albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333;">Conexão falhou.</p>'; }
+    } catch (error) { 
+        clearTimeout(timeoutAlert);
+        loadingText.style.display = 'none'; albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333;">Conexão falhou.</p>'; 
+    }
 };
 
 const loadFriendsFeed = async () => {
@@ -654,9 +664,8 @@ const renderPage = () => {
                 if(!currentUser) return alert('Faça login para avaliar esta obra.'); 
                 animateStars(stars, index); 
                 const rating = index + 1;
-                const safeId = album.name.replace(/[^a-zA-Z0-9]/g, ''); 
-                await setDoc(doc(db, "users", currentUser.uid, "ratings", safeId), {
-                    name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: rating, timestamp: new Date(), type: originalType
+                await setDoc(doc(db, "users", currentUser.uid, "ratings", String(album.id)), {
+                    id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: rating, timestamp: new Date(), type: originalType
                 }, { merge: true });
             });
         });
@@ -670,13 +679,18 @@ searchBtn.addEventListener('click', async () => {
     let rawQuery = searchInput.value.trim();
     if (!rawQuery) { loadTrending(); return; }
 
+    loadingText.innerHTML = 'Buscando registros<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span>';
     loadingText.style.display = 'block'; albumGrid.innerHTML = ''; document.getElementById('pagination-controls').style.display = 'none';
+
+    // BUG CORRIGIDO: AVISO SE O RENDER ESTIVER DORMINDO
+    let timeoutAlert = setTimeout(() => { loadingText.innerHTML = 'O servidor Render está acordando da hibernação. Aguenta aí (pode levar até 1 minuto)...'; }, 5000);
 
     try {
         const selectedType = document.querySelector('input[name="search-type"]:checked').value;
-        
         let fetchUrl = `https://api-musicbox-m275.onrender.com/search?q=${encodeURIComponent(rawQuery)}&type=${selectedType}`;
+        
         const response = await fetch(fetchUrl);
+        clearTimeout(timeoutAlert);
         
         if (!response.ok) throw new Error('A API devolveu um erro.');
 
@@ -694,6 +708,8 @@ searchBtn.addEventListener('click', async () => {
             const maxYear = parseInt(maxSlider.value) || 9999;
             data = data.filter(album => {
                 const year = parseInt(album.year);
+                // BUG CORRIGIDO: TRATAMENTO DO NaN PARA NÃO APAGAR OBRAS SEM DATA
+                if (isNaN(year)) return false; 
                 return year >= minYear && year <= maxYear;
             });
         }
@@ -702,6 +718,7 @@ searchBtn.addEventListener('click', async () => {
 
         currentAlbums = data; currentPage = 1; renderPage();
     } catch (error) { 
+        clearTimeout(timeoutAlert);
         loadingText.style.display = 'none'; 
         albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333; width:100%;">A conexão falhou. Tente novamente.</p>'; 
     }
