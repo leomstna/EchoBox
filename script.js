@@ -45,14 +45,7 @@ const scrollObserver = new IntersectionObserver((entries) => {
     });
 }, { threshold: 0.1 });
 
-// Observa os elementos estáticos iniciais
 document.querySelectorAll('.scroll-trigger').forEach(el => scrollObserver.observe(el));
-
-// --- TOGGLE DE FILTROS ---
-document.getElementById('toggle-filters-btn').addEventListener('click', () => {
-    const filterDiv = document.getElementById('advanced-filters');
-    filterDiv.style.display = filterDiv.style.display === 'none' ? 'flex' : 'none';
-});
 
 // --- LOGICA DO SLIDER DUPLO ---
 const minSlider = document.getElementById('filter-year-min');
@@ -60,6 +53,8 @@ const maxSlider = document.getElementById('filter-year-max');
 const minValText = document.getElementById('year-min-val');
 const maxValText = document.getElementById('year-max-val');
 const sliderFill = document.getElementById('slider-fill');
+const useYearFilter = document.getElementById('use-year-filter');
+const sliderWrapper = document.getElementById('slider-wrapper');
 
 function updateSlider() {
     let min = parseInt(minSlider.min);
@@ -84,6 +79,17 @@ maxSlider.addEventListener('input', () => {
     maxValText.innerText = maxSlider.value; updateSlider();
 });
 updateSlider();
+
+// Checkbox para ligar/desligar o ano
+useYearFilter.addEventListener('change', (e) => {
+    if (e.target.checked) {
+        sliderWrapper.style.opacity = '1';
+        sliderWrapper.style.pointerEvents = 'auto';
+    } else {
+        sliderWrapper.style.opacity = '0.3';
+        sliderWrapper.style.pointerEvents = 'none';
+    }
+});
 
 // --- MOTOR INVISÍVEL DO YOUTUBE MUSIC ---
 let ytPlayer = null;
@@ -164,21 +170,23 @@ pPlayBtn.addEventListener('click', () => {
     }
 });
 
-// --- FUNÇÃO PARA ANIMAR ESTRELAS (STAGGERED + EXPLOSÃO) ---
+// --- FUNÇÃO PARA ANIMAR ESTRELAS ---
 const animateStars = (starArray, targetIndex) => {
-    starArray.forEach((s, i) => {
+    starArray.forEach((s) => {
         s.classList.remove('star-animate', 'star-explode');
-        void s.offsetWidth; // Força o reflow do CSS para reiniciar a animação
-        if (i <= targetIndex) {
-            setTimeout(() => {
-                if (i === 4 && targetIndex === 4) s.classList.add('star-explode');
-                else s.classList.add('star-animate');
-                s.style.color = '#fff'; s.classList.replace('ph', 'ph-fill');
-            }, i * 80); // Atraso em escadinha
-        } else {
-            s.style.color = '#444'; s.classList.replace('ph-fill', 'ph');
-        }
+        s.style.color = '#444';
+        s.classList.replace('ph-fill', 'ph');
     });
+    
+    for(let i = 0; i <= targetIndex; i++) {
+        setTimeout(() => {
+            const s = starArray[i];
+            s.style.color = '#fff';
+            s.classList.replace('ph', 'ph-fill');
+            if (i === 4 && targetIndex === 4) s.classList.add('star-explode');
+            else s.classList.add('star-animate');
+        }, i * 100);
+    }
 };
 
 const showSection = (id) => {
@@ -239,11 +247,11 @@ const loadAlbumView = async (album) => {
             const myTrackData = savedData[tId] || { rating: 0, comment: '' };
             
             const div = document.createElement('div');
-            div.className = 'track-row liquid-glass scroll-trigger'; // Anima no scroll
+            div.className = 'track-row liquid-glass scroll-trigger'; 
             div.innerHTML = `
                 <div class="track-info">
                     <span style="color:#666; font-size:0.8rem; width:15px;">${index + 1}</span>
-                    <i class="ph ph-play-circle play-btn" id="btn-track-${tId}"></i>
+                    <i class="ph ph-play-circle play-btn"></i>
                     <div class="track-info-text">
                         <div class="t-name">${track.trackName}</div>
                         <div style="color:#888; font-size:0.7rem;">${album.artist}</div>
@@ -257,7 +265,7 @@ const loadAlbumView = async (album) => {
                 </div>
             `;
             trackContainer.appendChild(div);
-            scrollObserver.observe(div); // Coloca o observer na musica
+            scrollObserver.observe(div); 
 
             const playBtn = div.querySelector('.play-btn');
             playBtn.addEventListener('click', async () => {
@@ -268,9 +276,13 @@ const loadAlbumView = async (album) => {
                     if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
                     else ytPlayer.playVideo();
                 } else {
-                    if (currentPlayBtnUI) { currentPlayBtnUI.classList.remove('ph-spinner'); currentPlayBtnUI.classList.add('ph-play-circle'); currentPlayBtnUI.classList.remove('ph-pause-circle'); }
-                    currentPlayBtnUI = playBtn; 
-                    playBtn.classList.replace('ph-play-circle', 'ph-spinner'); 
+                    if (currentPlayBtnUI) {
+                        currentPlayBtnUI.classList.remove('ph-spinner');
+                        currentPlayBtnUI.classList.add('ph-play-circle');
+                        currentPlayBtnUI.classList.remove('ph-pause-circle');
+                    }
+                    currentPlayBtnUI = playBtn;
+                    playBtn.classList.replace('ph-play-circle', 'ph-spinner');
                     playBtn.classList.remove('ph-pause-circle');
                     
                     try {
@@ -279,10 +291,17 @@ const loadAlbumView = async (album) => {
                         const ytData = await ytRes.json();
                         
                         if(ytData.videoId) {
-                            currentTrackId = tId; ytPlayer.loadVideoById(ytData.videoId);
+                            currentTrackId = tId;
+                            ytPlayer.loadVideoById(ytData.videoId);
                             pTitle.innerText = track.trackName; pArtist.innerText = album.artist; pCover.src = album.image;
-                        } else { alert("Faixa não encontrada no YouTube Music."); playBtn.classList.replace('ph-spinner', 'ph-play-circle'); }
-                    } catch(e) { alert("Erro ao conectar com o servidor musical."); playBtn.classList.replace('ph-spinner', 'ph-play-circle'); }
+                        } else {
+                            alert("Faixa não encontrada no YouTube Music.");
+                            playBtn.classList.replace('ph-spinner', 'ph-play-circle');
+                        }
+                    } catch(e) {
+                        alert("Erro ao conectar com o servidor musical.");
+                        playBtn.classList.replace('ph-spinner', 'ph-play-circle');
+                    }
                 }
             });
 
@@ -290,7 +309,7 @@ const loadAlbumView = async (album) => {
             stars.forEach((star, sIndex) => {
                 star.addEventListener('click', async () => {
                     if(!currentUser) return alert('Faça login.');
-                    animateStars(stars, sIndex); 
+                    animateStars(stars, sIndex);
                     const rating = sIndex + 1;
                     const safeId = album.name.replace(/[^a-zA-Z0-9]/g, ''); 
                     await setDoc(doc(db, "users", currentUser.uid, "ratings", safeId), {
@@ -369,7 +388,7 @@ const loadFriendsFeed = async () => {
             else if (originalType === 'ep') typeLabel = 'EP';
 
             const div = document.createElement('div');
-            div.className = 'feed-item liquid-glass scroll-trigger'; // Anima no scroll
+            div.className = 'feed-item liquid-glass scroll-trigger'; 
             div.style.marginBottom = '15px'; div.style.borderRadius = '12px';
             
             let highlightComment = '';
@@ -391,7 +410,7 @@ const loadFriendsFeed = async () => {
             div.querySelector('.cover').addEventListener('click', () => loadAlbumView(act));
             div.querySelector('.feed-title').addEventListener('click', () => loadAlbumView(act));
             feed.appendChild(div);
-            scrollObserver.observe(div); // Coloca o observer
+            scrollObserver.observe(div); 
         });
     } catch(e) { feed.innerHTML = '<p style="color:red;">Erro ao puxar o feed.</p>'; }
 };
@@ -405,7 +424,7 @@ const renderUsers = (usersList) => {
         const data = userObj.data;
         const uid = userObj.id;
         const userCard = document.createElement('div');
-        userCard.className = 'user-card fade-in-up liquid-glass scroll-trigger'; // Anima no scroll
+        userCard.className = 'user-card fade-in-up liquid-glass scroll-trigger'; 
         userCard.innerHTML = `
             <div class="user-info-click" style="display:flex; align-items:center; gap:10px; width: 100%;">
                 <div class="pfp-container-mini"><img src="${data.photoURL || 'https://via.placeholder.com/50'}"></div>
@@ -417,7 +436,7 @@ const renderUsers = (usersList) => {
             <button class="btn-follow" data-id="${uid}">Seguir</button>
         `;
         usersGrid.appendChild(userCard);
-        scrollObserver.observe(userCard); // Coloca o observer
+        scrollObserver.observe(userCard); 
         userCard.querySelector('.user-info-click').addEventListener('click', () => openPublicProfile(uid, data));
     });
 
@@ -613,7 +632,7 @@ const renderPage = () => {
             star.addEventListener('click', async (e) => {
                 e.stopPropagation(); 
                 if(!currentUser) return alert('Faça login para avaliar esta obra.'); 
-                animateStars(stars, index); // CHAMA A ANIMAÇÃO DA ESCADINHA E EXPLOSÃO
+                animateStars(stars, index); 
                 const rating = index + 1;
                 const safeId = album.name.replace(/[^a-zA-Z0-9]/g, ''); 
                 await setDoc(doc(db, "users", currentUser.uid, "ratings", safeId), {
@@ -640,6 +659,7 @@ searchBtn.addEventListener('click', async () => {
         if (!response.ok) throw new Error('A API devolveu um erro escondido.');
 
         let data = await response.json();
+        
         loadingText.style.display = 'none';
         
         if (data.error || !data || data.length === 0) { 
@@ -647,10 +667,10 @@ searchBtn.addEventListener('click', async () => {
             return; 
         }
 
-        const minYear = parseInt(minSlider.value) || 0;
-        const maxYear = parseInt(maxSlider.value) || 9999;
-        
-        if (minYear > 0 || maxYear < 9999) {
+        const useYear = document.getElementById('use-year-filter').checked;
+        if (useYear) {
+            const minYear = parseInt(minSlider.value) || 0;
+            const maxYear = parseInt(maxSlider.value) || 9999;
             data = data.filter(album => {
                 const year = parseInt(album.year);
                 return year >= minYear && year <= maxYear;
