@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EchoBox</title>
-    <link rel="stylesheet" href="style.css?v=10">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+    <link rel="stylesheet" href="style.css?v=11">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 <body class="site-enter">
@@ -43,10 +44,19 @@
         <div class="search-bar-container">
             <input type="text" id="search-input" class="dark-input liquid-glass" placeholder="Pesquise o artista ou obra..." autocomplete="off">
             
-            <div class="filters" style="margin-top: 15px; display: flex; gap: 10px;">
-                <input type="number" id="filter-year-min" class="dark-input liquid-glass" placeholder="Ano Inicial (Ex: 2000)" min="1900" max="2026">
-                <input type="number" id="filter-year-max" class="dark-input liquid-glass" placeholder="Ano Final (Ex: 2026)" min="1900" max="2026">
-                <button id="search-btn" class="btn-primary glow-box" style="flex: 0.5;">Buscar</button>
+            <div class="filters" style="margin-top: 25px; display: flex; flex-direction: column; gap: 10px;">
+                <div class="range-slider-wrapper">
+                    <div class="range-values glow-text">
+                        <span id="year-min-val">2000</span> - <span id="year-max-val">2026</span>
+                    </div>
+                    <div class="slider-track liquid-glass">
+                        <div class="slider-fill" id="slider-fill"></div>
+                    </div>
+                    <input type="range" id="filter-year-min" min="1900" max="2026" value="2000">
+                    <input type="range" id="filter-year-max" min="1900" max="2026" value="2026">
+                </div>
+                
+                <button id="search-btn" class="btn-primary glow-box" style="margin-top: 15px;">Buscar</button>
             </div>
         </div>
 
@@ -156,6 +166,19 @@
         </div>
     </div>
 
+    <div id="crop-modal" class="modal-overlay" style="display: none; z-index: 100000;">
+        <div class="modal-content liquid-glass" style="max-width: 500px; text-align: center;">
+            <div class="modal-header">
+                <h2 class="glow-text">Recortar Foto</h2>
+                <button id="close-crop-modal" class="btn-ghost"><i class="ph ph-x"></i></button>
+            </div>
+            <div style="max-height: 400px; overflow: hidden; margin-bottom: 20px; border-radius: 8px;">
+                <img id="crop-image" src="" style="max-width: 100%; display: block;">
+            </div>
+            <button id="save-crop-btn" class="btn-primary glow-box w-100">Salvar Foto</button>
+        </div>
+    </div>
+
     <div id="public-profile-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content liquid-glass">
             <div class="modal-header">
@@ -179,6 +202,8 @@
     </div>
 
     <div id="yt-player" style="position: absolute; width: 1px; height: 1px; top: -9999px; left: -9999px;"></div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
     <script type="module" src="script.js"></script>
 </body>
