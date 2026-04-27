@@ -14,16 +14,12 @@ body { background-color: #050505; color: #ededed; overflow-x: hidden; }
 }
 .section-page { transition: opacity 0.3s ease; }
 
-/* Animação de Carregamento da Música */
-.ph-spinner { animation: spin 1s linear infinite; }
-@keyframes spin { 100% { transform: rotate(360deg); } }
-
 /* SCROLLBAR PREMIUM */
 .custom-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
 .custom-scroll::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
 .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 10px; }
 
-/* GLASSMORPHISM - Otimizado pra não dar lag */
+/* GLASSMORPHISM */
 .liquid-glass {
     background: rgba(15, 15, 15, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -42,7 +38,7 @@ body { background-color: #050505; color: #ededed; overflow-x: hidden; }
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 .fade-in-up { animation: fadeInUp 0.5s ease forwards; }
 
-/* BLINDAGEM DE IMAGENS DE PERFIL (Pra não estourar nunca) */
+/* BLINDAGEM DE IMAGENS DE PERFIL */
 .pfp-container-mini { width: 35px; height: 35px; border-radius: 50%; overflow: hidden; border: 1px solid #333; }
 .pfp-container-mini img { width: 100%; height: 100%; object-fit: cover; }
 
@@ -99,11 +95,33 @@ body { background-color: #050505; color: #ededed; overflow-x: hidden; }
 .stars { display: flex; gap: 2px; color: #444; cursor: pointer; }
 .stars i:hover, .stars i.active { color: #fff; text-shadow: 0 0 5px rgba(255,255,255,0.8); }
 
-/* MODALS */
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 99999; display: flex; justify-content: center; align-items: center; }
-.modal-content { border-radius: 16px; width: 90%; max-width: 500px; animation: modalPop 0.3s ease forwards; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; backdrop-filter: blur(20px); }
-.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 25px 30px 15px 30px; border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
-.modal-body { padding: 15px 30px 30px 30px; overflow-y: auto; }
+/* MODALS - CABEÇALHO FIXO E SCROLL INTERNO */
+.modal-overlay { 
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+    background: rgba(0,0,0,0.85); z-index: 99999; 
+    display: flex; justify-content: center; align-items: center; 
+}
+.modal-content.liquid-glass { 
+    background: rgba(10, 10, 10, 0.95) !important;
+    border-radius: 16px; width: 90%; max-width: 500px; 
+    animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+    max-height: 85vh; 
+    display: flex; flex-direction: column;
+    overflow: hidden; 
+}
+.modal-header { 
+    display: flex; justify-content: space-between; align-items: center; 
+    padding: 25px 30px 15px 30px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    flex-shrink: 0; 
+}
+.modal-body { 
+    padding: 15px 30px 30px 30px;
+    overflow-y: auto; 
+}
+.modal-body::-webkit-scrollbar { width: 6px; }
+.modal-body::-webkit-scrollbar-track { background: transparent; }
+.modal-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
 .pfp-edit { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
 .modal-body label { display: block; margin: 15px 0 5px 0; color: #888; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
 
@@ -112,11 +130,6 @@ body { background-color: #050505; color: #ededed; overflow-x: hidden; }
 .rated-album-mini { opacity: 0; transform: translateY(15px); animation: fadeInUp 0.4s ease forwards; transition: transform 0.2s; cursor: pointer; min-width: 80px; text-align: center; }
 .rated-album-mini:hover { transform: translateY(-5px) scale(1.05); }
 .rated-album-mini img { width: 80px; height: 80px; border-radius: 8px; object-fit: cover; border: 1px solid #333; transition: border-color 0.2s; }
-
-/* FIX INPUTS NAVEGADOR */
-input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
-select.dark-select { -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml;utf8,<svg fill='%23888888' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>"); background-repeat: no-repeat; background-position: right 10px top 50%; padding-right: 30px; }
 
 /* COMUNIDADE & FEED */
 .user-card { border-radius: 12px; padding: 15px; display: flex; align-items: center; justify-content: space-between; gap: 15px; transition: transform 0.3s, border-color 0.3s; cursor: pointer; }
@@ -145,3 +158,7 @@ select.dark-select { -webkit-appearance: none; appearance: none; background-imag
 .progress-bar-bg:hover .progress-bar-fill { background: #1ed760; }
 .player-volume { display: flex; align-items: center; gap: 10px; width: 200px; justify-content: flex-end; }
 .player-volume input { width: 80px; accent-color: #fff; }
+
+/* SPINNER DO YOUTUBE MUSIC */
+.ph-spinner { animation: spin 1s linear infinite; }
+@keyframes spin { 100% { transform: rotate(360deg); } }
