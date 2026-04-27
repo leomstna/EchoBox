@@ -73,7 +73,7 @@ maxSlider.addEventListener('input', () => {
 });
 updateSlider();
 
-// --- MOTOR INVISÍVEL DO YOUTUBE MUSIC ---
+// --- MOTOR INVISÍVEL DO YOUTUBE MUSIC (DESIGN BURLADO) ---
 let ytPlayer = null;
 let isPlayerReady = false;
 let currentTrackId = null;
@@ -90,6 +90,7 @@ const pTimeCurr = document.getElementById('player-time-current');
 const pTimeTot = document.getElementById('player-time-total');
 const volSlider = document.getElementById('volume-slider');
 
+// DIMENSÕES 1x1 PARA PREVENIR BLOQUEIO DO YOUTUBE
 window.onYouTubeIframeAPIReady = () => {
     ytPlayer = new YT.Player('yt-player', {
         height: '1', width: '1', videoId: '',
@@ -194,19 +195,35 @@ const loadAlbumView = async (album) => {
     document.getElementById('album-view-title').innerText = album.name;
     document.getElementById('album-view-artist').innerText = album.artist;
     
+    // Atualiza o subtítulo do tipo de mídia (Álbum, EP, Single)
+    const mediaTypeText = document.getElementById('album-view-media-type');
+    const originalType = album.type || 'album';
+    if (originalType === 'single') mediaTypeText.innerText = 'Single';
+    else if (originalType === 'ep') mediaTypeText.innerText = 'EP';
+    else mediaTypeText.innerText = 'Álbum';
+
     const trackContainer = document.getElementById('tracklist-container');
     trackContainer.innerHTML = '<p class="pulse-text">Buscando faixas<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span></p>';
     
     try {
         let url = `https://itunes.apple.com/lookup?id=${album.id}&entity=song`;
-        if (!album.id || isNaN(album.id)) {
+        
+        // Se for Single ou busca antiga sem ID, usa o motor de busca por texto
+        if (originalType === 'single' || !album.id || isNaN(album.id)) {
             url = `https://itunes.apple.com/search?term=${encodeURIComponent(album.name + ' ' + album.artist)}&entity=song&limit=25`;
         }
 
         const res = await fetch(url);
         const data = await res.json();
         let tracks = data.results.filter(t => t.wrapperType === 'track');
-        if(isNaN(album.id)) tracks = tracks.filter(t => t.collectionName && t.collectionName.includes(album.name));
+        
+        // Refina a busca por texto se necessário
+        if (originalType === 'single' || isNaN(album.id)) {
+            tracks = tracks.filter(t => 
+                (t.collectionName && t.collectionName.includes(album.name)) || 
+                (t.trackName && t.trackName.includes(album.name))
+            );
+        }
 
         let savedData = {};
         if(currentUser) {
@@ -216,7 +233,7 @@ const loadAlbumView = async (album) => {
         }
         
         trackContainer.innerHTML = '';
-        if(tracks.length === 0) { trackContainer.innerHTML = '<p style="color:#aaa;">Nenhuma faixa encontrada para este registro.</p>'; return; }
+        if(tracks.length === 0) { trackContainer.innerHTML = '<p style="color:#aaa;">Nenhuma faixa individual encontrada para este registro.</p>'; return; }
 
         tracks.forEach((track, index) => {
             const tId = String(track.trackId);
@@ -235,7 +252,7 @@ const loadAlbumView = async (album) => {
                 </div>
                 <div class="track-actions">
                     <div class="stars track-stars" data-track="${tId}">
-                        ${[1,2,3,4,5].map(n => `<i class="${n <= myTrackData.rating ? 'ph-fill' : 'ph'} ph-star" style="color: ${n <= myTrackData.rating ? '#1ed760' : '#444'}"></i>`).join('')}
+                        ${[1,2,3,4,5].map(n => `<i class="${n <= myTrackData.rating ? 'ph-fill' : 'ph'} ph-star" style="color: ${n <= myTrackData.rating ? '#fff' : '#444'}"></i>`).join('')}
                     </div>
                     <input type="text" class="track-comment" placeholder="Suas notas sobre a faixa..." value="${myTrackData.comment}" data-track="${tId}">
                 </div>
@@ -275,29 +292,31 @@ const loadAlbumView = async (album) => {
                             playBtn.classList.replace('ph-spinner', 'ph-play-circle');
                         }
                     } catch(e) {
-                        alert("Erro ao conectar com o servidor.");
+                        alert("Erro ao conectar com o servidor musical.");
                         playBtn.classList.replace('ph-spinner', 'ph-play-circle');
                     }
                 }
             });
 
+            // Salvar estrelas (CORES METIDAS PRA BRANCO)
             const stars = Array.from(div.querySelectorAll('.track-stars i'));
             stars.forEach((star, sIndex) => {
                 star.addEventListener('click', async () => {
                     if(!currentUser) return alert('Faça login.');
                     stars.forEach((s, i) => {
-                        if (i <= sIndex) { s.style.color = '#1ed760'; s.classList.replace('ph', 'ph-fill'); } 
+                        if (i <= sIndex) { s.style.color = '#fff'; s.classList.replace('ph', 'ph-fill'); } 
                         else { s.style.color = '#444'; s.classList.replace('ph-fill', 'ph'); }
                     });
                     const rating = sIndex + 1;
                     const safeId = album.name.replace(/[^a-zA-Z0-9]/g, ''); 
                     await setDoc(doc(db, "users", currentUser.uid, "ratings", safeId), {
-                        name: album.name, artist: album.artist, image: album.image || 'https://via.placeholder.com/200', timestamp: new Date(),
+                        name: album.name, artist: album.artist, image: album.image || 'https://via.placeholder.com/200', timestamp: new Date(), type: originalType,
                         tracks: { [tId]: { rating: rating, comment: div.querySelector('.track-comment').value } }
                     }, { merge: true });
                 });
             });
 
+            // Salvar comentario
             let timeout = null;
             div.querySelector('.track-comment').addEventListener('input', (e) => {
                 clearTimeout(timeout);
@@ -306,7 +325,7 @@ const loadAlbumView = async (album) => {
                     const safeId = album.name.replace(/[^a-zA-Z0-9]/g, '');
                     const currentStars = Array.from(div.querySelectorAll('.track-stars .ph-fill')).length;
                     await setDoc(doc(db, "users", currentUser.uid, "ratings", safeId), {
-                        name: album.name, artist: album.artist, image: album.image || 'https://via.placeholder.com/200', timestamp: new Date(),
+                        name: album.name, artist: album.artist, image: album.image || 'https://via.placeholder.com/200', timestamp: new Date(), type: originalType,
                         tracks: { [tId]: { rating: currentStars, comment: e.target.value } }
                     }, { merge: true });
                 }, 1000);
@@ -363,6 +382,11 @@ const loadFriendsFeed = async () => {
         feed.innerHTML = '';
         recentActs.forEach(act => {
             const overallRating = act.rating || 0;
+            const originalType = act.type || 'album';
+            let typeLabel = 'Álbum';
+            if (originalType === 'single') typeLabel = 'Single';
+            else if (originalType === 'ep') typeLabel = 'EP';
+
             const div = document.createElement('div');
             div.className = 'feed-item liquid-glass';
             div.style.marginBottom = '15px'; div.style.borderRadius = '12px';
@@ -376,9 +400,9 @@ const loadFriendsFeed = async () => {
             div.innerHTML = `
                 <div class="pfp-container-mini"><img src="${act.friendPfp}"></div>
                 <div style="flex:1;">
-                    <p style="font-size:0.8rem; color:#888;"><b>${act.friendName}</b> avaliou:</p>
+                    <p style="font-size:0.8rem; color:#888;"><b>${act.friendName}</b> avaliou um ${typeLabel}:</p>
                     <h4 style="color:#fff; margin:5px 0; cursor:pointer;" class="feed-title">${act.name} <span style="color:#aaa; font-weight:normal; font-size:0.8rem;">- ${act.artist}</span></h4>
-                    <p style="color:#1ed760; font-size:0.9rem;">${'★'.repeat(overallRating)}${'☆'.repeat(5 - overallRating)}</p>
+                    <p style="color:#fff; font-size:0.9rem; text-shadow: 0 0 10px rgba(255,255,255,0.5);">${'★'.repeat(overallRating)}${'☆'.repeat(5 - overallRating)}</p>
                     ${highlightComment}
                 </div>
                 <img src="${act.image}" class="cover" data-id="open-album" title="Abrir Álbum">
@@ -393,7 +417,7 @@ const loadFriendsFeed = async () => {
 const renderUsers = (usersList) => {
     const usersGrid = document.getElementById('users-grid');
     usersGrid.innerHTML = '';
-    if (usersList.length === 0) { usersGrid.innerHTML = '<p style="color:#aaa;">Nenhum utilizador encontrado.</p>'; return; }
+    if (usersList.length === 0) { usersGrid.innerHTML = '<p style="color:#aaa;">Nenhum usuário encontrado.</p>'; return; }
 
     usersList.forEach(userObj => {
         const data = userObj.data;
@@ -404,7 +428,7 @@ const renderUsers = (usersList) => {
             <div class="user-info-click" style="display:flex; align-items:center; gap:10px; width: 100%;">
                 <div class="pfp-container-mini"><img src="${data.photoURL || 'https://via.placeholder.com/50'}"></div>
                 <div>
-                    <h4 class="glow-text" style="color:#fff;">${data.name || 'Anónimo'}</h4>
+                    <h4 class="glow-text" style="color:#fff;">${data.name || 'Anônimo'}</h4>
                     <p style="font-size:0.7rem; color:#aaa;">${data.bio ? data.bio.substring(0, 30) + '...' : 'Sem biografia'}</p>
                 </div>
             </div>
@@ -417,11 +441,11 @@ const renderUsers = (usersList) => {
     document.querySelectorAll('.btn-follow').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             e.stopPropagation(); 
-            if(!currentUser) return alert("Faz login para adicionar amigos.");
+            if(!currentUser) return alert("Faça login para adicionar amigos.");
             const targetId = e.target.getAttribute('data-id');
             const followRef = doc(db, "users", currentUser.uid, "friends", targetId);
             if (e.target.classList.contains('following')) { await deleteDoc(followRef); e.target.classList.remove('following'); e.target.innerText = 'Seguir'; } 
-            else { await setDoc(followRef, { addedAt: new Date() }); e.target.classList.add('following'); e.target.innerText = 'A seguir'; }
+            else { await setDoc(followRef, { addedAt: new Date() }); e.target.classList.add('following'); e.target.innerText = 'Seguindo'; }
             loadFriendsFeed(); 
         });
     });
@@ -430,13 +454,13 @@ const renderUsers = (usersList) => {
 document.getElementById('link-rede').addEventListener('click', async (e) => {
     e.preventDefault(); showSection('network-section'); loadFriendsFeed();
     const usersGrid = document.getElementById('users-grid');
-    usersGrid.innerHTML = '<p class="pulse-text">Buscando utilizadores...</p>';
+    usersGrid.innerHTML = '<p class="pulse-text">Buscando usuários...</p>';
     try {
         const usersSnap = await getDocs(collection(db, "users"));
         allUsersData = [];
         usersSnap.forEach(docSnap => { if(currentUser && docSnap.id === currentUser.uid) return; allUsersData.push({ id: docSnap.id, data: docSnap.data() }); });
-        if (allUsersData.length === 0) usersGrid.innerHTML = '<p style="color:#aaa;">És o único utilizador no momento.</p>'; else renderUsers(allUsersData);
-    } catch (err) { usersGrid.innerHTML = '<p style="color:#ff3333;">Falha ao aceder aos dados.</p>'; }
+        if (allUsersData.length === 0) usersGrid.innerHTML = '<p style="color:#aaa;">Você é o único usuário no momento.</p>'; else renderUsers(allUsersData);
+    } catch (err) { usersGrid.innerHTML = '<p style="color:#ff3333;">Falha ao acessar dados.</p>'; }
 });
 
 if(document.getElementById('user-search-input')) {
@@ -450,27 +474,33 @@ if(document.getElementById('user-search-input')) {
 // --- VER PERFIL PÚBLICO ---
 const openPublicProfile = async (uid, userData) => {
     publicModal.style.display = 'flex';
-    document.getElementById('public-name').innerText = userData.name || 'Anónimo';
+    document.getElementById('public-name').innerText = userData.name || 'Anônimo';
     document.getElementById('public-pfp').src = userData.photoURL || 'https://via.placeholder.com/80';
-    document.getElementById('public-bio').innerText = userData.bio || 'Este utilizador não possui biografia.';
+    document.getElementById('public-bio').innerText = userData.bio || 'Este usuário não possui biografia.';
     const container = document.getElementById('public-rated-albums');
-    container.innerHTML = '<p style="color: #888; font-size: 0.8rem;">A procurar obras...</p>';
+    container.innerHTML = '<p style="color: #888; font-size: 0.8rem;">Buscando obras...</p>';
     try {
         const snap = await getDocs(collection(db, "users", uid, "ratings"));
         if (snap.empty) { container.innerHTML = '<p style="color: #444; font-size: 0.8rem;">Nenhuma obra avaliada.</p>'; return; }
         container.innerHTML = ''; let animDelay = 0;
         snap.forEach((docSnap) => {
             const data = docSnap.data();
+            const originalType = data.type || 'album';
+            let typeLabel = 'Álbum';
+            if (originalType === 'single') typeLabel = 'Single';
+            else if (originalType === 'ep') typeLabel = 'EP';
+
             const div = document.createElement('div'); div.className = 'rated-album-mini'; div.style.animationDelay = `${animDelay}s`;
             div.innerHTML = `
                 <img src="${data.image}">
                 <p style="font-size: 0.7rem; color: #fff; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px;" title="${data.name}">${data.name}</p>
-                <p style="font-size: 0.8rem; color: #1ed760;">${'★'.repeat(data.rating || 0)}${'☆'.repeat(5 - (data.rating || 0))}</p>
+                <p style="font-size: 0.6rem; color: #aaa; text-transform:uppercase; letter-spacing:1px;">${typeLabel}</p>
+                <p style="font-size: 0.8rem; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5);">${'★'.repeat(data.rating || 0)}${'☆'.repeat(5 - (data.rating || 0))}</p>
             `;
             div.addEventListener('click', () => { publicModal.style.display = 'none'; loadAlbumView(data); });
             container.appendChild(div); animDelay += 0.08; 
         });
-    } catch (error) { container.innerHTML = '<p style="color: #ff3333; font-size: 0.8rem;">Erro ao carregar as obras.</p>'; }
+    } catch (error) { container.innerHTML = '<p style="color: #ff3333; font-size: 0.8rem;">Erro ao carregar obras.</p>'; }
 };
 document.getElementById('close-public-modal').addEventListener('click', () => publicModal.style.display = 'none');
 
@@ -493,23 +523,29 @@ onAuthStateChanged(auth, async (user) => {
     } else { loginBtn.style.display = 'block'; userMenu.style.display = 'none'; }
 });
 
-// --- O TEU PERFIL E CROPPER ---
+// --- SEU PERFIL E CROPPER ---
 navPfp.addEventListener('click', async () => {
     modal.style.display = 'flex';
     const ratedContainer = document.getElementById('user-rated-albums');
     if (!currentUser) return;
-    ratedContainer.innerHTML = '<p style="color: #888; font-size: 0.8rem;">A aceder aos dados da conta...</p>';
+    ratedContainer.innerHTML = '<p style="color: #888; font-size: 0.8rem;">Acessando dados da conta...</p>';
     try {
         const querySnapshot = await getDocs(collection(db, "users", currentUser.uid, "ratings"));
         if (querySnapshot.empty) { ratedContainer.innerHTML = '<p style="color: #444; font-size: 0.8rem;">Nenhuma obra avaliada.</p>'; return; }
         ratedContainer.innerHTML = ''; let animDelay = 0; 
         querySnapshot.forEach((docSnap) => {
             const data = docSnap.data();
+            const originalType = data.type || 'album';
+            let typeLabel = 'Álbum';
+            if (originalType === 'single') typeLabel = 'Single';
+            else if (originalType === 'ep') typeLabel = 'EP';
+
             const div = document.createElement('div'); div.className = 'rated-album-mini'; div.style.animationDelay = `${animDelay}s`;
             div.innerHTML = `
                 <img src="${data.image}">
                 <p style="font-size: 0.7rem; color: #fff; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px;" title="${data.name}">${data.name}</p>
-                <p style="font-size: 0.8rem; color: #1ed760;">${'★'.repeat(data.rating || 0)}${'☆'.repeat(5 - (data.rating || 0))}</p>
+                <p style="font-size: 0.6rem; color: #aaa; text-transform:uppercase; letter-spacing:1px;">${typeLabel}</p>
+                <p style="font-size: 0.8rem; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5);">${'★'.repeat(data.rating || 0)}${'☆'.repeat(5 - (data.rating || 0))}</p>
             `;
             div.addEventListener('click', () => { modal.style.display = 'none'; loadAlbumView(data); });
             ratedContainer.appendChild(div); animDelay += 0.08; 
@@ -554,8 +590,8 @@ document.getElementById('save-crop-btn').addEventListener('click', () => {
 });
 
 document.getElementById('save-profile').addEventListener('click', async () => {
-    if (!currentUser) return alert("Faz login primeiro.");
-    document.getElementById('save-profile').innerText = "A guardar...";
+    if (!currentUser) return alert("Faça login primeiro.");
+    document.getElementById('save-profile').innerText = "Salvando...";
     try {
         const pfpSrc = document.getElementById('modal-pfp').src;
         await setDoc(doc(db, "users", currentUser.uid), { name: document.getElementById('edit-name').value, bio: document.getElementById('edit-bio').value, photoURL: pfpSrc }, { merge: true });
@@ -579,12 +615,18 @@ const renderPage = () => {
     pageData.forEach(album => {
         const card = document.createElement('div');
         card.className = 'album-card fade-in-up liquid-glass';
+        
+        const originalType = album.type || 'album';
+        let typeLabel = 'Álbum';
+        if (originalType === 'single') typeLabel = 'Single';
+        else if (originalType === 'ep') typeLabel = 'EP';
+
         card.innerHTML = `
             <img src="${album.image || 'https://via.placeholder.com/200'}" alt="Capa" class="capa-click">
             <div class="album-title glow-text capa-click">${album.name}</div>
             <div class="album-artist">${album.artist}</div>
             <div class="rating-ui">
-                <span style="font-size: 0.7rem; color: #aaa;">NOTA GERAL</span>
+                <span style="font-size: 0.6rem; color: #888; text-transform:uppercase; letter-spacing:1px; border: 1px solid rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px;">${typeLabel}</span>
                 <div class="stars card-stars">
                     <i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i>
                 </div>
@@ -594,19 +636,20 @@ const renderPage = () => {
 
         card.querySelectorAll('.capa-click').forEach(el => el.addEventListener('click', () => loadAlbumView(album)));
 
+        // Salvar estrelas do card (CORES METIDAS PRA BRANCO)
         const stars = Array.from(card.querySelectorAll('.card-stars i'));
         stars.forEach((star, index) => {
             star.addEventListener('click', async (e) => {
                 e.stopPropagation(); 
-                if(!currentUser) return alert('Faz login para avaliares esta obra.'); 
+                if(!currentUser) return alert('Faça login para avaliar esta obra.'); 
                 stars.forEach((s, i) => {
-                    if (i <= index) { s.style.color = '#1ed760'; s.classList.replace('ph', 'ph-fill'); } 
+                    if (i <= index) { s.style.color = '#fff'; s.classList.replace('ph', 'ph-fill'); } 
                     else { s.style.color = '#444'; s.classList.replace('ph-fill', 'ph'); }
                 });
                 const rating = index + 1;
                 const safeId = album.name.replace(/[^a-zA-Z0-9]/g, ''); 
                 await setDoc(doc(db, "users", currentUser.uid, "ratings", safeId), {
-                    name: album.name, artist: album.artist, image: album.image || 'https://via.placeholder.com/200', rating: rating, timestamp: new Date()
+                    name: album.name, artist: album.artist, image: album.image || 'https://via.placeholder.com/200', rating: rating, timestamp: new Date(), type: originalType
                 }, { merge: true });
             });
         });
@@ -616,7 +659,7 @@ const renderPage = () => {
 document.getElementById('prev-page').addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderPage(); document.getElementById('search-section').scrollIntoView({ behavior: 'instant' }); } });
 document.getElementById('next-page').addEventListener('click', () => { if ((currentPage * itemsPerPage) < currentAlbums.length) { currentPage++; renderPage(); document.getElementById('search-section').scrollIntoView({ behavior: 'instant' }); } });
 
-// --- SISTEMA DE BUSCA ---
+// --- SISTEMA DE BUSCA (ATUALIZADO COM TIPO DE OBRA) ---
 searchBtn.addEventListener('click', async () => {
     let rawQuery = searchInput.value.trim();
     if (!rawQuery) { loadTrending(); return; }
@@ -624,7 +667,11 @@ searchBtn.addEventListener('click', async () => {
     loadingText.style.display = 'block'; albumGrid.innerHTML = ''; document.getElementById('pagination-controls').style.display = 'none';
 
     try {
-        const response = await fetch(`https://api-musicbox-m275.onrender.com/search?q=${encodeURIComponent(rawQuery)}`);
+        // Captura o tipo de obra selecionado nos botões de rádio
+        const selectedType = document.querySelector('input[name="search-type"]:checked').value;
+        
+        // Envia a busca incluindo o tipo para o servidor do Render
+        const response = await fetch(`https://api-musicbox-m275.onrender.com/search?q=${encodeURIComponent(rawQuery)}&type=${selectedType}`);
         
         if (!response.ok) {
             throw new Error('A API devolveu um erro escondido.');
@@ -635,10 +682,11 @@ searchBtn.addEventListener('click', async () => {
         loadingText.style.display = 'none';
         
         if (data.error || !data || data.length === 0) { 
-            albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registo encontrado.</p>'; 
+            albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registro encontrado para este tipo de obra.</p>'; 
             return; 
         }
 
+        // Filtro local de anos (mantido)
         const minYear = parseInt(minSlider.value) || 0;
         const maxYear = parseInt(maxSlider.value) || 9999;
         
@@ -649,12 +697,12 @@ searchBtn.addEventListener('click', async () => {
             });
         }
 
-        if (data.length === 0) { albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registo encontrado nesta faixa de anos.</p>'; return; }
+        if (data.length === 0) { albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registro encontrado nesta faixa de anos.</p>'; return; }
 
         currentAlbums = data; currentPage = 1; renderPage();
     } catch (error) { 
         loadingText.style.display = 'none'; 
-        albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333; width:100%;">A conexão falhou. Tenta novamente.</p>'; 
+        albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333; width:100%;">A conexão falhou. Tente novamente.</p>'; 
     }
 });
 searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchBtn.click(); });
