@@ -35,8 +35,11 @@ let currentAlbums = [];
 let currentPage = 1;
 const itemsPerPage = 12;
 
-// --- CONTROLE DE ÁUDIO GLOBAL ---
-let currentAudio = new Audio();
+// --- MOTOR INVISÍVEL DO YOUTUBE MUSIC ---
+let ytPlayer = null;
+let isPlayerReady = false;
+let currentTrackId = null;
+let progressInterval = null;
 let currentPlayBtnUI = null;
 
 const globalPlayer = document.getElementById('global-player');
@@ -46,36 +49,74 @@ const pArtist = document.getElementById('player-artist');
 const pCover = document.getElementById('player-cover');
 const pBarFill = document.getElementById('progress-bar-fill');
 const pTimeCurr = document.getElementById('player-time-current');
+const pTimeTot = document.getElementById('player-time-total');
 const volSlider = document.getElementById('volume-slider');
 
-currentAudio.volume = 0.5;
-volSlider.addEventListener('input', (e) => currentAudio.volume = e.target.value);
+window.onYouTubeIframeAPIReady = () => {
+    ytPlayer = new YT.Player('yt-player', {
+        height: '0', width: '0', videoId: '',
+        playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'fs': 0 },
+        events: {
+            'onReady': () => { isPlayerReady = true; ytPlayer.setVolume(volSlider.value * 100); },
+            'onStateChange': onPlayerStateChange
+        }
+    });
+};
 
-currentAudio.addEventListener('timeupdate', () => {
-    if(!currentAudio.duration) return;
-    const progress = (currentAudio.currentTime / currentAudio.duration) * 100;
-    pBarFill.style.width = `${progress}%`;
-    
-    let secs = Math.floor(currentAudio.currentTime);
-    pTimeCurr.innerText = `0:${secs < 10 ? '0'+secs : secs}`;
-});
+function onPlayerStateChange(event) {
+    if (event.data === YT.PlayerState.PLAYING) {
+        pPlayBtn.classList.replace('ph-play-circle', 'ph-pause-circle');
+        if (currentPlayBtnUI) {
+            currentPlayBtnUI.classList.remove('ph-spinner');
+            currentPlayBtnUI.classList.add('ph-pause-circle');
+        }
+        clearInterval(progressInterval);
+        progressInterval = setInterval(updateProgressBar, 500);
+    } else if (event.data === YT.PlayerState.PAUSED) {
+        pPlayBtn.classList.replace('ph-pause-circle', 'ph-play-circle');
+        if (currentPlayBtnUI) currentPlayBtnUI.classList.replace('ph-pause-circle', 'ph-play-circle');
+        clearInterval(progressInterval);
+    } else if (event.data === YT.PlayerState.ENDED) {
+        pPlayBtn.classList.replace('ph-pause-circle', 'ph-play-circle');
+        if (currentPlayBtnUI) currentPlayBtnUI.classList.replace('ph-pause-circle', 'ph-play-circle');
+        clearInterval(progressInterval);
+        pBarFill.style.width = '0%';
+        pTimeCurr.innerText = '0:00';
+    }
+}
 
-currentAudio.addEventListener('ended', () => {
-    pPlayBtn.classList.replace('ph-pause-circle', 'ph-play-circle');
-    if(currentPlayBtnUI) currentPlayBtnUI.classList.replace('ph-pause-circle', 'ph-play-circle');
+function updateProgressBar() {
+    if(!ytPlayer || !ytPlayer.getDuration) return;
+    const duration = ytPlayer.getDuration();
+    const current = ytPlayer.getCurrentTime();
+    if(duration > 0) {
+        const progress = (current / duration) * 100;
+        pBarFill.style.width = `${progress}%`;
+        
+        let curMins = Math.floor(current / 60);
+        let curSecs = Math.floor(current % 60);
+        pTimeCurr.innerText = `${curMins}:${curSecs < 10 ? '0'+curSecs : curSecs}`;
+        
+        let durMins = Math.floor(duration / 60);
+        let durSecs = Math.floor(duration % 60);
+        pTimeTot.innerText = `${durMins}:${durSecs < 10 ? '0'+durSecs : durSecs}`;
+    }
+}
+
+volSlider.addEventListener('input', (e) => { if(isPlayerReady) ytPlayer.setVolume(e.target.value * 100); });
+
+// Deixa clicar na barra para avançar a música
+document.getElementById('progress-bar-bg').addEventListener('click', (e) => {
+    if(!isPlayerReady || !currentTrackId) return;
+    const rect = e.target.getBoundingClientRect();
+    const percent = (e.clientX - rect.left) / rect.width;
+    ytPlayer.seekTo(ytPlayer.getDuration() * percent, true);
 });
 
 pPlayBtn.addEventListener('click', () => {
-    if(currentAudio.src) {
-        if(currentAudio.paused) { 
-            currentAudio.play(); 
-            pPlayBtn.classList.replace('ph-play-circle', 'ph-pause-circle');
-            if(currentPlayBtnUI) currentPlayBtnUI.classList.replace('ph-play-circle', 'ph-pause-circle');
-        } else { 
-            currentAudio.pause(); 
-            pPlayBtn.classList.replace('ph-pause-circle', 'ph-play-circle');
-            if(currentPlayBtnUI) currentPlayBtnUI.classList.replace('ph-pause-circle', 'ph-play-circle');
-        }
+    if(isPlayerReady && currentTrackId) {
+        if(ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
+        else ytPlayer.playVideo();
     }
 });
 
@@ -104,13 +145,12 @@ document.getElementById('link-home').addEventListener('click', (e) => { e.preven
 document.getElementById('back-to-explore').addEventListener('click', () => showSection('search-section'));
 
 document.getElementById('link-explorar').addEventListener('click', (e) => {
-    e.preventDefault();
-    showSection('search-section');
+    e.preventDefault(); showSection('search-section');
     if (!searchInput.value.trim()) { setTimeout(() => loadTrending(), 400); } 
     else { searchInput.focus(); }
 });
 
-// --- CARREGA DETALHES DO ÁLBUM (FIX CONEXÃO + PLAYER) ---
+// --- CARREGA DETALHES DO ÁLBUM ---
 const loadAlbumView = async (album) => {
     showSection('album-view-section');
     document.getElementById('album-view-cover').src = album.image;
@@ -122,9 +162,6 @@ const loadAlbumView = async (album) => {
     
     try {
         let url = `https://itunes.apple.com/lookup?id=${album.id}&entity=song`;
-        
-        // SISTEMA ANTI-FALHA (Pra consertar o Bug do Anexo 1)
-        // Se for um ID velho do Spotify (que tem letras), pesquisa o nome em texto
         if (!album.id || isNaN(album.id)) {
             url = `https://itunes.apple.com/search?term=${encodeURIComponent(album.name + ' ' + album.artist)}&entity=song&limit=25`;
         }
@@ -132,8 +169,6 @@ const loadAlbumView = async (album) => {
         const res = await fetch(url);
         const data = await res.json();
         let tracks = data.results.filter(t => t.wrapperType === 'track');
-        
-        // Filtra só as musicas corretas se foi busca por texto
         if(isNaN(album.id)) tracks = tracks.filter(t => t.collectionName && t.collectionName.includes(album.name));
 
         let savedData = {};
@@ -155,7 +190,7 @@ const loadAlbumView = async (album) => {
             div.innerHTML = `
                 <div class="track-info">
                     <span style="color:#666; font-size:0.8rem; width:15px;">${index + 1}</span>
-                    <i class="ph ph-play-circle play-btn" data-url="${track.previewUrl}"></i>
+                    <i class="ph ph-play-circle play-btn"></i>
                     <div class="track-info-text">
                         <div class="t-name">${track.trackName}</div>
                         <div style="color:#888; font-size:0.7rem;">${album.artist}</div>
@@ -170,31 +205,41 @@ const loadAlbumView = async (album) => {
             `;
             trackContainer.appendChild(div);
 
-            // Tocar no Global Player
             const playBtn = div.querySelector('.play-btn');
-            playBtn.addEventListener('click', () => {
-                if(!track.previewUrl) return alert("Áudio indisponível no catálogo oficial.");
-                
+            playBtn.addEventListener('click', async () => {
+                if(!isPlayerReady) return alert("O reprodutor está a iniciar, aguarda um momento.");
                 globalPlayer.style.display = 'flex';
                 
-                if (currentAudio.src === track.previewUrl) {
-                    if (currentAudio.paused) { 
-                        currentAudio.play(); playBtn.classList.replace('ph-play-circle', 'ph-pause-circle'); pPlayBtn.classList.replace('ph-play-circle', 'ph-pause-circle');
-                    } else { 
-                        currentAudio.pause(); playBtn.classList.replace('ph-pause-circle', 'ph-play-circle'); pPlayBtn.classList.replace('ph-pause-circle', 'ph-play-circle');
-                    }
+                if (currentTrackId === tId) {
+                    if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
+                    else ytPlayer.playVideo();
                 } else {
-                    if (currentPlayBtnUI) currentPlayBtnUI.classList.replace('ph-pause-circle', 'ph-play-circle');
-                    currentAudio.src = track.previewUrl;
-                    currentAudio.play();
-                    
-                    pTitle.innerText = track.trackName;
-                    pArtist.innerText = album.artist;
-                    pCover.src = album.image;
-                    
+                    if (currentPlayBtnUI) {
+                        currentPlayBtnUI.classList.remove('ph-spinner');
+                        currentPlayBtnUI.classList.add('ph-play-circle');
+                    }
                     currentPlayBtnUI = playBtn;
-                    playBtn.classList.replace('ph-play-circle', 'ph-pause-circle');
-                    pPlayBtn.classList.replace('ph-play-circle', 'ph-pause-circle');
+                    
+                    // Coloca em loading
+                    playBtn.classList.replace('ph-play-circle', 'ph-spinner');
+                    
+                    try {
+                        const searchUrl = `https://api-musicbox-m275.onrender.com/yt-search?track=${encodeURIComponent(track.trackName)}&artist=${encodeURIComponent(album.artist)}`;
+                        const ytRes = await fetch(searchUrl);
+                        const ytData = await ytRes.json();
+                        
+                        if(ytData.videoId) {
+                            currentTrackId = tId;
+                            ytPlayer.loadVideoById(ytData.videoId);
+                            pTitle.innerText = track.trackName; pArtist.innerText = album.artist; pCover.src = album.image;
+                        } else {
+                            alert("Faixa não encontrada no catálogo completo.");
+                            playBtn.classList.replace('ph-spinner', 'ph-play-circle');
+                        }
+                    } catch(e) {
+                        alert("Erro ao conectar com o servidor musical.");
+                        playBtn.classList.replace('ph-spinner', 'ph-play-circle');
+                    }
                 }
             });
 
@@ -493,9 +538,10 @@ const renderPage = () => {
                     if (i <= index) { s.style.color = '#1ed760'; s.classList.replace('ph', 'ph-fill'); } 
                     else { s.style.color = '#444'; s.classList.replace('ph-fill', 'ph'); }
                 });
+                const rating = index + 1;
                 const safeId = album.name.replace(/[^a-zA-Z0-9]/g, ''); 
                 await setDoc(doc(db, "users", currentUser.uid, "ratings", safeId), {
-                    name: album.name, artist: album.artist, image: album.image || 'https://via.placeholder.com/200', rating: index + 1, timestamp: new Date()
+                    name: album.name, artist: album.artist, image: album.image || 'https://via.placeholder.com/200', rating: rating, timestamp: new Date()
                 }, { merge: true });
             });
         });
@@ -520,7 +566,6 @@ searchBtn.addEventListener('click', async () => {
         loadingText.style.display = 'none';
         if (!data || data.length === 0) { albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registro encontrado.</p>'; return; }
 
-        // FILTRO DE ANOS (JS)
         const minYear = parseInt(document.getElementById('filter-year-min').value) || 0;
         const maxYear = parseInt(document.getElementById('filter-year-max').value) || 9999;
         
