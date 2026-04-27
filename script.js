@@ -71,8 +71,7 @@ maxSlider.addEventListener('input', () => {
     maxValText.innerText = maxSlider.value;
     updateSlider();
 });
-updateSlider(); // Inicializar
-// -----------------------------
+updateSlider();
 
 // --- MOTOR INVISÍVEL DO YOUTUBE MUSIC ---
 let ytPlayer = null;
@@ -91,7 +90,6 @@ const pTimeCurr = document.getElementById('player-time-current');
 const pTimeTot = document.getElementById('player-time-total');
 const volSlider = document.getElementById('volume-slider');
 
-// BURLA DO 1 PIXEL INVISIVEL
 window.onYouTubeIframeAPIReady = () => {
     ytPlayer = new YT.Player('yt-player', {
         height: '1', width: '1', videoId: '',
@@ -395,7 +393,7 @@ const loadFriendsFeed = async () => {
 const renderUsers = (usersList) => {
     const usersGrid = document.getElementById('users-grid');
     usersGrid.innerHTML = '';
-    if (usersList.length === 0) { usersGrid.innerHTML = '<p style="color:#aaa;">Nenhum usuário encontrado.</p>'; return; }
+    if (usersList.length === 0) { usersGrid.innerHTML = '<p style="color:#aaa;">Nenhum utilizador encontrado.</p>'; return; }
 
     usersList.forEach(userObj => {
         const data = userObj.data;
@@ -406,7 +404,7 @@ const renderUsers = (usersList) => {
             <div class="user-info-click" style="display:flex; align-items:center; gap:10px; width: 100%;">
                 <div class="pfp-container-mini"><img src="${data.photoURL || 'https://via.placeholder.com/50'}"></div>
                 <div>
-                    <h4 class="glow-text" style="color:#fff;">${data.name || 'Anônimo'}</h4>
+                    <h4 class="glow-text" style="color:#fff;">${data.name || 'Anónimo'}</h4>
                     <p style="font-size:0.7rem; color:#aaa;">${data.bio ? data.bio.substring(0, 30) + '...' : 'Sem biografia'}</p>
                 </div>
             </div>
@@ -419,11 +417,11 @@ const renderUsers = (usersList) => {
     document.querySelectorAll('.btn-follow').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             e.stopPropagation(); 
-            if(!currentUser) return alert("Faça login para adicionar amigos.");
+            if(!currentUser) return alert("Faz login para adicionar amigos.");
             const targetId = e.target.getAttribute('data-id');
             const followRef = doc(db, "users", currentUser.uid, "friends", targetId);
             if (e.target.classList.contains('following')) { await deleteDoc(followRef); e.target.classList.remove('following'); e.target.innerText = 'Seguir'; } 
-            else { await setDoc(followRef, { addedAt: new Date() }); e.target.classList.add('following'); e.target.innerText = 'Seguindo'; }
+            else { await setDoc(followRef, { addedAt: new Date() }); e.target.classList.add('following'); e.target.innerText = 'A seguir'; }
             loadFriendsFeed(); 
         });
     });
@@ -432,13 +430,13 @@ const renderUsers = (usersList) => {
 document.getElementById('link-rede').addEventListener('click', async (e) => {
     e.preventDefault(); showSection('network-section'); loadFriendsFeed();
     const usersGrid = document.getElementById('users-grid');
-    usersGrid.innerHTML = '<p class="pulse-text">Buscando usuários...</p>';
+    usersGrid.innerHTML = '<p class="pulse-text">Buscando utilizadores...</p>';
     try {
         const usersSnap = await getDocs(collection(db, "users"));
         allUsersData = [];
         usersSnap.forEach(docSnap => { if(currentUser && docSnap.id === currentUser.uid) return; allUsersData.push({ id: docSnap.id, data: docSnap.data() }); });
-        if (allUsersData.length === 0) usersGrid.innerHTML = '<p style="color:#aaa;">Você é o único usuário no momento.</p>'; else renderUsers(allUsersData);
-    } catch (err) { usersGrid.innerHTML = '<p style="color:#ff3333;">Falha ao acessar dados.</p>'; }
+        if (allUsersData.length === 0) usersGrid.innerHTML = '<p style="color:#aaa;">És o único utilizador no momento.</p>'; else renderUsers(allUsersData);
+    } catch (err) { usersGrid.innerHTML = '<p style="color:#ff3333;">Falha ao aceder aos dados.</p>'; }
 });
 
 if(document.getElementById('user-search-input')) {
@@ -452,11 +450,11 @@ if(document.getElementById('user-search-input')) {
 // --- VER PERFIL PÚBLICO ---
 const openPublicProfile = async (uid, userData) => {
     publicModal.style.display = 'flex';
-    document.getElementById('public-name').innerText = userData.name || 'Anônimo';
+    document.getElementById('public-name').innerText = userData.name || 'Anónimo';
     document.getElementById('public-pfp').src = userData.photoURL || 'https://via.placeholder.com/80';
-    document.getElementById('public-bio').innerText = userData.bio || 'Este usuário não possui biografia.';
+    document.getElementById('public-bio').innerText = userData.bio || 'Este utilizador não possui biografia.';
     const container = document.getElementById('public-rated-albums');
-    container.innerHTML = '<p style="color: #888; font-size: 0.8rem;">Buscando obras...</p>';
+    container.innerHTML = '<p style="color: #888; font-size: 0.8rem;">A procurar obras...</p>';
     try {
         const snap = await getDocs(collection(db, "users", uid, "ratings"));
         if (snap.empty) { container.innerHTML = '<p style="color: #444; font-size: 0.8rem;">Nenhuma obra avaliada.</p>'; return; }
@@ -472,7 +470,7 @@ const openPublicProfile = async (uid, userData) => {
             div.addEventListener('click', () => { publicModal.style.display = 'none'; loadAlbumView(data); });
             container.appendChild(div); animDelay += 0.08; 
         });
-    } catch (error) { container.innerHTML = '<p style="color: #ff3333; font-size: 0.8rem;">Erro ao carregar obras.</p>'; }
+    } catch (error) { container.innerHTML = '<p style="color: #ff3333; font-size: 0.8rem;">Erro ao carregar as obras.</p>'; }
 };
 document.getElementById('close-public-modal').addEventListener('click', () => publicModal.style.display = 'none');
 
@@ -495,12 +493,12 @@ onAuthStateChanged(auth, async (user) => {
     } else { loginBtn.style.display = 'block'; userMenu.style.display = 'none'; }
 });
 
-// --- SEU PERFIL E CROPPER (RECORTAR FOTO) ---
+// --- O TEU PERFIL E CROPPER ---
 navPfp.addEventListener('click', async () => {
     modal.style.display = 'flex';
     const ratedContainer = document.getElementById('user-rated-albums');
     if (!currentUser) return;
-    ratedContainer.innerHTML = '<p style="color: #888; font-size: 0.8rem;">Acessando dados da conta...</p>';
+    ratedContainer.innerHTML = '<p style="color: #888; font-size: 0.8rem;">A aceder aos dados da conta...</p>';
     try {
         const querySnapshot = await getDocs(collection(db, "users", currentUser.uid, "ratings"));
         if (querySnapshot.empty) { ratedContainer.innerHTML = '<p style="color: #444; font-size: 0.8rem;">Nenhuma obra avaliada.</p>'; return; }
@@ -556,8 +554,8 @@ document.getElementById('save-crop-btn').addEventListener('click', () => {
 });
 
 document.getElementById('save-profile').addEventListener('click', async () => {
-    if (!currentUser) return alert("Faça login primeiro.");
-    document.getElementById('save-profile').innerText = "Salvando...";
+    if (!currentUser) return alert("Faz login primeiro.");
+    document.getElementById('save-profile').innerText = "A guardar...";
     try {
         const pfpSrc = document.getElementById('modal-pfp').src;
         await setDoc(doc(db, "users", currentUser.uid), { name: document.getElementById('edit-name').value, bio: document.getElementById('edit-bio').value, photoURL: pfpSrc }, { merge: true });
@@ -600,7 +598,7 @@ const renderPage = () => {
         stars.forEach((star, index) => {
             star.addEventListener('click', async (e) => {
                 e.stopPropagation(); 
-                if(!currentUser) return alert('Faça login para avaliar esta obra.'); 
+                if(!currentUser) return alert('Faz login para avaliares esta obra.'); 
                 stars.forEach((s, i) => {
                     if (i <= index) { s.style.color = '#1ed760'; s.classList.replace('ph', 'ph-fill'); } 
                     else { s.style.color = '#444'; s.classList.replace('ph-fill', 'ph'); }
@@ -626,12 +624,20 @@ searchBtn.addEventListener('click', async () => {
     loadingText.style.display = 'block'; albumGrid.innerHTML = ''; document.getElementById('pagination-controls').style.display = 'none';
 
     try {
-        const type = 'album';
-        const response = await fetch(`https://api-musicbox-m275.onrender.com/search?q=${encodeURIComponent(rawQuery)}&type=${type}`);
+        const response = await fetch(`https://api-musicbox-m275.onrender.com/search?q=${encodeURIComponent(rawQuery)}`);
+        
+        if (!response.ok) {
+            throw new Error('A API devolveu um erro escondido.');
+        }
+
         let data = await response.json();
         
         loadingText.style.display = 'none';
-        if (!data || data.length === 0) { albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registro encontrado.</p>'; return; }
+        
+        if (data.error || !data || data.length === 0) { 
+            albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registo encontrado.</p>'; 
+            return; 
+        }
 
         const minYear = parseInt(minSlider.value) || 0;
         const maxYear = parseInt(maxSlider.value) || 9999;
@@ -643,9 +649,12 @@ searchBtn.addEventListener('click', async () => {
             });
         }
 
-        if (data.length === 0) { albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registro encontrado nesta faixa de anos.</p>'; return; }
+        if (data.length === 0) { albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registo encontrado nesta faixa de anos.</p>'; return; }
 
         currentAlbums = data; currentPage = 1; renderPage();
-    } catch (error) { loadingText.style.display = 'none'; albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333; width:100%;">A conexão falhou.</p>'; }
+    } catch (error) { 
+        loadingText.style.display = 'none'; 
+        albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333; width:100%;">A conexão falhou. Tenta novamente.</p>'; 
+    }
 });
 searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchBtn.click(); });
