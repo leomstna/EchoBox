@@ -35,19 +35,23 @@ let currentAlbums = [];
 let currentPage = 1;
 const itemsPerPage = 12;
 
-// --- OBSERVER PARA ANIMAÇÕES DE SCROLL ---
+// --- OBSERVER PARA ANIMAÇÕES DE SCROLL (COM DELAY ESCADINHA) ---
 const scrollObserver = new IntersectionObserver((entries) => {
+    let delay = 0;
     entries.forEach(entry => {
         if (entry.isIntersecting) {
-            entry.target.classList.add('scroll-animated');
+            setTimeout(() => {
+                entry.target.classList.add('scroll-animated');
+            }, delay);
+            delay += 80; // Delay em cascata para não subir tudo igual robô
             scrollObserver.unobserve(entry.target); 
         }
     });
-}, { threshold: 0.1 });
+}, { threshold: 0.1, rootMargin: "0px 0px -30px 0px" });
 
 document.querySelectorAll('.scroll-trigger').forEach(el => scrollObserver.observe(el));
 
-// --- LOGICA DO SLIDER DUPLO ---
+// --- LOGICA DO SLIDER E CHECKBOX ---
 const minSlider = document.getElementById('filter-year-min');
 const maxSlider = document.getElementById('filter-year-max');
 const minValText = document.getElementById('year-min-val');
@@ -80,7 +84,6 @@ maxSlider.addEventListener('input', () => {
 });
 updateSlider();
 
-// Checkbox para ligar/desligar o ano
 useYearFilter.addEventListener('change', (e) => {
     if (e.target.checked) {
         sliderWrapper.style.opacity = '1';
@@ -236,8 +239,37 @@ const loadAlbumView = async (album) => {
         if(currentUser) {
             const safeId = album.name.replace(/[^a-zA-Z0-9]/g, ''); 
             const docSnap = await getDoc(doc(db, "users", currentUser.uid, "ratings", safeId));
-            if(docSnap.exists() && docSnap.data().tracks) savedData = docSnap.data().tracks;
+            if(docSnap.exists()) {
+                if (docSnap.data().tracks) savedData = docSnap.data().tracks;
+                
+                // Preenche as estrelas gerais do álbum que estão no topo
+                const overallRating = docSnap.data().rating || 0;
+                const albumStars = Array.from(document.querySelectorAll('#album-view-stars i'));
+                albumStars.forEach((s, i) => {
+                    if (i < overallRating) { s.style.color = '#fff'; s.classList.replace('ph', 'ph-fill'); } 
+                    else { s.style.color = '#444'; s.classList.replace('ph-fill', 'ph'); }
+                });
+            }
         }
+        
+        // Logica para salvar as estrelas gerais do álbum de dentro do view
+        const albumStarsArray = Array.from(document.querySelectorAll('#album-view-stars i'));
+        albumStarsArray.forEach((star, index) => {
+            // Remove listeners antigos criando um clone do node para evitar sobreposição
+            const newStar = star.cloneNode(true);
+            star.parentNode.replaceChild(newStar, star);
+            
+            newStar.addEventListener('click', async () => {
+                if(!currentUser) return alert('Faça login.');
+                const currentStarsNodes = Array.from(document.querySelectorAll('#album-view-stars i'));
+                animateStars(currentStarsNodes, index);
+                const rating = index + 1;
+                const safeId = album.name.replace(/[^a-zA-Z0-9]/g, ''); 
+                await setDoc(doc(db, "users", currentUser.uid, "ratings", safeId), {
+                    name: album.name, artist: album.artist, image: album.image || 'https://via.placeholder.com/200', rating: rating, timestamp: new Date(), type: originalType
+                }, { merge: true });
+            });
+        });
         
         trackContainer.innerHTML = '';
         if(tracks.length === 0) { trackContainer.innerHTML = '<p style="color:#aaa;">Nenhuma faixa individual encontrada para este registro.</p>'; return; }
@@ -247,7 +279,7 @@ const loadAlbumView = async (album) => {
             const myTrackData = savedData[tId] || { rating: 0, comment: '' };
             
             const div = document.createElement('div');
-            div.className = 'track-row liquid-glass scroll-trigger'; 
+            div.className = 'track-row liquid-glass anim-slide-left scroll-trigger'; 
             div.innerHTML = `
                 <div class="track-info">
                     <span style="color:#666; font-size:0.8rem; width:15px;">${index + 1}</span>
@@ -388,7 +420,7 @@ const loadFriendsFeed = async () => {
             else if (originalType === 'ep') typeLabel = 'EP';
 
             const div = document.createElement('div');
-            div.className = 'feed-item liquid-glass scroll-trigger'; 
+            div.className = 'feed-item liquid-glass anim-slide-up scroll-trigger'; 
             div.style.marginBottom = '15px'; div.style.borderRadius = '12px';
             
             let highlightComment = '';
@@ -424,7 +456,7 @@ const renderUsers = (usersList) => {
         const data = userObj.data;
         const uid = userObj.id;
         const userCard = document.createElement('div');
-        userCard.className = 'user-card fade-in-up liquid-glass scroll-trigger'; 
+        userCard.className = 'user-card liquid-glass anim-zoom scroll-trigger'; 
         userCard.innerHTML = `
             <div class="user-info-click" style="display:flex; align-items:center; gap:10px; width: 100%;">
                 <div class="pfp-container-mini"><img src="${data.photoURL || 'https://via.placeholder.com/50'}"></div>
@@ -604,7 +636,7 @@ const renderPage = () => {
 
     pageData.forEach(album => {
         const card = document.createElement('div');
-        card.className = 'album-card fade-in-up liquid-glass scroll-trigger'; 
+        card.className = 'album-card liquid-glass anim-slide-up scroll-trigger'; 
         
         const originalType = album.type || 'album';
         let typeLabel = 'Álbum';
@@ -659,7 +691,6 @@ searchBtn.addEventListener('click', async () => {
         if (!response.ok) throw new Error('A API devolveu um erro escondido.');
 
         let data = await response.json();
-        
         loadingText.style.display = 'none';
         
         if (data.error || !data || data.length === 0) { 
