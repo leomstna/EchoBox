@@ -4,11 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EchoBox</title>
-    <link rel="stylesheet" href="style.css?v=6">
+    <link rel="stylesheet" href="style.css?v=7">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 <body class="site-enter">
-    <nav class="pill-nav liquid-glass">
+    
+    <div id="page-transition" class="transition-overlay" style="display: none;">
+        <h2 class="glow-text" style="font-size: 2rem;">Sincronizando</h2>
+        <div class="pulse-text" style="font-size: 3rem; margin-top: -10px;">
+            <span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span>
+        </div>
+    </div>
+
+    <nav class="pill-nav liquid-glass blur-target">
         <div class="logo glow-text">EchoBox</div>
         <div class="nav-links">
             <a href="#" id="link-home">Home</a>
@@ -24,20 +32,19 @@
         </div>
     </nav>
 
-    <header id="home" class="hero fade-in-up">
+    <header id="home" class="hero fade-in-up blur-target">
         <p class="subtitle">A PLATAFORMA</p>
         <h1 class="glow-text" style="font-size: 4rem; line-height: 1.1; letter-spacing: -2px; margin-bottom: 20px;">Sua vida.<br>Sua trilha sonora.</h1>
         <p class="desc">Catalogue, avalie e descubra álbuns na rede.</p>
     </header>
 
-    <main id="search-section" class="fade-in-up" style="animation-delay: 0.2s;">
+    <main id="search-section" class="fade-in-up blur-target" style="animation-delay: 0.2s;">
         <div class="search-bar-container">
-            <input type="text" id="search-input" class="dark-input liquid-glass" placeholder="Pesquise o nome da obra..." autocomplete="off">
+            <input type="text" id="search-input" class="dark-input liquid-glass" placeholder="Pesquise o artista ou obra..." autocomplete="off">
             
             <div class="filters" style="margin-top: 15px;">
                 <select id="filter-type" class="dark-select liquid-glass">
-                    <option value="album">Álbum</option>
-                    <option value="single">Single / EP</option>
+                    <option value="album">Álbum / Single</option>
                 </select>
                 <input type="number" id="filter-year" class="dark-input liquid-glass" placeholder="Ano (Opcional)" min="1900" max="2026">
                 <button id="search-btn" class="btn-primary glow-box">Buscar</button>
@@ -57,10 +64,38 @@
         </div>
     </main>
 
-    <main id="network-section" class="fade-in-up" style="display: none;">
+    <main id="album-view-section" class="fade-in-up blur-target" style="display: none; max-width: 1000px; margin: 0 auto; padding: 0 20px 100px 20px;">
+        <button id="back-to-explore" class="btn-ghost" style="margin-bottom: 20px; font-size: 1rem; border: 1px solid #333; padding: 5px 15px; border-radius: 5px;"><i class="ph ph-arrow-left"></i> Voltar</button>
+        
+        <div class="album-header liquid-glass" style="display:flex; gap:30px; padding:30px; border-radius:16px; align-items: flex-end;">
+            <img id="album-view-cover" src="" style="width:250px; height:250px; object-fit:cover; border-radius:8px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+            <div>
+                <p style="font-size:0.8rem; text-transform:uppercase; letter-spacing:2px; color:#888;">Álbum</p>
+                <h1 id="album-view-title" class="glow-text" style="font-size: 4rem; line-height:1; margin: 10px 0; letter-spacing:-1px;"></h1>
+                <h3 id="album-view-artist" style="color:#ccc; font-weight:400;"></h3>
+            </div>
+        </div>
+
+        <div style="margin-top: 40px;">
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #222; padding-bottom: 10px; margin-bottom: 15px; color:#888; font-size:0.8rem; text-transform:uppercase;">
+                <span># Título</span>
+                <span>Avaliação & Notas Pessoais</span>
+            </div>
+            <div id="tracklist-container">
+                <p class="pulse-text">Carregando faixas<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span></p>
+            </div>
+        </div>
+    </main>
+
+    <main id="network-section" class="fade-in-up blur-target" style="display: none;">
         <h2 class="glow-text" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">Comunidade</h2>
         <input type="text" id="user-search-input" class="dark-input liquid-glass" placeholder="Buscar perfil por nome..." style="max-width: 400px; margin-bottom: 30px;">
-        <div id="users-grid" class="grid-container"></div>
+        <div id="users-grid" class="grid-container" style="margin-bottom: 50px;"></div>
+
+        <h2 class="glow-text" style="margin-top: 50px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">Atividade dos Amigos</h2>
+        <div id="friends-feed" style="max-width: 800px; margin: 0 auto 100px auto;">
+            <p style="color:#aaa;">As avaliações recentes aparecerão aqui.</p>
+        </div>
     </main>
 
     <div id="profile-modal" class="modal-overlay" style="display: none;">
