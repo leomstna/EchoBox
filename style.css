@@ -142,6 +142,11 @@ body { background-color: #050505; color: #ededed; overflow-x: hidden; }
 .feed-item img.pfp { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
 .feed-item img.cover { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; cursor: pointer; }
 
+textarea.dark-input { 
+    resize: none; 
+    max-height: 80px; 
+}
+
 /* GLOBAL PLAYER */
 #global-player {
     position: fixed; bottom: 0; left: 0; width: 100vw; height: 80px;
