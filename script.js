@@ -35,13 +35,12 @@ let currentAlbums = [];
 let currentPage = 1;
 const itemsPerPage = 12;
 
-// --- OBSERVER PARA ANIMAÇÕES DE SCROLL (Manteiga) ---
 const scrollObserver = new IntersectionObserver((entries) => {
     let delay = 0;
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             setTimeout(() => { entry.target.classList.add('scroll-animated'); }, delay);
-            delay += 50; // Sobe os cards 50ms depois do outro em cascata
+            delay += 50; 
             scrollObserver.unobserve(entry.target); 
         }
     });
@@ -49,7 +48,6 @@ const scrollObserver = new IntersectionObserver((entries) => {
 
 document.querySelectorAll('.scroll-trigger').forEach(el => scrollObserver.observe(el));
 
-// --- LOGICA DO SLIDER E CHECKBOX ---
 const minSlider = document.getElementById('filter-year-min');
 const maxSlider = document.getElementById('filter-year-max');
 const minValText = document.getElementById('year-min-val');
@@ -63,10 +61,8 @@ function updateSlider() {
     let max = parseInt(minSlider.max);
     let val1 = parseInt(minSlider.value);
     let val2 = parseInt(maxSlider.value);
-    
     let percent1 = ((val1 - min) / (max - min)) * 100;
     let percent2 = ((val2 - min) / (max - min)) * 100;
-    
     sliderFill.style.left = percent1 + "%";
     sliderFill.style.width = (percent2 - percent1) + "%";
 }
@@ -84,15 +80,12 @@ updateSlider();
 
 useYearFilter.addEventListener('change', (e) => {
     if (e.target.checked) {
-        sliderWrapper.style.opacity = '1';
-        sliderWrapper.style.pointerEvents = 'auto';
+        sliderWrapper.style.opacity = '1'; sliderWrapper.style.pointerEvents = 'auto';
     } else {
-        sliderWrapper.style.opacity = '0.3';
-        sliderWrapper.style.pointerEvents = 'none';
+        sliderWrapper.style.opacity = '0.3'; sliderWrapper.style.pointerEvents = 'none';
     }
 });
 
-// --- MOTOR INVISÍVEL DO YOUTUBE MUSIC (LIMPO DE ERROS DE CONSOLE) ---
 let ytPlayer = null;
 let isPlayerReady = false;
 let currentTrackId = null;
@@ -111,7 +104,7 @@ const volSlider = document.getElementById('volume-slider');
 
 window.onYouTubeIframeAPIReady = () => {
     ytPlayer = new YT.Player('yt-player', {
-        height: '1', width: '1', videoId: 'M7lc1UVf-VE', // Dummy video oficial da API só pro erro sumir
+        height: '1', width: '1', videoId: 'M7lc1UVf-VE',
         playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'fs': 0, 'origin': window.location.origin },
         events: {
             'onReady': () => { isPlayerReady = true; ytPlayer.setVolume(volSlider.value * 100); ytPlayer.pauseVideo(); },
@@ -171,7 +164,6 @@ pPlayBtn.addEventListener('click', () => {
     }
 });
 
-// --- FUNÇÃO PARA ANIMAR ESTRELAS ---
 const animateStars = (starArray, targetIndex) => {
     starArray.forEach((s) => {
         s.classList.remove('star-animate', 'star-explode');
@@ -186,7 +178,7 @@ const animateStars = (starArray, targetIndex) => {
             s.classList.replace('ph', 'ph-fill');
             if (i === 4 && targetIndex === 4) s.classList.add('star-explode');
             else s.classList.add('star-animate');
-        }, i * 80); // Fica super suave
+        }, i * 80); 
     }
 };
 
@@ -239,6 +231,7 @@ const loadAlbumView = async (album) => {
             const docSnap = await getDoc(doc(db, "users", currentUser.uid, "ratings", safeId));
             if(docSnap.exists()) {
                 if (docSnap.data().tracks) savedData = docSnap.data().tracks;
+                
                 const overallRating = docSnap.data().rating || 0;
                 const albumStars = Array.from(document.querySelectorAll('#album-view-stars i'));
                 albumStars.forEach((s, i) => {
@@ -252,6 +245,7 @@ const loadAlbumView = async (album) => {
         albumStarsArray.forEach((star, index) => {
             const newStar = star.cloneNode(true);
             star.parentNode.replaceChild(newStar, star);
+            
             newStar.addEventListener('click', async () => {
                 if(!currentUser) return alert('Faça login.');
                 const currentStarsNodes = Array.from(document.querySelectorAll('#album-view-stars i'));
@@ -272,7 +266,7 @@ const loadAlbumView = async (album) => {
             const myTrackData = savedData[tId] || { rating: 0, comment: '' };
             
             const div = document.createElement('div');
-            div.className = 'track-row liquid-glass scroll-trigger'; 
+            div.className = 'track-row liquid-glass'; // Tirei o trigger de animação pra não parecer que tem só 2 músicas
             div.innerHTML = `
                 <div class="track-info">
                     <span style="color:#666; font-size:0.8rem; width:15px;">${index + 1}</span>
@@ -290,7 +284,6 @@ const loadAlbumView = async (album) => {
                 </div>
             `;
             trackContainer.appendChild(div);
-            scrollObserver.observe(div); 
 
             const playBtn = div.querySelector('.play-btn');
             playBtn.addEventListener('click', async () => {
@@ -518,10 +511,10 @@ const openPublicProfile = async (uid, userData) => {
 
             const div = document.createElement('div'); div.className = 'rated-album-mini'; div.style.animationDelay = `${animDelay}s`;
             div.innerHTML = `
-                <img src="${data.image}">
-                <p style="font-size: 0.7rem; color: #fff; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px;" title="${data.name}">${data.name}</p>
-                <p style="font-size: 0.6rem; color: #aaa; text-transform:uppercase; letter-spacing:1px;">${typeLabel}</p>
-                <p style="font-size: 0.8rem; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5);">${'★'.repeat(data.rating || 0)}${'☆'.repeat(5 - (data.rating || 0))}</p>
+                <img src="${data.image}" style="width: 100px; height: 100px; border-radius: 8px; object-fit: cover; border: 1px solid #333; transition: border-color 0.2s;">
+                <p style="font-size: 0.7rem; color: #fff; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px;" title="${data.name}">${data.name}</p>
+                <p style="font-size: 0.6rem; color: #aaa; text-transform:uppercase; letter-spacing:1px; margin-top: 2px;">${typeLabel}</p>
+                <p style="font-size: 0.8rem; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); white-space: nowrap; margin-top: 2px;">${'★'.repeat(data.rating || 0)}${'☆'.repeat(5 - (data.rating || 0))}</p>
             `;
             div.addEventListener('click', () => { publicModal.style.display = 'none'; loadAlbumView(data); });
             container.appendChild(div); animDelay += 0.08; 
@@ -566,10 +559,10 @@ navPfp.addEventListener('click', async () => {
 
             const div = document.createElement('div'); div.className = 'rated-album-mini'; div.style.animationDelay = `${animDelay}s`;
             div.innerHTML = `
-                <img src="${data.image}">
-                <p style="font-size: 0.7rem; color: #fff; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px;" title="${data.name}">${data.name}</p>
-                <p style="font-size: 0.6rem; color: #aaa; text-transform:uppercase; letter-spacing:1px;">${typeLabel}</p>
-                <p style="font-size: 0.8rem; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5);">${'★'.repeat(data.rating || 0)}${'☆'.repeat(5 - (data.rating || 0))}</p>
+                <img src="${data.image}" style="width: 100px; height: 100px; border-radius: 8px; object-fit: cover; border: 1px solid #333; transition: border-color 0.2s;">
+                <p style="font-size: 0.7rem; color: #fff; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px;" title="${data.name}">${data.name}</p>
+                <p style="font-size: 0.6rem; color: #aaa; text-transform:uppercase; letter-spacing:1px; margin-top: 2px;">${typeLabel}</p>
+                <p style="font-size: 0.8rem; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); white-space: nowrap; margin-top: 2px;">${'★'.repeat(data.rating || 0)}${'☆'.repeat(5 - (data.rating || 0))}</p>
             `;
             div.addEventListener('click', () => { modal.style.display = 'none'; loadAlbumView(data); });
             ratedContainer.appendChild(div); animDelay += 0.08; 
