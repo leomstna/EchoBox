@@ -406,25 +406,28 @@ const renderHomeTrending = (data) => {
     });
 };
 
+const getGridSkeletons = () => Array(8).fill('<div class="skeleton skel-card"></div>').join('');
+
 const loadTrending = async () => {
-    loadingText.innerHTML = 'Buscando registros<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span>';
-    loadingText.style.display = 'block'; albumGrid.innerHTML = ''; document.getElementById('pagination-controls').style.display = 'none';
+    loadingText.style.display = 'none'; 
+    albumGrid.innerHTML = getGridSkeletons(); // Skeleton da grelha
+    document.getElementById('pagination-controls').style.display = 'none';
     let timeoutAlert = setTimeout(() => { if(renderToast) renderToast.classList.add('show'); }, 3000);
 
     try {
         const response = await fetch(`${API_BASE_URL}/trending`);
         clearTimeout(timeoutAlert); if(renderToast) renderToast.classList.remove('show');
         const data = await response.json();
-        loadingText.style.display = 'none';
+        
         if (!data || data.length === 0) { albumGrid.innerHTML = '<p style="text-align:center; color:#666;">Nenhum lançamento encontrado.</p>'; return; }
         
         currentAlbums = data; currentPage = 1; 
-        renderPage(); // Renderiza na aba Explorar
-        renderHomeTrending(data); // Renderiza na aba Home
+        renderPage(); 
+        renderHomeTrending(data); 
 
     } catch (error) { 
         clearTimeout(timeoutAlert); if(renderToast) renderToast.classList.remove('show');
-        loadingText.style.display = 'none'; albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333;">Conexão falhou.</p>'; 
+        albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333;">Conexão falhou.</p>'; 
     }
 };
 
@@ -432,8 +435,9 @@ const performSearch = async () => {
     let rawQuery = searchInput.value.trim();
     if (!rawQuery) { loadTrending(); return; }
 
-    loadingText.innerHTML = 'Buscando registros<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span>';
-    loadingText.style.display = 'block'; albumGrid.innerHTML = ''; document.getElementById('pagination-controls').style.display = 'none';
+    loadingText.style.display = 'none'; 
+    albumGrid.innerHTML = getGridSkeletons(); // Skeleton da grelha
+    document.getElementById('pagination-controls').style.display = 'none';
     let timeoutAlert = setTimeout(() => { if(renderToast) renderToast.classList.add('show'); }, 3000);
 
     try {
@@ -442,7 +446,7 @@ const performSearch = async () => {
         clearTimeout(timeoutAlert); if(renderToast) renderToast.classList.remove('show');
 
         if (!response.ok) throw new Error('A API devolveu um erro.');
-        let data = await response.json(); loadingText.style.display = 'none';
+        let data = await response.json(); 
         
         if (data.error || !data || data.length === 0) { albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registro encontrado.</p>'; return; }
 
@@ -455,7 +459,7 @@ const performSearch = async () => {
         currentAlbums = data; currentPage = 1; renderPage();
     } catch (error) { 
         clearTimeout(timeoutAlert); if(renderToast) renderToast.classList.remove('show');
-        loadingText.style.display = 'none'; albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333; width:100%;">A conexão falhou. Tente novamente.</p>'; 
+        albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333; width:100%;">A conexão falhou. Tente novamente.</p>'; 
     }
 };
 
