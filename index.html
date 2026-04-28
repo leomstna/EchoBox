@@ -274,19 +274,14 @@
 
     loader.load('./modelos/boombox/scene.gltf', (gltf) => {
         boombox = gltf.scene;
-        boombox.position.set(3, -1, -3); 
-        boombox.scale.set(0.4, 0.4, 0.4);
+        boombox.position.set(3.5, -0.5, -3); 
+        boombox.scale.set(0.45, 0.45, 0.45);
         scene.add(boombox);
     });
 
-    let targetPos = new THREE.Vector3(3, -1, -3);
-    let targetRot = new THREE.Vector3(0, -0.4, 0);
-    let baseScale = 0.4;
-    
-    // NOVIDADE: Variáveis pra transição maluca
-    let currentSection = 'home';
-    let spinOffset = 0; 
-    let continuousSpin = 0;
+    let targetPos = new THREE.Vector3(3.5, -0.5, -3);
+    let targetRot = new THREE.Vector3(0, -0.3, -0.05);
+    let baseScale = 0.45;
 
     let mouseX = 0, mouseY = 0;
     document.addEventListener('mousemove', (e) => {
@@ -302,38 +297,22 @@
         const isNetwork = document.getElementById('network-section').style.display !== 'none';
         const isAlbum = document.getElementById('album-view-section').style.display !== 'none';
 
-        let newSection = 'home';
-
         if (isAlbum) {
-            newSection = 'album';
-            // TELA DO ÁLBUM: Alto, direita
             targetPos.set(4, 1.5, -3.5);
             targetRot.set(0.2, -0.6, 0.1);
             baseScale = 0.55;
         } else if (isNetwork) {
-            newSection = 'network';
-            // COMUNIDADE: Alto, esquerda, olhando pra baixo
             targetPos.set(-4, 2, -4.5);
             targetRot.set(0.3, 0.8, -0.1);
             baseScale = 0.45;
         } else if (isSearch) {
-            newSection = 'search';
-            // EXPLORAR: Baixo, esquerda
             targetPos.set(-3.5, -2, -3);
             targetRot.set(-0.2, 0.6, 0.1);
             baseScale = 0.4;
         } else {
-            newSection = 'home';
-            // HOME: Posição clássica direita com escala boa
             targetPos.set(3.5, -0.5, -3);
             targetRot.set(0, -0.3, -0.05);
             baseScale = 0.45;
-        }
-
-        // Se mudou de aba, injeta um giro de 360 graus na velocidade
-        if (newSection !== currentSection) {
-            spinOffset = Math.PI * 2; 
-            currentSection = newSection;
         }
     }
 
@@ -345,26 +324,15 @@
         requestAnimationFrame(animate);
 
         if (boombox) {
-            // Mata o giro do 360 aos poucos pra parar suavemente
-            spinOffset += (0 - spinOffset) * 0.05;
-
-            // Home tem um giro contínuo extra pra ficar girando estilo vitrine
-            if (currentSection === 'home') {
-                continuousSpin += 0.005;
-            } else {
-                // Nas outras abas ele trava no ângulo que a gente definiu
-                continuousSpin += (0 - continuousSpin) * 0.05;
-            }
-
             // POSIÇÃO E FLUTUAÇÃO ORGÂNICA (Seno + Cosseno)
             boombox.position.x += (targetPos.x - boombox.position.x) * 0.08;
             let floatY = targetPos.y + (Math.sin(Date.now() * 0.001) * 0.1) + (Math.cos(Date.now() * 0.0008) * 0.05);
             boombox.position.y += (floatY - boombox.position.y) * 0.08;
             boombox.position.z += (targetPos.z - boombox.position.z) * 0.08;
 
-            // ROTAÇÃO FINAL
+            // ROTAÇÃO COM PARALLAX
             boombox.rotation.x += ((targetRot.x + mouseY) - boombox.rotation.x) * 0.08;
-            boombox.rotation.y += ((targetRot.y + mouseX + spinOffset + continuousSpin) - boombox.rotation.y) * 0.08;
+            boombox.rotation.y += ((targetRot.y + mouseX) - boombox.rotation.y) * 0.08;
             boombox.rotation.z += (targetRot.z - boombox.rotation.z) * 0.08;
 
             // BATIDA DA MÚSICA (Kick Grave)
@@ -373,11 +341,10 @@
             let currentScaleZ = baseScale;
 
             if (playBtn && playBtn.classList.contains('ph-pause-circle')) {
-                // Math.pow deixa a curva mais aguda, parecendo uma pancada seca
                 let beat = Math.pow(Math.abs(Math.sin(Date.now() * 0.006)), 4); 
                 currentScaleX += beat * 0.03;
                 currentScaleY += beat * 0.03;
-                currentScaleZ += beat * 0.06; // Eixo Z estica mais pra "jogar" o som na cara
+                currentScaleZ += beat * 0.06; 
             }
 
             boombox.scale.x += (currentScaleX - boombox.scale.x) * 0.2;
