@@ -110,8 +110,11 @@
     <main id="album-view-section" class="section-page" style="display: none; max-width: 1000px; margin: 0 auto; padding: 0 20px 150px 20px;">
         <button id="back-to-explore" class="btn-ghost scroll-trigger" style="margin-bottom: 20px; font-size: 1rem; border: 1px solid #333; padding: 5px 15px; border-radius: 5px;"><i class="ph ph-arrow-left"></i> Voltar</button>
         
-        <div class="album-header liquid-glass scroll-trigger" style="display:flex; gap:30px; padding:30px; border-radius:16px; align-items: flex-end;">
-            <img id="album-view-cover" src="" style="width:220px; height:220px; object-fit:cover; border-radius:8px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+        <div class="album-header liquid-glass scroll-trigger" style="display:flex; gap:30px; padding:30px; border-radius:16px; align-items: flex-start;">
+            <div style="position: relative; width: 220px; height: 220px; flex-shrink: 0;">
+                <img id="album-view-cover" src="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+                <img src="./cd-overlay.png" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; transform: scale(1.02);">
+            </div>
             <div>
                 <p id="album-view-media-type" style="font-size:0.8rem; text-transform:uppercase; letter-spacing:2px; color:#fff; font-weight:700;">Álbum</p>
                 <h1 id="album-view-title" class="glow-text" style="font-size: 3rem; line-height:1.1; margin: 10px 0; letter-spacing:-1px;"></h1>
