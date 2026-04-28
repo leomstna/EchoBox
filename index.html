@@ -275,11 +275,16 @@
 
     // Carrega o Disco de Acetato
     loader.load('./modelos/disco/scene.gltf', (gltf) => {
+        console.log("SUCESSO: O disco carregou perfeitamente!", gltf.scene);
         disco = gltf.scene;
-        disco.position.set(-3.5, 1, -2); 
-        disco.scale.set(0.6, 0.6, 0.6);
+        // Puxei mais para o meio e para perto da câmara
+        disco.position.set(-1.5, 0, -1); 
+        // Aumentei a escala à bruta para termos a certeza que se vê
+        disco.scale.set(3, 3, 3); 
         disco.rotation.x = Math.PI / 4; 
         scene.add(disco);
+    }, undefined, (error) => {
+        console.error("ERRO: O ficheiro do disco falhou a carregar!", error);
     });
 
     // Carrega o Boombox
