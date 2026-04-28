@@ -11,10 +11,11 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 <body class="site-enter">
-    <div id="canvas-3d-container" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none;"></div>
-    <div id="page-transition" class="transition-overlay" style="display: none;">
-        <div class="pulse-text" style="font-size: 3rem;">
-            <span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span>
+    <div id="render-toast">
+        <div class="toast-spinner"></div>
+        <div style="font-size: 0.85rem;">
+            <p style="color: #fff; font-weight: 600;">Servidor em hibernação</p>
+            <p style="color: #aaa;">Acordando a API... Aguarde uns instantes.</p>
         </div>
     </div>
 
