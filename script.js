@@ -36,8 +36,9 @@ let currentPage = 1;
 const itemsPerPage = 12;
 
 // --- CHAVEADOR DE API (LOCAL OU PRODUÇÃO) ---
-const API_BASE_URL = 'http://127.0.0.1:5000'; // Deixe essa pra testar no seu PC
-// const API_BASE_URL = 'https://api-musicbox-m275.onrender.com'; // Descomente essa quando subir pro Render
+// Se for testar no seu PC com o app.py rodando, descomente a linha de baixo e comente a do Render:
+// const API_BASE_URL = 'http://127.0.0.1:5000'; 
+const API_BASE_URL = 'https://api-musicbox-m275.onrender.com';
 
 const scrollObserver = new IntersectionObserver((entries) => {
     let delay = 0;
@@ -720,7 +721,7 @@ searchBtn.addEventListener('click', async () => {
             const maxYear = parseInt(maxSlider.value) || 9999;
             data = data.filter(album => {
                 const year = parseInt(album.year);
-                if (isNaN(year)) return true; // Se a API não achar a data, não apaga o card
+                if (isNaN(year)) return true; // CORRIGIDO AQUI DE FALSE PRA TRUE
                 return year >= minYear && year <= maxYear;
             });
         }
