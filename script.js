@@ -51,7 +51,7 @@ const scrollObserver = new IntersectionObserver((entries) => {
 
 document.querySelectorAll('.scroll-trigger').forEach(el => scrollObserver.observe(el));
 
-// --- LÓGICA DE ROTAS (F5) E NAVEGAÇÃO ---
+// --- LÓGICA DE ROTAS E SCROLL SMOOTH CORRIGIDA ---
 const sectionsMap = {
     '': 'home',
     '#home': 'home',
@@ -63,26 +63,37 @@ const showSection = (id, updateHash = true) => {
     const overlay = document.getElementById('page-transition');
     const sections = document.querySelectorAll('.section-page');
     
-    // Se for rolagem da home para explorar, animação smooth
-    if (id === 'search-section' && document.getElementById('home').style.display !== 'none') {
-        document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' });
-        if(updateHash) window.location.hash = '#explorar';
+    const isHomeOrExplore = (id === 'home' || id === 'search-section');
+    const isCurrentlyOnHomeOrExplore = (document.getElementById('home').style.display === 'block');
+
+    // Navegação suave se estiver transitando apenas entre Home e Explorar
+    if (isHomeOrExplore && isCurrentlyOnHomeOrExplore) {
+        if (id === 'search-section') {
+            document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' });
+        } else {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        if(updateHash) window.location.hash = (id === 'home') ? '#home' : '#explorar';
         return;
     }
 
+    // Transição com tela preta para outras seções (Comunidade, Álbum)
     overlay.style.display = 'flex'; void overlay.offsetWidth; overlay.style.opacity = '1';
 
     setTimeout(() => {
         sections.forEach(s => s.style.display = 'none');
         
-        if(id === 'home' || id === 'search-section') { 
+        if (isHomeOrExplore) { 
             document.getElementById('home').style.display = 'block'; 
             document.getElementById('search-section').style.display = 'block';
             if (id === 'search-section') {
-                setTimeout(() => document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' }), 50);
+                setTimeout(() => document.getElementById('search-section').scrollIntoView({ behavior: 'instant' }), 50);
+            } else {
+                window.scrollTo({ top: 0, behavior: 'instant' });
             }
         } else {
             document.getElementById(id).style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'instant' });
         }
 
         if(updateHash) {
@@ -90,7 +101,6 @@ const showSection = (id, updateHash = true) => {
             window.location.hash = hash || '#home';
         }
 
-        window.scrollTo({ top: 0, behavior: 'instant' });
         overlay.style.opacity = '0'; 
         setTimeout(() => { overlay.style.display = 'none'; }, 300);
     }, 300);
@@ -110,9 +120,18 @@ window.addEventListener('hashchange', () => {
     }
 });
 
+// Botões da NAV
 document.getElementById('link-home').addEventListener('click', (e) => { e.preventDefault(); showSection('home'); });
-document.getElementById('link-explorar').addEventListener('click', (e) => { e.preventDefault(); showSection('search-section'); if (!searchInput.value.trim()) loadTrending(); });
 document.getElementById('back-to-explore').addEventListener('click', () => showSection('search-section'));
+
+document.getElementById('link-explorar').addEventListener('click', (e) => { 
+    e.preventDefault(); 
+    showSection('search-section'); 
+    // Só carrega a API de novo se a tela estiver literalmente vazia
+    if (!searchInput.value.trim() && currentAlbums.length === 0) {
+        loadTrending(); 
+    }
+});
 
 // --- FILTROS E SLIDERS ---
 const minSlider = document.getElementById('filter-year-min');
@@ -273,14 +292,12 @@ const loadAlbumView = async (album) => {
     const trackContainer = document.getElementById('tracklist-container');
     trackContainer.innerHTML = '<p class="pulse-text">Buscando faixas<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span></p>';
     
-    // Adiciona o aviso visual dinamicamente abaixo das estrelas (agora bonitão)
     let warningText = document.getElementById('album-rating-warning');
     if (!warningText) {
         const starsContainer = document.getElementById('album-view-stars').parentElement;
         warningText = document.createElement('div');
         warningText.id = 'album-rating-warning';
         
-        // Estilização injetada via JS pra ficar com cara de painel
         warningText.style.marginTop = '15px';
         warningText.style.padding = '12px 15px';
         warningText.style.borderRadius = '10px';
@@ -570,7 +587,6 @@ const performSearch = async () => {
 searchBtn.addEventListener('click', performSearch);
 searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
 
-// Auto-pesquisa nos filtros
 document.querySelectorAll('input[name="search-type"]').forEach(radio => { radio.addEventListener('change', performSearch); });
 minSlider.addEventListener('change', performSearch);
 maxSlider.addEventListener('change', performSearch);
@@ -834,6 +850,7 @@ const renderPage = () => {
     pageData.forEach(album => {
         const card = document.createElement('div');
         card.className = 'album-card liquid-glass scroll-trigger'; 
+        card.style.cursor = 'pointer'; // O card inteiro vira botão
         
         const originalType = album.type || 'album';
         let typeLabel = 'Álbum';
@@ -841,8 +858,8 @@ const renderPage = () => {
         else if (originalType === 'ep') typeLabel = 'EP';
 
         card.innerHTML = `
-            <img src="${album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa'}" alt="Capa" class="capa-click">
-            <div class="album-title glow-text capa-click">${album.name}</div>
+            <img src="${album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa'}" alt="Capa">
+            <div class="album-title glow-text">${album.name}</div>
             <div class="album-artist">${album.artist}</div>
             <div class="rating-ui">
                 <span style="font-size: 0.6rem; color: #888; text-transform:uppercase; letter-spacing:1px; border: 1px solid rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px;">${typeLabel}</span>
@@ -854,26 +871,28 @@ const renderPage = () => {
         albumGrid.appendChild(card);
         scrollObserver.observe(card);
 
-        card.querySelectorAll('.capa-click').forEach(el => el.addEventListener('click', () => loadAlbumView(album)));
+        // CLIQUE PRA ABRIR O ÁLBUM (AGORA NO CARD INTEIRO)
+        card.addEventListener('click', () => loadAlbumView(album));
 
         const stars = Array.from(card.querySelectorAll('.card-stars i'));
         stars.forEach((star, index) => {
             star.addEventListener('click', async (e) => {
-                e.stopPropagation(); 
+                e.stopPropagation(); // ISSO AQUI impede que clique nas estrelas abra a tela de músicas
+                
                 if(!currentUser) return alert('Faça login para avaliar esta obra.'); 
                 
                 const isAlreadyRated = stars[index].classList.contains('ph-fill') && (index === 4 || !stars[index+1]?.classList.contains('ph-fill'));
                 const finalRating = isAlreadyRated ? 0 : index + 1;
 
                 if (finalRating > 0) {
-                    const proceed = confirm("Aviso: Você está avaliando o álbum inteiro pela busca.\n\nA nota selecionada será aplicada à obra como um todo. Se preferir o cálculo automático da nota pela média, abra o álbum e avalie as músicas individualmente.\n\nDeseja confirmar a nota geral?");
+                    const proceed = confirm("Aviso: Você está avaliando o álbum inteiro pela busca.\n\nA nota selecionada será aplicada à obra como um todo. Se preferir o cálculo automático da nota pela média, ABRA o álbum clicando na capa e avalie as músicas individualmente.\n\nDeseja confirmar a nota geral?");
                     if (!proceed) return;
                 }
                 
                 animateStars(stars, finalRating - 1); 
                 
                 const docRef = doc(db, "users", currentUser.uid, "ratings", String(album.id));
-                if (finalRating === 0) {
+                if (finalিন্তRating === 0) {
                     await deleteDoc(docRef);
                 } else {
                     await setDoc(docRef, {
@@ -887,3 +906,10 @@ const renderPage = () => {
 
 document.getElementById('prev-page').addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderPage(); document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' }); } });
 document.getElementById('next-page').addEventListener('click', () => { if ((currentPage * itemsPerPage) < currentAlbums.length) { currentPage++; renderPage(); document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' }); } });
+
+// Inicia a busca dos álbuns silenciosamente no fundo assim que o site abre pra acordar o Render!
+window.addEventListener('DOMContentLoaded', () => {
+    if (currentAlbums.length === 0) {
+        loadTrending();
+    }
+});
