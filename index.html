@@ -272,16 +272,21 @@
     const loader = new THREE.GLTFLoader();
     let boombox;
 
+    // FIXADO NO CANTO SUPERIOR DIREITO
+    const fixedPosX = 3.5;
+    const fixedPosY = 2.2; 
+    const fixedPosZ = -4.0;
+    const baseScale = 0.45;
+    const fixedRotX = 0.2;
+    const fixedRotY = -0.6;
+
     loader.load('./modelos/boombox/scene.gltf', (gltf) => {
         boombox = gltf.scene;
-        boombox.position.set(3.5, -0.5, -3); 
-        boombox.scale.set(0.45, 0.45, 0.45);
+        boombox.position.set(fixedPosX, fixedPosY, fixedPosZ);
+        boombox.rotation.set(fixedRotX, fixedRotY, 0);
+        boombox.scale.set(baseScale, baseScale, baseScale);
         scene.add(boombox);
     });
-
-    let targetPos = new THREE.Vector3(3.5, -0.5, -3);
-    let targetRot = new THREE.Vector3(0, -0.3, -0.05);
-    let baseScale = 0.45;
 
     let mouseX = 0, mouseY = 0;
     document.addEventListener('mousemove', (e) => {
@@ -289,51 +294,19 @@
         mouseY = (e.clientY - window.innerHeight / 2) * 0.0007;
     });
 
-    function updateBoomboxTarget() {
-        if (!boombox) return;
-        
-        const isHome = document.getElementById('home').style.display !== 'none';
-        const isSearch = document.getElementById('search-section').style.display !== 'none';
-        const isNetwork = document.getElementById('network-section').style.display !== 'none';
-        const isAlbum = document.getElementById('album-view-section').style.display !== 'none';
-
-        if (isAlbum) {
-            targetPos.set(4, 1.5, -3.5);
-            targetRot.set(0.2, -0.6, 0.1);
-            baseScale = 0.55;
-        } else if (isNetwork) {
-            targetPos.set(-4, 2, -4.5);
-            targetRot.set(0.3, 0.8, -0.1);
-            baseScale = 0.45;
-        } else if (isSearch) {
-            targetPos.set(-3.5, -2, -3);
-            targetRot.set(-0.2, 0.6, 0.1);
-            baseScale = 0.4;
-        } else {
-            targetPos.set(3.5, -0.5, -3);
-            targetRot.set(0, -0.3, -0.05);
-            baseScale = 0.45;
-        }
-    }
-
-    setInterval(updateBoomboxTarget, 50);
-
     const playBtn = document.getElementById('player-play-btn');
 
     function animate() {
         requestAnimationFrame(animate);
 
         if (boombox) {
-            // POSIÇÃO E FLUTUAÇÃO ORGÂNICA (Seno + Cosseno)
-            boombox.position.x += (targetPos.x - boombox.position.x) * 0.08;
-            let floatY = targetPos.y + (Math.sin(Date.now() * 0.001) * 0.1) + (Math.cos(Date.now() * 0.0008) * 0.05);
-            boombox.position.y += (floatY - boombox.position.y) * 0.08;
-            boombox.position.z += (targetPos.z - boombox.position.z) * 0.08;
+            // FLUTUAÇÃO ORGÂNICA (Seno + Cosseno no eixo Y)
+            let floatY = fixedPosY + (Math.sin(Date.now() * 0.001) * 0.1) + (Math.cos(Date.now() * 0.0008) * 0.05);
+            boombox.position.y = floatY;
 
-            // ROTAÇÃO COM PARALLAX
-            boombox.rotation.x += ((targetRot.x + mouseY) - boombox.rotation.x) * 0.08;
-            boombox.rotation.y += ((targetRot.y + mouseX) - boombox.rotation.y) * 0.08;
-            boombox.rotation.z += (targetRot.z - boombox.rotation.z) * 0.08;
+            // ROTAÇÃO COM PARALLAX (Segue o mouse de leve)
+            boombox.rotation.x = fixedRotX + mouseY;
+            boombox.rotation.y = fixedRotY + mouseX;
 
             // BATIDA DA MÚSICA (Kick Grave)
             let currentScaleX = baseScale;
