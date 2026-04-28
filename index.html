@@ -131,7 +131,7 @@
         <div class="album-header liquid-glass scroll-trigger" style="display:flex; gap:30px; padding:30px; border-radius:16px; align-items: flex-start;">
             <div style="position: relative; width: 220px; height: 220px; flex-shrink: 0;">
                 <img id="album-view-cover" src="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
-                <img src="./cd-overlay.png" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; transform: scale(1.02); mix-blend-mode: screen; opacity: 0.85;">
+                <img src="./cd-overlay.png" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; transform: scale(1.02);">
             </div>
             <div>
                 <p id="album-view-media-type" style="font-size:0.8rem; text-transform:uppercase; letter-spacing:2px; color:#fff; font-weight:700;">Álbum</p>
@@ -275,7 +275,6 @@
     <script type="module" src="script.js"></script>
 
     <script>
-    // TRAVA INTELIGENTE DO MODO LEVE
     const isLightMode = localStorage.getItem('echo_light_mode') === 'true';
 
     if (!isLightMode) {
@@ -377,7 +376,6 @@
             composer.setSize(window.innerWidth, window.innerHeight); 
         });
     } else {
-        // Se ativou o modo leve, esconde a div base do 3D
         document.getElementById('canvas-3d-container').style.display = 'none';
     }
     </script>
