@@ -12,7 +12,7 @@
 </head>
 <body class="site-enter">
 
-<div id="canvas-3d-container" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none;"></div>
+    <div id="canvas-3d-container" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none;"></div>
     
     <div id="page-transition" class="transition-overlay" style="display: none;">
         <div class="pulse-text" style="font-size: 3rem;">
@@ -290,6 +290,16 @@
         scene.add(boombox);
     });
         
+    // VARIÁVEIS PRO PARALLAX
+    let mouseX = 0, mouseY = 0, targetX = 0, targetY = 0;
+    const windowHalfX = window.innerWidth / 2;
+    const windowHalfY = window.innerHeight / 2;
+
+    document.addEventListener('mousemove', (event) => {
+        mouseX = (event.clientX - windowHalfX);
+        mouseY = (event.clientY - windowHalfY);
+    });
+
     function animate() {
         requestAnimationFrame(animate);
         targetX = mouseX * 0.001;
