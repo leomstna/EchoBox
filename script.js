@@ -171,6 +171,7 @@ const animateStars = (starArray, targetIndex) => {
         s.classList.replace('ph-fill', 'ph');
     });
     
+    // Se targetIndex for -1 (nota zero), o loop nem roda e a animação só reseta
     for(let i = 0; i <= targetIndex; i++) {
         setTimeout(() => {
             const s = starArray[i];
@@ -227,7 +228,6 @@ const loadAlbumView = async (album) => {
 
         let savedData = {};
         if(currentUser) {
-            // BUG CORRIGIDO AQUI: USANDO String(album.id) PARA EVITAR COLISÕES DE NOMES NO BANCO
             const docSnap = await getDoc(doc(db, "users", currentUser.uid, "ratings", String(album.id)));
             if(docSnap.exists()) {
                 if (docSnap.data().tracks) savedData = docSnap.data().tracks;
@@ -239,7 +239,6 @@ const loadAlbumView = async (album) => {
                     else { s.style.color = '#444'; s.classList.replace('ph-fill', 'ph'); }
                 });
             } else {
-                // Reseta as estrelas gerais se não tiver nota
                 const albumStars = Array.from(document.querySelectorAll('#album-view-stars i'));
                 albumStars.forEach((s) => { s.style.color = '#444'; s.classList.replace('ph-fill', 'ph'); });
             }
@@ -253,11 +252,15 @@ const loadAlbumView = async (album) => {
             newStar.addEventListener('click', async () => {
                 if(!currentUser) return alert('Faça login.');
                 const currentStarsNodes = Array.from(document.querySelectorAll('#album-view-stars i'));
-                animateStars(currentStarsNodes, index);
-                const rating = index + 1;
-                // BUG CORRIGIDO AQUI: ADICIONANDO ID NO SETDOC
+                
+                // Lógica de nota zero: Se clicar na estrela que já é a nota final, ele zera a nota.
+                const isAlreadyRated = currentStarsNodes[index].classList.contains('ph-fill') && (index === 4 || !currentStarsNodes[index+1]?.classList.contains('ph-fill'));
+                const finalRating = isAlreadyRated ? 0 : index + 1;
+                
+                animateStars(currentStarsNodes, finalRating - 1);
+                
                 await setDoc(doc(db, "users", currentUser.uid, "ratings", String(album.id)), {
-                    id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: rating, timestamp: new Date(), type: originalType
+                    id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: finalRating, timestamp: new Date(), type: originalType
                 }, { merge: true });
             });
         });
@@ -332,11 +335,14 @@ const loadAlbumView = async (album) => {
             stars.forEach((star, sIndex) => {
                 star.addEventListener('click', async () => {
                     if(!currentUser) return alert('Faça login.');
-                    animateStars(stars, sIndex);
-                    const rating = sIndex + 1;
+                    
+                    const isAlreadyRated = stars[sIndex].classList.contains('ph-fill') && (sIndex === 4 || !stars[sIndex+1]?.classList.contains('ph-fill'));
+                    const finalRating = isAlreadyRated ? 0 : sIndex + 1;
+                    
+                    animateStars(stars, finalRating - 1);
                     await setDoc(doc(db, "users", currentUser.uid, "ratings", String(album.id)), {
                         id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', timestamp: new Date(), type: originalType,
-                        tracks: { [tId]: { rating: rating, comment: div.querySelector('.track-comment').value } }
+                        tracks: { [tId]: { rating: finalRating, comment: div.querySelector('.track-comment').value } }
                     }, { merge: true });
                 });
             });
@@ -361,7 +367,6 @@ const loadTrending = async () => {
     loadingText.innerHTML = 'Buscando registros<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span>';
     loadingText.style.display = 'block'; albumGrid.innerHTML = ''; document.getElementById('pagination-controls').style.display = 'none';
     
-    // BUG CORRIGIDO AQUI: AVISO SE O RENDER TIVER HIBERNANDO
     let timeoutAlert = setTimeout(() => { loadingText.innerHTML = 'O servidor Render está acordando da hibernação. Aguenta aí (pode levar até 1 minuto)...'; }, 5000);
 
     try {
@@ -432,7 +437,7 @@ const loadFriendsFeed = async () => {
                 <div style="flex:1;">
                     <p style="font-size:0.8rem; color:#888;"><b>${act.friendName}</b> avaliou um ${typeLabel}:</p>
                     <h4 style="color:#fff; margin:5px 0; cursor:pointer;" class="feed-title">${act.name} <span style="color:#aaa; font-weight:normal; font-size:0.8rem;">- ${act.artist}</span></h4>
-                    <p style="color:#fff; font-size:0.9rem; text-shadow: 0 0 10px rgba(255,255,255,0.5);">${'★'.repeat(overallRating)}${'☆'.repeat(5 - overallRating)}</p>
+                    <p style="color:#ffca28; font-size:1rem; text-shadow: 0 0 10px rgba(255,202,40,0.5);">${'★'.repeat(overallRating)}${'<span style="color:#444; text-shadow:none;">' + '☆'.repeat(5 - overallRating) + '</span>'}</p>
                     ${highlightComment}
                 </div>
                 <img src="${act.image}" class="cover" data-id="open-album" title="Abrir Álbum">
@@ -526,7 +531,7 @@ const openPublicProfile = async (uid, userData) => {
                 <img src="${data.image}" style="width: 110px; height: 110px; border-radius: 8px; object-fit: cover; border: 1px solid #333; transition: border-color 0.2s;">
                 <p style="font-size: 0.75rem; color: #fff; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px;" title="${data.name}">${data.name}</p>
                 <p style="font-size: 0.6rem; color: #aaa; text-transform:uppercase; letter-spacing:1px; margin-top: 2px;">${typeLabel}</p>
-                <p style="font-size: 0.75rem; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); white-space: nowrap; margin-top: 2px;">${'★'.repeat(data.rating || 0)}${'☆'.repeat(5 - (data.rating || 0))}</p>
+                <p style="font-size: 1rem; color: #ffca28; text-shadow: 0 0 10px rgba(255,202,40,0.5); white-space: nowrap; margin-top: 5px;">${'★'.repeat(data.rating || 0)}${'<span style="color:#444; text-shadow:none;">' + '☆'.repeat(5 - (data.rating || 0)) + '</span>'}</p>
             `;
             div.addEventListener('click', () => { publicModal.style.display = 'none'; loadAlbumView(data); });
             container.appendChild(div); animDelay += 0.08; 
@@ -574,7 +579,7 @@ navPfp.addEventListener('click', async () => {
                 <img src="${data.image}" style="width: 110px; height: 110px; border-radius: 8px; object-fit: cover; border: 1px solid #333; transition: border-color 0.2s;">
                 <p style="font-size: 0.75rem; color: #fff; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px;" title="${data.name}">${data.name}</p>
                 <p style="font-size: 0.6rem; color: #aaa; text-transform:uppercase; letter-spacing:1px; margin-top: 2px;">${typeLabel}</p>
-                <p style="font-size: 0.75rem; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); white-space: nowrap; margin-top: 2px;">${'★'.repeat(data.rating || 0)}${'☆'.repeat(5 - (data.rating || 0))}</p>
+                <p style="font-size: 1rem; color: #ffca28; text-shadow: 0 0 10px rgba(255,202,40,0.5); white-space: nowrap; margin-top: 5px;">${'★'.repeat(data.rating || 0)}${'<span style="color:#444; text-shadow:none;">' + '☆'.repeat(5 - (data.rating || 0)) + '</span>'}</p>
             `;
             div.addEventListener('click', () => { modal.style.display = 'none'; loadAlbumView(data); });
             ratedContainer.appendChild(div); animDelay += 0.08; 
@@ -662,10 +667,14 @@ const renderPage = () => {
             star.addEventListener('click', async (e) => {
                 e.stopPropagation(); 
                 if(!currentUser) return alert('Faça login para avaliar esta obra.'); 
-                animateStars(stars, index); 
-                const rating = index + 1;
+                
+                const isAlreadyRated = stars[index].classList.contains('ph-fill') && (index === 4 || !stars[index+1]?.classList.contains('ph-fill'));
+                const finalRating = isAlreadyRated ? 0 : index + 1;
+                
+                animateStars(stars, finalRating - 1); 
+                
                 await setDoc(doc(db, "users", currentUser.uid, "ratings", String(album.id)), {
-                    id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: rating, timestamp: new Date(), type: originalType
+                    id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: finalRating, timestamp: new Date(), type: originalType
                 }, { merge: true });
             });
         });
@@ -682,7 +691,6 @@ searchBtn.addEventListener('click', async () => {
     loadingText.innerHTML = 'Buscando registros<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span>';
     loadingText.style.display = 'block'; albumGrid.innerHTML = ''; document.getElementById('pagination-controls').style.display = 'none';
 
-    // BUG CORRIGIDO: AVISO SE O RENDER ESTIVER DORMINDO
     let timeoutAlert = setTimeout(() => { loadingText.innerHTML = 'O servidor Render está acordando da hibernação. Aguenta aí (pode levar até 1 minuto)...'; }, 5000);
 
     try {
@@ -707,9 +715,8 @@ searchBtn.addEventListener('click', async () => {
             const minYear = parseInt(minSlider.value) || 0;
             const maxYear = parseInt(maxSlider.value) || 9999;
             data = data.filter(album => {
-                if (!useYear) return true;
                 const year = parseInt(album.year);
-                if (isNaN(year)) return true; // Se não souber o ano, mostra assim mesmo
+                if (isNaN(year)) return true; // Se a API não achar a data, não apaga o card
                 return year >= minYear && year <= maxYear;
             });
         }
