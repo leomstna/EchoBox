@@ -290,8 +290,9 @@
 
     let mouseX = 0, mouseY = 0;
     document.addEventListener('mousemove', (e) => {
-        mouseX = (e.clientX - window.innerWidth / 2) * 0.0007;
-        mouseY = (e.clientY - window.innerHeight / 2) * 0.0007;
+        // Reduzi o multiplicador pela metade pra ficar menos sensível
+        mouseX = (e.clientX - window.innerWidth / 2) * 0.0003;
+        mouseY = (e.clientY - window.innerHeight / 2) * 0.0003;
     });
 
     const playBtn = document.getElementById('player-play-btn');
@@ -304,9 +305,11 @@
             let floatY = fixedPosY + (Math.sin(Date.now() * 0.001) * 0.1) + (Math.cos(Date.now() * 0.0008) * 0.05);
             boombox.position.y = floatY;
 
-            // ROTAÇÃO COM PARALLAX (Segue o mouse de leve)
-            boombox.rotation.x = fixedRotX + mouseY;
-            boombox.rotation.y = fixedRotY + mouseX;
+            // ROTAÇÃO COM PARALLAX SUAVIZADO (Lerp)
+            let targetRotationX = fixedRotX + mouseY;
+            let targetRotationY = fixedRotY + mouseX;
+            boombox.rotation.x += (targetRotationX - boombox.rotation.x) * 0.05;
+            boombox.rotation.y += (targetRotationY - boombox.rotation.y) * 0.05;
 
             // BATIDA DA MÚSICA (Kick Grave)
             let currentScaleX = baseScale;
