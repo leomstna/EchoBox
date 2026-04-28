@@ -35,9 +35,6 @@ let currentAlbums = [];
 let currentPage = 1;
 const itemsPerPage = 12;
 
-// --- CHAVEADOR DE API (LOCAL OU PRODUÇÃO) ---
-// Se for testar no seu PC com o app.py rodando, descomente a linha de baixo e comente a do Render:
-// const API_BASE_URL = 'http://127.0.0.1:5000'; 
 const API_BASE_URL = 'https://api-musicbox-m275.onrender.com';
 
 const scrollObserver = new IntersectionObserver((entries) => {
@@ -72,24 +69,26 @@ function updateSlider() {
     sliderFill.style.width = (percent2 - percent1) + "%";
 }
 
-minSlider.addEventListener('input', () => {
-    if (parseInt(minSlider.value) > parseInt(maxSlider.value) - 1) minSlider.value = parseInt(maxSlider.value) - 1;
-    minValText.innerText = minSlider.value; updateSlider();
-});
+if(minSlider && maxSlider) {
+    minSlider.addEventListener('input', () => {
+        if (parseInt(minSlider.value) > parseInt(maxSlider.value) - 1) minSlider.value = parseInt(maxSlider.value) - 1;
+        minValText.innerText = minSlider.value; updateSlider();
+    });
 
-maxSlider.addEventListener('input', () => {
-    if (parseInt(maxSlider.value) < parseInt(minSlider.value) + 1) maxSlider.value = parseInt(minSlider.value) + 1;
-    maxValText.innerText = maxSlider.value; updateSlider();
-});
-updateSlider();
+    maxSlider.addEventListener('input', () => {
+        if (parseInt(maxSlider.value) < parseInt(minSlider.value) + 1) maxSlider.value = parseInt(minSlider.value) + 1;
+        maxValText.innerText = maxSlider.value; updateSlider();
+    });
+    updateSlider();
 
-useYearFilter.addEventListener('change', (e) => {
-    if (e.target.checked) {
-        sliderWrapper.style.opacity = '1'; sliderWrapper.style.pointerEvents = 'auto';
-    } else {
-        sliderWrapper.style.opacity = '0.3'; sliderWrapper.style.pointerEvents = 'none';
-    }
-});
+    useYearFilter.addEventListener('change', (e) => {
+        if (e.target.checked) {
+            sliderWrapper.style.opacity = '1'; sliderWrapper.style.pointerEvents = 'auto';
+        } else {
+            sliderWrapper.style.opacity = '0.3'; sliderWrapper.style.pointerEvents = 'none';
+        }
+    });
+}
 
 let ytPlayer = null;
 let isPlayerReady = false;
@@ -112,7 +111,7 @@ window.onYouTubeIframeAPIReady = () => {
         height: '1', width: '1', videoId: 'M7lc1UVf-VE',
         playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'fs': 0, 'origin': window.location.origin },
         events: {
-            'onReady': () => { isPlayerReady = true; ytPlayer.setVolume(volSlider.value * 100); ytPlayer.pauseVideo(); },
+            'onReady': () => { isPlayerReady = true; if(volSlider) ytPlayer.setVolume(volSlider.value * 100); ytPlayer.pauseVideo(); },
             'onStateChange': onPlayerStateChange
         }
     });
@@ -155,19 +154,26 @@ function updateProgressBar() {
     }
 }
 
-volSlider.addEventListener('input', (e) => { if(isPlayerReady) ytPlayer.setVolume(e.target.value * 100); });
-document.getElementById('progress-bar-bg').addEventListener('click', (e) => {
-    if(!isPlayerReady || !currentTrackId) return;
-    const rect = e.target.getBoundingClientRect(); const percent = (e.clientX - rect.left) / rect.width;
-    ytPlayer.seekTo(ytPlayer.getDuration() * percent, true);
-});
+if(volSlider) {
+    volSlider.addEventListener('input', (e) => { if(isPlayerReady) ytPlayer.setVolume(e.target.value * 100); });
+}
 
-pPlayBtn.addEventListener('click', () => {
-    if(isPlayerReady && currentTrackId) {
-        if(ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
-        else ytPlayer.playVideo();
-    }
-});
+if(document.getElementById('progress-bar-bg')) {
+    document.getElementById('progress-bar-bg').addEventListener('click', (e) => {
+        if(!isPlayerReady || !currentTrackId) return;
+        const rect = e.target.getBoundingClientRect(); const percent = (e.clientX - rect.left) / rect.width;
+        ytPlayer.seekTo(ytPlayer.getDuration() * percent, true);
+    });
+}
+
+if(pPlayBtn) {
+    pPlayBtn.addEventListener('click', () => {
+        if(isPlayerReady && currentTrackId) {
+            if(ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
+            else ytPlayer.playVideo();
+        }
+    });
+}
 
 const animateStars = (starArray, targetIndex) => {
     starArray.forEach((s) => {
@@ -176,7 +182,6 @@ const animateStars = (starArray, targetIndex) => {
         s.classList.replace('ph-fill', 'ph');
     });
     
-    // Se targetIndex for -1 (nota zero), o loop nem roda e a animação só reseta
     for(let i = 0; i <= targetIndex; i++) {
         setTimeout(() => {
             const s = starArray[i];
@@ -220,6 +225,18 @@ const loadAlbumView = async (album) => {
     const trackContainer = document.getElementById('tracklist-container');
     trackContainer.innerHTML = '<p class="pulse-text">Buscando faixas<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span></p>';
     
+    // Adiciona o aviso visual dinamicamente abaixo das estrelas (lógica do chat do zap)
+    let warningText = document.getElementById('album-rating-warning');
+    if (!warningText) {
+        const starsContainer = document.getElementById('album-view-stars').parentElement;
+        warningText = document.createElement('div');
+        warningText.id = 'album-rating-warning';
+        warningText.style.marginTop = '8px';
+        warningText.style.maxWidth = '380px';
+        warningText.innerHTML = '<p style="color:#fff; font-size:0.75rem; font-weight:600;">Ou avalie o álbum por inteiro.</p><p style="color:#888; font-size:0.65rem; margin-top:3px;">Ao avaliar o álbum inteiro, a nota será distribuída entre as músicas. Recomendamos que avalie as músicas individualmente para melhor curadoria.</p>';
+        starsContainer.parentElement.appendChild(warningText);
+    }
+
     try {
         let url = `https://itunes.apple.com/lookup?id=${album.id}&entity=song`;
         if (originalType === 'single' || !album.id || isNaN(album.id)) {
@@ -258,15 +275,39 @@ const loadAlbumView = async (album) => {
                 if(!currentUser) return alert('Faça login.');
                 const currentStarsNodes = Array.from(document.querySelectorAll('#album-view-stars i'));
                 
-                // Lógica de nota zero: Se clicar na estrela que já é a nota final, ele zera a nota.
                 const isAlreadyRated = currentStarsNodes[index].classList.contains('ph-fill') && (index === 4 || !currentStarsNodes[index+1]?.classList.contains('ph-fill'));
                 const finalRating = isAlreadyRated ? 0 : index + 1;
                 
+                // POPUP DE AVISO (Lógica do chat do zap)
+                if (finalRating > 0) {
+                    const proceed = confirm("Aviso: Você está avaliando o álbum inteiro.\n\nA nota selecionada será distribuída para TODAS as músicas desta obra. Recomendamos avaliar as músicas individualmente abaixo para uma melhor curadoria.\n\nDeseja continuar e dar essa nota para o álbum inteiro?");
+                    if (!proceed) return;
+                }
+
                 animateStars(currentStarsNodes, finalRating - 1);
                 
-                await setDoc(doc(db, "users", currentUser.uid, "ratings", String(album.id)), {
-                    id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: finalRating, timestamp: new Date(), type: originalType
-                }, { merge: true });
+                // Distribui a nota para todas as faixas locais e visuais
+                tracks.forEach(track => {
+                    const tId = String(track.trackId);
+                    savedData[tId] = savedData[tId] || { comment: '' };
+                    savedData[tId].rating = finalRating;
+                    
+                    const trackStarsContainer = document.querySelector(`.track-stars[data-track="${tId}"]`);
+                    if(trackStarsContainer) {
+                        const tNodes = Array.from(trackStarsContainer.querySelectorAll('i'));
+                        animateStars(tNodes, finalRating - 1);
+                    }
+                });
+
+                const docRef = doc(db, "users", currentUser.uid, "ratings", String(album.id));
+                if(finalRating === 0) {
+                    await deleteDoc(docRef);
+                } else {
+                    await setDoc(docRef, {
+                        id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: finalRating, timestamp: new Date(), type: originalType,
+                        tracks: savedData
+                    }, { merge: true });
+                }
             });
         });
         
@@ -345,10 +386,32 @@ const loadAlbumView = async (album) => {
                     const finalRating = isAlreadyRated ? 0 : sIndex + 1;
                     
                     animateStars(stars, finalRating - 1);
-                    await setDoc(doc(db, "users", currentUser.uid, "ratings", String(album.id)), {
-                        id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', timestamp: new Date(), type: originalType,
-                        tracks: { [tId]: { rating: finalRating, comment: div.querySelector('.track-comment').value } }
-                    }, { merge: true });
+
+                    // Salva a nota da faixa individual
+                    savedData[tId] = savedData[tId] || { comment: '' };
+                    savedData[tId].rating = finalRating;
+
+                    // CALCULO DA MÉDIA (Lógica do chat do zap)
+                    let sum = 0; let count = 0;
+                    Object.values(savedData).forEach(t => {
+                        if (t.rating && t.rating > 0) { sum += t.rating; count++; }
+                    });
+                    const avgRating = count > 0 ? Math.round(sum / count) : 0;
+
+                    // Atualiza as estrelas principais do álbum visualmente
+                    const albumStarsNodes = Array.from(document.querySelectorAll('#album-view-stars i'));
+                    animateStars(albumStarsNodes, avgRating - 1);
+
+                    const docRef = doc(db, "users", currentUser.uid, "ratings", String(album.id));
+                    
+                    if (avgRating === 0 && count === 0) {
+                        await deleteDoc(docRef); // Se zerou todas as faixas, deleta
+                    } else {
+                        await setDoc(docRef, {
+                            id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: avgRating, timestamp: new Date(), type: originalType,
+                            tracks: savedData
+                        }, { merge: true });
+                    }
                 });
             });
 
@@ -358,9 +421,13 @@ const loadAlbumView = async (album) => {
                 timeout = setTimeout(async () => {
                     if(!currentUser) return;
                     const currentStars = Array.from(div.querySelectorAll('.track-stars .ph-fill')).length;
+                    
+                    savedData[tId] = savedData[tId] || { rating: 0 };
+                    savedData[tId].comment = e.target.value;
+
                     await setDoc(doc(db, "users", currentUser.uid, "ratings", String(album.id)), {
                         id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', timestamp: new Date(), type: originalType,
-                        tracks: { [tId]: { rating: currentStars, comment: e.target.value } }
+                        tracks: savedData
                     }, { merge: true });
                 }, 1000);
             });
@@ -442,7 +509,7 @@ const loadFriendsFeed = async () => {
                 <div style="flex:1;">
                     <p style="font-size:0.8rem; color:#888;"><b>${act.friendName}</b> avaliou um ${typeLabel}:</p>
                     <h4 style="color:#fff; margin:5px 0; cursor:pointer;" class="feed-title">${act.name} <span style="color:#aaa; font-weight:normal; font-size:0.8rem;">- ${act.artist}</span></h4>
-                    <p style="color:#ffca28; font-size:1rem; text-shadow: 0 0 10px rgba(255,202,40,0.5);">${'★'.repeat(overallRating)}${'<span style="color:#444; text-shadow:none;">' + '☆'.repeat(5 - overallRating) + '</span>'}</p>
+                    <p style="color:#fff; font-size:1rem; text-shadow: 0 0 10px rgba(255,255,255,0.5);">${'★'.repeat(overallRating)}${'<span style="color:#444; text-shadow:none;">' + '☆'.repeat(5 - overallRating) + '</span>'}</p>
                     ${highlightComment}
                 </div>
                 <img src="${act.image}" class="cover" data-id="open-album" title="Abrir Álbum">
@@ -536,7 +603,7 @@ const openPublicProfile = async (uid, userData) => {
                 <img src="${data.image}" style="width: 110px; height: 110px; border-radius: 8px; object-fit: cover; border: 1px solid #333; transition: border-color 0.2s;">
                 <p style="font-size: 0.75rem; color: #fff; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px;" title="${data.name}">${data.name}</p>
                 <p style="font-size: 0.6rem; color: #aaa; text-transform:uppercase; letter-spacing:1px; margin-top: 2px;">${typeLabel}</p>
-                <p style="font-size: 1rem; color: #ffca28; text-shadow: 0 0 10px rgba(255,202,40,0.5); white-space: nowrap; margin-top: 5px;">${'★'.repeat(data.rating || 0)}${'<span style="color:#444; text-shadow:none;">' + '☆'.repeat(5 - (data.rating || 0)) + '</span>'}</p>
+                <p style="font-size: 1rem; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); white-space: nowrap; margin-top: 5px;">${'★'.repeat(data.rating || 0)}${'<span style="color:#444; text-shadow:none;">' + '☆'.repeat(5 - (data.rating || 0)) + '</span>'}</p>
             `;
             div.addEventListener('click', () => { publicModal.style.display = 'none'; loadAlbumView(data); });
             container.appendChild(div); animDelay += 0.08; 
@@ -584,7 +651,7 @@ navPfp.addEventListener('click', async () => {
                 <img src="${data.image}" style="width: 110px; height: 110px; border-radius: 8px; object-fit: cover; border: 1px solid #333; transition: border-color 0.2s;">
                 <p style="font-size: 0.75rem; color: #fff; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px;" title="${data.name}">${data.name}</p>
                 <p style="font-size: 0.6rem; color: #aaa; text-transform:uppercase; letter-spacing:1px; margin-top: 2px;">${typeLabel}</p>
-                <p style="font-size: 1rem; color: #ffca28; text-shadow: 0 0 10px rgba(255,202,40,0.5); white-space: nowrap; margin-top: 5px;">${'★'.repeat(data.rating || 0)}${'<span style="color:#444; text-shadow:none;">' + '☆'.repeat(5 - (data.rating || 0)) + '</span>'}</p>
+                <p style="font-size: 1rem; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); white-space: nowrap; margin-top: 5px;">${'★'.repeat(data.rating || 0)}${'<span style="color:#444; text-shadow:none;">' + '☆'.repeat(5 - (data.rating || 0)) + '</span>'}</p>
             `;
             div.addEventListener('click', () => { modal.style.display = 'none'; loadAlbumView(data); });
             ratedContainer.appendChild(div); animDelay += 0.08; 
@@ -675,12 +742,23 @@ const renderPage = () => {
                 
                 const isAlreadyRated = stars[index].classList.contains('ph-fill') && (index === 4 || !stars[index+1]?.classList.contains('ph-fill'));
                 const finalRating = isAlreadyRated ? 0 : index + 1;
+
+                // POPUP DE AVISO (Lógica do chat do zap para as estrelas da tela de busca)
+                if (finalRating > 0) {
+                    const proceed = confirm("Aviso: Você está avaliando o álbum inteiro pela busca.\n\nA nota selecionada será aplicada à obra como um todo. Se preferir o cálculo automático da nota pela média, abra o álbum e avalie as músicas individualmente.\n\nDeseja confirmar a nota geral?");
+                    if (!proceed) return;
+                }
                 
                 animateStars(stars, finalRating - 1); 
                 
-                await setDoc(doc(db, "users", currentUser.uid, "ratings", String(album.id)), {
-                    id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: finalRating, timestamp: new Date(), type: originalType
-                }, { merge: true });
+                const docRef = doc(db, "users", currentUser.uid, "ratings", String(album.id));
+                if (finalRating === 0) {
+                    await deleteDoc(docRef);
+                } else {
+                    await setDoc(docRef, {
+                        id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: finalRating, timestamp: new Date(), type: originalType
+                    }, { merge: true });
+                }
             });
         });
     });
@@ -721,7 +799,7 @@ searchBtn.addEventListener('click', async () => {
             const maxYear = parseInt(maxSlider.value) || 9999;
             data = data.filter(album => {
                 const year = parseInt(album.year);
-                if (isNaN(year)) return true; // CORRIGIDO AQUI DE FALSE PRA TRUE
+                if (isNaN(year)) return true;
                 return year >= minYear && year <= maxYear;
             });
         }
