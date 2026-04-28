@@ -51,7 +51,7 @@ const scrollObserver = new IntersectionObserver((entries) => {
 
 document.querySelectorAll('.scroll-trigger').forEach(el => scrollObserver.observe(el));
 
-// --- LÓGICA DE ROTAS E SCROLL SMOOTH CORRIGIDA ---
+// --- LÓGICA DE ROTAS E SCROLL SMOOTH BLINDADA ---
 const sectionsMap = {
     '': 'home',
     '#home': 'home',
@@ -64,7 +64,7 @@ const showSection = (id, updateHash = true) => {
     const sections = document.querySelectorAll('.section-page');
     
     const isHomeOrExplore = (id === 'home' || id === 'search-section');
-    const isCurrentlyOnHomeOrExplore = (document.getElementById('home').style.display === 'block');
+    const isCurrentlyOnHomeOrExplore = (document.getElementById('home').style.display !== 'none');
 
     // Navegação suave se estiver transitando apenas entre Home e Explorar
     if (isHomeOrExplore && isCurrentlyOnHomeOrExplore) {
@@ -73,11 +73,14 @@ const showSection = (id, updateHash = true) => {
         } else {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-        if(updateHash) window.location.hash = (id === 'home') ? '#home' : '#explorar';
+        if(updateHash) {
+            const hash = (id === 'home') ? '#home' : '#explorar';
+            history.pushState(null, null, hash); // Muda a URL sem quebrar a tela
+        }
         return;
     }
 
-    // Transição com tela preta para outras seções (Comunidade, Álbum)
+    // Transição com tela preta para outras seções
     overlay.style.display = 'flex'; void overlay.offsetWidth; overlay.style.opacity = '1';
 
     setTimeout(() => {
@@ -97,8 +100,8 @@ const showSection = (id, updateHash = true) => {
         }
 
         if(updateHash) {
-            const hash = Object.keys(sectionsMap).find(key => sectionsMap[key] === id);
-            window.location.hash = hash || '#home';
+            const hash = Object.keys(sectionsMap).find(key => sectionsMap[key] === id) || '#home';
+            history.pushState(null, null, hash);
         }
 
         overlay.style.opacity = '0'; 
@@ -112,26 +115,16 @@ window.addEventListener('load', () => {
     showSection(sectionId, false);
 });
 
+// Só dispara pelo "Voltar/Avançar" do navegador
 window.addEventListener('hashchange', () => {
     const sectionId = sectionsMap[window.location.hash] || 'home';
-    if (document.getElementById(sectionId).style.display === 'none' || 
-       (sectionId === 'search-section' && document.getElementById('search-section').getBoundingClientRect().top > window.innerHeight)) {
-        showSection(sectionId, false);
-    }
+    showSection(sectionId, false);
 });
 
 // Botões da NAV
 document.getElementById('link-home').addEventListener('click', (e) => { e.preventDefault(); showSection('home'); });
+document.getElementById('link-explorar').addEventListener('click', (e) => { e.preventDefault(); showSection('search-section'); });
 document.getElementById('back-to-explore').addEventListener('click', () => showSection('search-section'));
-
-document.getElementById('link-explorar').addEventListener('click', (e) => { 
-    e.preventDefault(); 
-    showSection('search-section'); 
-    // Só carrega a API de novo se a tela estiver literalmente vazia
-    if (!searchInput.value.trim() && currentAlbums.length === 0) {
-        loadTrending(); 
-    }
-});
 
 // --- FILTROS E SLIDERS ---
 const minSlider = document.getElementById('filter-year-min');
@@ -353,16 +346,11 @@ const loadAlbumView = async (album) => {
             star.parentNode.replaceChild(newStar, star);
             
             newStar.addEventListener('click', async () => {
-                if(!currentUser) return alert('Faça login.');
+                if(!currentUser) return alert('Faça login para avaliar.');
                 const currentStarsNodes = Array.from(document.querySelectorAll('#album-view-stars i'));
                 
                 const isAlreadyRated = currentStarsNodes[index].classList.contains('ph-fill') && (index === 4 || !currentStarsNodes[index+1]?.classList.contains('ph-fill'));
                 const finalRating = isAlreadyRated ? 0 : index + 1;
-                
-                if (finalRating > 0) {
-                    const proceed = confirm("Aviso: Você está avaliando o álbum inteiro.\n\nA nota selecionada será distribuída para TODAS as músicas desta obra. Recomendamos avaliar as músicas individualmente abaixo para uma melhor curadoria.\n\nDeseja continuar e dar essa nota para o álbum inteiro?");
-                    if (!proceed) return;
-                }
 
                 animateStars(currentStarsNodes, finalRating - 1);
                 
@@ -850,7 +838,7 @@ const renderPage = () => {
     pageData.forEach(album => {
         const card = document.createElement('div');
         card.className = 'album-card liquid-glass scroll-trigger'; 
-        card.style.cursor = 'pointer'; // O card inteiro vira botão
+        card.style.cursor = 'pointer'; 
         
         const originalType = album.type || 'album';
         let typeLabel = 'Álbum';
@@ -871,28 +859,23 @@ const renderPage = () => {
         albumGrid.appendChild(card);
         scrollObserver.observe(card);
 
-        // CLIQUE PRA ABRIR O ÁLBUM (AGORA NO CARD INTEIRO)
+        // CLIQUE PRA ABRIR O ÁLBUM NO CARD INTEIRO
         card.addEventListener('click', () => loadAlbumView(album));
 
         const stars = Array.from(card.querySelectorAll('.card-stars i'));
         stars.forEach((star, index) => {
             star.addEventListener('click', async (e) => {
-                e.stopPropagation(); // ISSO AQUI impede que clique nas estrelas abra a tela de músicas
+                e.stopPropagation(); // ISSO AQUI impede que clicar na estrela abra a tela de músicas junto
                 
                 if(!currentUser) return alert('Faça login para avaliar esta obra.'); 
                 
                 const isAlreadyRated = stars[index].classList.contains('ph-fill') && (index === 4 || !stars[index+1]?.classList.contains('ph-fill'));
                 const finalRating = isAlreadyRated ? 0 : index + 1;
-
-                if (finalRating > 0) {
-                    const proceed = confirm("Aviso: Você está avaliando o álbum inteiro pela busca.\n\nA nota selecionada será aplicada à obra como um todo. Se preferir o cálculo automático da nota pela média, ABRA o álbum clicando na capa e avalie as músicas individualmente.\n\nDeseja confirmar a nota geral?");
-                    if (!proceed) return;
-                }
                 
                 animateStars(stars, finalRating - 1); 
                 
                 const docRef = doc(db, "users", currentUser.uid, "ratings", String(album.id));
-                if (finalিন্তRating === 0) {
+                if (finalRating === 0) {
                     await deleteDoc(docRef);
                 } else {
                     await setDoc(docRef, {
@@ -907,7 +890,7 @@ const renderPage = () => {
 document.getElementById('prev-page').addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderPage(); document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' }); } });
 document.getElementById('next-page').addEventListener('click', () => { if ((currentPage * itemsPerPage) < currentAlbums.length) { currentPage++; renderPage(); document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' }); } });
 
-// Inicia a busca dos álbuns silenciosamente no fundo assim que o site abre pra acordar o Render!
+// Inicia a busca silenciosamente no fundo assim que o site abre
 window.addEventListener('DOMContentLoaded', () => {
     if (currentAlbums.length === 0) {
         loadTrending();
