@@ -7,13 +7,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
     <link rel="stylesheet" href="style.css?v=17">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 <body class="site-enter">
-    
-    <div id="canvas-3d-container" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none;"></div>
     
     <div id="page-transition" class="transition-overlay" style="display: none;">
         <div class="pulse-text" style="font-size: 3rem;">
@@ -132,6 +127,10 @@
         </div>
 
         <div style="margin-top: 40px;" class="scroll-trigger">
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #222; padding-bottom: 10px; margin-bottom: 15px; color:#888; font-size:0.8rem; text-transform:uppercase;">
+                <span># Título</span>
+                <span>Avaliação & Notas Pessoais</span>
+            </div>
             <div id="tracklist-container">
                 <p class="pulse-text">Carregando faixas<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span></p>
             </div>
@@ -139,11 +138,11 @@
     </main>
 
     <main id="network-section" class="section-page scroll-trigger" style="display: none;">
-        <h2 class="glow-text" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">Comunidade</h2>
-        <input type="text" id="user-search-input" class="dark-input liquid-glass" placeholder="Buscar perfil por nome..." style="max-width: 400px; margin-bottom: 30px;">
+        <h2 class="glow-text scroll-trigger" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">Comunidade</h2>
+        <input type="text" id="user-search-input" class="dark-input liquid-glass scroll-trigger" placeholder="Buscar perfil por nome..." style="max-width: 400px; margin-bottom: 30px;">
         <div id="users-grid" class="grid-container" style="margin-bottom: 50px;"></div>
 
-        <h2 class="glow-text" style="margin-top: 50px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">Atividade dos Amigos</h2>
+        <h2 class="glow-text scroll-trigger" style="margin-top: 50px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">Atividade dos Amigos</h2>
         <div id="friends-feed" style="max-width: 800px; margin: 0 auto 120px auto;">
             <p style="color:#aaa;">As avaliações recentes aparecerão aqui.</p>
         </div>
@@ -186,14 +185,21 @@
                     <div class="pfp-container-large">
                         <img id="modal-pfp" src="https://placehold.co/80x80/1a1a1a/888888?text=U" alt="Sua Foto">
                     </div>
-                    <label for="edit-pfp-file" class="btn-ghost" style="cursor: pointer; border: 1px solid #444; padding: 5px 10px; border-radius: 5px;">Mudar Foto</label>
+                    <label for="edit-pfp-file" class="btn-ghost" style="font-size: 1rem; border: 1px solid rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 5px; cursor: pointer;">Mudar Foto</label>
                     <input type="file" id="edit-pfp-file" accept="image/*" style="display: none;">
                 </div>
                 <label>Nome</label>
                 <input type="text" id="edit-name" class="dark-input liquid-glass">
                 <label>Biografia</label>
-                <textarea id="edit-bio" class="dark-input liquid-glass" rows="3"></textarea>
-                <button id="save-profile" class="btn-primary glow-box w-100" style="margin-top: 20px; width: 100%;">Salvar</button>
+                <textarea id="edit-bio" class="dark-input liquid-glass" rows="3" placeholder="Escreva algo sobre você..."></textarea>
+                
+                <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                    <h3 style="font-size: 1rem; margin-bottom: 10px; color: #aaa;">Obras Avaliadas</h3>
+                    <div id="user-rated-albums" class="custom-scroll" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px;">
+                        <p style="color: #444; font-size: 0.8rem;">(Nenhuma obra avaliada ainda...)</p>
+                    </div>
+                </div>
+                <button id="save-profile" class="btn-primary glow-box w-100" style="margin-top: 20px;">Salvar Modificações</button>
             </div>
         </div>
     </div>
@@ -238,77 +244,5 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
     <script type="module" src="script.js"></script>
-
-    <script>
-    const container = document.getElementById('canvas-3d-container');
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.z = 5;
-
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    container.appendChild(renderer.domElement);
-
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-    scene.add(ambientLight);
-    const pointLight = new THREE.PointLight(0xffffff, 2);
-    pointLight.position.set(2, 3, 4);
-    scene.add(pointLight);
-
-    const loader = new THREE.GLTFLoader();
-    let disco, boombox, cdCase;
-
-    loader.load('./modelos/cd/scene.gltf', (gltf) => {
-        cdCase = gltf.scene;
-        cdCase.position.set(0, 0, -2);
-        cdCase.scale.set(2.5, 2.5, 2.5);
-        scene.add(cdCase);
-    });
-
-    loader.load('./modelos/disco/scene.gltf', (gltf) => {
-        disco = gltf.scene;
-        disco.position.set(-4, 1.5, -4); 
-        disco.scale.set(0.5, 0.5, 0.5);
-        disco.rotation.x = Math.PI / 3;
-        scene.add(disco);
-    });
-
-    loader.load('./modelos/boombox/scene.gltf', (gltf) => {
-        boombox = gltf.scene;
-        boombox.position.set(4, -1.5, -4); 
-        boombox.scale.set(0.4, 0.4, 0.4);
-        scene.add(boombox);
-    });
-
-    let mouseX = 0, mouseY = 0;
-    document.addEventListener('mousemove', (e) => {
-        mouseX = (e.clientX - window.innerWidth / 2);
-        mouseY = (e.clientY - window.innerHeight / 2);
-    });
-
-    function animate() {
-        requestAnimationFrame(animate);
-        let targetX = mouseX * 0.0008;
-        let targetY = mouseY * 0.0008;
-
-        if (cdCase) {
-            cdCase.rotation.y += 0.005; 
-            cdCase.rotation.x += 0.05 * (targetY - cdCase.rotation.x);
-        }
-        if (disco) disco.rotation.y -= 0.01;
-        if (boombox) {
-            boombox.rotation.y = targetX;
-            boombox.position.y = -1.5 + Math.cos(Date.now() * 0.001) * 0.1;
-        }
-        renderer.render(scene, camera);
-    }
-    animate();
-
-    window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-    </script>
 </body>
 </html>
