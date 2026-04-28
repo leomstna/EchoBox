@@ -252,7 +252,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
     <script type="module" src="script.js"></script>
 
-    <script>
+<script>
     const container = document.getElementById('canvas-3d-container');
     const scene = new THREE.Scene();
     
@@ -263,70 +263,66 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     container.appendChild(renderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
     scene.add(ambientLight);
-    const dirLight = new THREE.DirectionalLight(0x88ccff, 1.5);
+    const dirLight = new THREE.DirectionalLight(0x88ccff, 1.8);
     dirLight.position.set(5, 10, 7.5);
     scene.add(dirLight);
 
     const loader = new THREE.GLTFLoader();
     let boombox;
 
-    // ADEUS DISCO. SÓ BOOMBOX AGORA!
     loader.load('./modelos/boombox/scene.gltf', (gltf) => {
         boombox = gltf.scene;
-        boombox.position.set(3.5, -1, -3); 
+        boombox.position.set(3, -1, -3); 
         boombox.scale.set(0.4, 0.4, 0.4);
         scene.add(boombox);
     });
 
-    // VARIÁVEIS DE ALVO PARA A TRANSIÇÃO SMOOTH
-    let targetPos = new THREE.Vector3(3.5, -1, -3);
-    let targetRot = new THREE.Vector3(0, -0.2, 0);
+    let targetPos = new THREE.Vector3(3, -1, -3);
+    let targetRot = new THREE.Vector3(0, -0.4, 0);
     let baseScale = 0.4;
         
     let mouseX = 0, mouseY = 0;
-    const windowHalfX = window.innerWidth / 2;
-    const windowHalfY = window.innerHeight / 2;
-
-    document.addEventListener('mousemove', (event) => {
-        mouseX = (event.clientX - windowHalfX) * 0.001;
-        mouseY = (event.clientY - windowHalfY) * 0.001;
+    document.addEventListener('mousemove', (e) => {
+        mouseX = (e.clientX - window.innerWidth / 2) * 0.0007;
+        mouseY = (e.clientY - window.innerHeight / 2) * 0.0007;
     });
 
-    // O CÉREBRO: Checa qual página tá aberta e define as novas coordenadas
-    function checkCurrentSection() {
+    // LÓGICA DE POSIÇÃO AGRESSIVA PARA CADA PÁGINA
+    function updateBoomboxTarget() {
         if (!boombox) return;
-        const home = document.getElementById('home').style.display;
-        const search = document.getElementById('search-section').style.display;
-        const rede = document.getElementById('network-section').style.display;
-        const album = document.getElementById('album-view-section').style.display;
+        
+        const isHome = document.getElementById('home').style.display !== 'none';
+        const isSearch = document.getElementById('search-section').style.display !== 'none';
+        const isNetwork = document.getElementById('network-section').style.display !== 'none';
+        const isAlbum = document.getElementById('album-view-section').style.display !== 'none';
 
-        if (album === 'block') {
-            // TELA DO ÁLBUM: Vai pro alto e pra direita
-            targetPos.set(4, 1.5, -4);
-            targetRot.set(0.2, -0.5, 0.1);
-            baseScale = 0.5; // Fica um pouco maior
-        } else if (rede === 'block') {
-            // COMUNIDADE: Viaja cruzando a tela pra esquerda
-            targetPos.set(-4, -0.5, -3);
-            targetRot.set(0, 0.5, -0.1);
+        if (isAlbum) {
+            // TELA DO ÁLBUM: Fica gigante no topo direito
+            targetPos.set(4.5, 1.8, -4);
+            targetRot.set(0.3, -0.8, 0.2);
+            baseScale = 0.55;
+        } else if (isNetwork) {
+            // COMUNIDADE: Vai pro extremo oposto (Esquerda alta)
+            targetPos.set(-4.5, 1.2, -4);
+            targetRot.set(0.1, 0.8, -0.2);
             baseScale = 0.45;
-        } else if (search === 'block' && home === 'none') {
-            // BUSCA/EXPLORAR: Fica escondido mais lá no fundo
-            targetPos.set(3, -2, -5);
-            targetRot.set(-0.3, 0.2, 0);
-            baseScale = 0.35;
-        } else {
-            // HOME: Posição padrão
-            targetPos.set(3.5, -1, -3);
-            targetRot.set(0, -0.2, 0);
+        } else if (isSearch) {
+            // EXPLORAR: Fica na esquerda baixa pra liberar o grid
+            targetPos.set(-3.8, -1.5, -3);
+            targetRot.set(-0.2, 0.5, 0);
             baseScale = 0.4;
+        } else {
+            // HOME: Posição clássica na direita
+            targetPos.set(3, -0.8, -2.5);
+            targetRot.set(0, -0.4, 0);
+            baseScale = 0.42;
         }
     }
 
-    // Roda a checagem a cada 200ms
-    setInterval(checkCurrentSection, 200);
+    // Checagem ultra rápida pra não ter delay no clique
+    setInterval(updateBoomboxTarget, 50);
 
     const playBtn = document.getElementById('player-play-btn');
 
@@ -334,30 +330,28 @@
         requestAnimationFrame(animate);
 
         if (boombox) {
-            // 1. TRANSIÇÃO DE POSIÇÃO SMOOTH (Lerp)
-            boombox.position.x += (targetPos.x - boombox.position.x) * 0.05;
-            let floatY = targetPos.y + Math.sin(Date.now() * 0.002) * 0.1; // Mantém a flutuação natural
-            boombox.position.y += (floatY - boombox.position.y) * 0.05;
-            boombox.position.z += (targetPos.z - boombox.position.z) * 0.05;
+            // MOVIMENTO SMOOTH (Aumentei a força pra 0.08 pra ser mais responsivo)
+            boombox.position.x += (targetPos.x - boombox.position.x) * 0.08;
+            let floatY = targetPos.y + Math.sin(Date.now() * 0.0015) * 0.12;
+            boombox.position.y += (floatY - boombox.position.y) * 0.08;
+            boombox.position.z += (targetPos.z - boombox.position.z) * 0.08;
 
-            // 2. TRANSIÇÃO DE ROTAÇÃO + PARALLAX DO MOUSE
-            boombox.rotation.x += ((targetRot.x + mouseY) - boombox.rotation.x) * 0.05;
-            boombox.rotation.y += ((targetRot.y + mouseX) - boombox.rotation.y) * 0.05;
-            boombox.rotation.z += (targetRot.z - boombox.rotation.z) * 0.05;
+            // ROTAÇÃO COM PARALLAX
+            boombox.rotation.x += ((targetRot.x + mouseY) - boombox.rotation.x) * 0.08;
+            boombox.rotation.y += ((targetRot.y + mouseX) - boombox.rotation.y) * 0.08;
+            boombox.rotation.z += (targetRot.z - boombox.rotation.z) * 0.08;
 
-            // 3. EFEITO DE PULSAR (BATER NA MÚSICA)
+            // BATIDA DA MÚSICA
             let currentScale = baseScale;
-            // Checa se o ícone do botão virou "pause", ou seja, a música tá tocando!
             if (playBtn && playBtn.classList.contains('ph-pause-circle')) {
-                // Matemática de onda senoidal pra simular batida do grave
-                let pulse = Math.abs(Math.sin(Date.now() * 0.005)) * 0.03; 
+                // Pulso mais forte pra dar o "pah" que você quer
+                let pulse = Math.abs(Math.sin(Date.now() * 0.006)) * 0.04; 
                 currentScale += pulse;
             }
 
-            // Aplica a escala suavemente pra não dar engasgo
-            boombox.scale.x += (currentScale - boombox.scale.x) * 0.2;
-            boombox.scale.y += (currentScale - boombox.scale.y) * 0.2;
-            boombox.scale.z += (currentScale - boombox.scale.z) * 0.2;
+            boombox.scale.x += (currentScale - boombox.scale.x) * 0.15;
+            boombox.scale.y += (currentScale - boombox.scale.y) * 0.15;
+            boombox.scale.z += (currentScale - boombox.scale.z) * 0.15;
         }
 
         renderer.render(scene, camera);
