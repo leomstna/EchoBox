@@ -1,0 +1,11 @@
+Model Information:
+* title:	CD Music 03
+* source:	https://sketchfab.com/3d-models/cd-music-03-0a7696bb33134cacb5a39eeb0420a738
+* author:	mfb64 (https://sketchfab.com/mfb64)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "CD Music 03" (https://sketchfab.com/3d-models/cd-music-03-0a7696bb33134cacb5a39eeb0420a738) by mfb64 (https://sketchfab.com/mfb64) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
