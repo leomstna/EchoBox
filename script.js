@@ -254,7 +254,8 @@ const loadAlbumView = async (album) => {
     if (originalType === 'single') mediaTypeText.innerText = 'Single'; else if (originalType === 'ep') mediaTypeText.innerText = 'EP'; else mediaTypeText.innerText = 'Álbum';
 
     const trackContainer = document.getElementById('tracklist-container');
-    trackContainer.innerHTML = '<p class="pulse-text">Buscando faixas<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span></p>';
+    // Skeleton das faixas
+    trackContainer.innerHTML = Array(5).fill('<div class="skeleton skel-row"></div>').join('');
     
     let warningText = document.getElementById('album-rating-warning');
     if (!warningText) {
