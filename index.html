@@ -272,7 +272,7 @@
     let disco, boombox;
 
     // Carrega o Disco de Acetato
-    loader.load('./acetate_disc/scene.gltf', (gltf) => {
+    loader.load('./modelos/disco/scene.gltf', (gltf) => {
         disco = gltf.scene;
         disco.position.set(-3.5, 1, -2); 
         disco.scale.set(0.6, 0.6, 0.6);
@@ -281,22 +281,13 @@
     });
 
     // Carrega o Boombox
-    loader.load('./bluetooth_music_boombox/scene.gltf', (gltf) => {
+    loader.load('./modelos/boombox/scene.gltf', (gltf) => {
         boombox = gltf.scene;
         boombox.position.set(3.5, -1, -3); 
         boombox.scale.set(0.4, 0.4, 0.4);
         scene.add(boombox);
     });
-
-    let mouseX = 0, mouseY = 0, targetX = 0, targetY = 0;
-    const windowHalfX = window.innerWidth / 2;
-    const windowHalfY = window.innerHeight / 2;
-
-    document.addEventListener('mousemove', (event) => {
-        mouseX = (event.clientX - windowHalfX);
-        mouseY = (event.clientY - windowHalfY);
-    });
-
+        
     function animate() {
         requestAnimationFrame(animate);
         targetX = mouseX * 0.001;
