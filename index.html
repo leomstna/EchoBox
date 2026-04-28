@@ -259,7 +259,6 @@
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.z = 5;
 
-    // Fundo transparente pra mesclar com o #050505 do css
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     container.appendChild(renderer.domElement);
@@ -271,54 +270,94 @@
     scene.add(dirLight);
 
     const loader = new THREE.GLTFLoader();
-    let disco, boombox;
+    let boombox;
 
-    // Carrega o Disco de Acetato
-    loader.load('./modelos/disco/scene.gltf', (gltf) => {
-        console.log("SUCESSO: O disco carregou perfeitamente!", gltf.scene);
-        disco = gltf.scene;
-        // Puxei mais para o meio e para perto da câmara
-        disco.position.set(-1.5, 0, -1); 
-        // Aumentei a escala à bruta para termos a certeza que se vê
-        disco.scale.set(3, 3, 3); 
-        disco.rotation.x = Math.PI / 4; 
-        scene.add(disco);
-    }, undefined, (error) => {
-        console.error("ERRO: O ficheiro do disco falhou a carregar!", error);
-    });
-
-    // Carrega o Boombox
+    // ADEUS DISCO. SÓ BOOMBOX AGORA!
     loader.load('./modelos/boombox/scene.gltf', (gltf) => {
         boombox = gltf.scene;
         boombox.position.set(3.5, -1, -3); 
         boombox.scale.set(0.4, 0.4, 0.4);
         scene.add(boombox);
     });
+
+    // VARIÁVEIS DE ALVO PARA A TRANSIÇÃO SMOOTH
+    let targetPos = new THREE.Vector3(3.5, -1, -3);
+    let targetRot = new THREE.Vector3(0, -0.2, 0);
+    let baseScale = 0.4;
         
-    // VARIÁVEIS PRO PARALLAX
-    let mouseX = 0, mouseY = 0, targetX = 0, targetY = 0;
+    let mouseX = 0, mouseY = 0;
     const windowHalfX = window.innerWidth / 2;
     const windowHalfY = window.innerHeight / 2;
 
     document.addEventListener('mousemove', (event) => {
-        mouseX = (event.clientX - windowHalfX);
-        mouseY = (event.clientY - windowHalfY);
+        mouseX = (event.clientX - windowHalfX) * 0.001;
+        mouseY = (event.clientY - windowHalfY) * 0.001;
     });
+
+    // O CÉREBRO: Checa qual página tá aberta e define as novas coordenadas
+    function checkCurrentSection() {
+        if (!boombox) return;
+        const home = document.getElementById('home').style.display;
+        const search = document.getElementById('search-section').style.display;
+        const rede = document.getElementById('network-section').style.display;
+        const album = document.getElementById('album-view-section').style.display;
+
+        if (album === 'block') {
+            // TELA DO ÁLBUM: Vai pro alto e pra direita
+            targetPos.set(4, 1.5, -4);
+            targetRot.set(0.2, -0.5, 0.1);
+            baseScale = 0.5; // Fica um pouco maior
+        } else if (rede === 'block') {
+            // COMUNIDADE: Viaja cruzando a tela pra esquerda
+            targetPos.set(-4, -0.5, -3);
+            targetRot.set(0, 0.5, -0.1);
+            baseScale = 0.45;
+        } else if (search === 'block' && home === 'none') {
+            // BUSCA/EXPLORAR: Fica escondido mais lá no fundo
+            targetPos.set(3, -2, -5);
+            targetRot.set(-0.3, 0.2, 0);
+            baseScale = 0.35;
+        } else {
+            // HOME: Posição padrão
+            targetPos.set(3.5, -1, -3);
+            targetRot.set(0, -0.2, 0);
+            baseScale = 0.4;
+        }
+    }
+
+    // Roda a checagem a cada 200ms
+    setInterval(checkCurrentSection, 200);
+
+    const playBtn = document.getElementById('player-play-btn');
 
     function animate() {
         requestAnimationFrame(animate);
-        targetX = mouseX * 0.001;
-        targetY = mouseY * 0.001;
-
-        if (disco) {
-            disco.rotation.y += 0.002; 
-            disco.rotation.x += 0.05 * (targetY - disco.rotation.x);
-        }
 
         if (boombox) {
-            boombox.rotation.y += 0.05 * (targetX - boombox.rotation.y);
-            boombox.rotation.x += 0.05 * (targetY - boombox.rotation.x);
-            boombox.position.y = -1 + Math.sin(Date.now() * 0.002) * 0.1; 
+            // 1. TRANSIÇÃO DE POSIÇÃO SMOOTH (Lerp)
+            boombox.position.x += (targetPos.x - boombox.position.x) * 0.05;
+            let floatY = targetPos.y + Math.sin(Date.now() * 0.002) * 0.1; // Mantém a flutuação natural
+            boombox.position.y += (floatY - boombox.position.y) * 0.05;
+            boombox.position.z += (targetPos.z - boombox.position.z) * 0.05;
+
+            // 2. TRANSIÇÃO DE ROTAÇÃO + PARALLAX DO MOUSE
+            boombox.rotation.x += ((targetRot.x + mouseY) - boombox.rotation.x) * 0.05;
+            boombox.rotation.y += ((targetRot.y + mouseX) - boombox.rotation.y) * 0.05;
+            boombox.rotation.z += (targetRot.z - boombox.rotation.z) * 0.05;
+
+            // 3. EFEITO DE PULSAR (BATER NA MÚSICA)
+            let currentScale = baseScale;
+            // Checa se o ícone do botão virou "pause", ou seja, a música tá tocando!
+            if (playBtn && playBtn.classList.contains('ph-pause-circle')) {
+                // Matemática de onda senoidal pra simular batida do grave
+                let pulse = Math.abs(Math.sin(Date.now() * 0.005)) * 0.03; 
+                currentScale += pulse;
+            }
+
+            // Aplica a escala suavemente pra não dar engasgo
+            boombox.scale.x += (currentScale - boombox.scale.x) * 0.2;
+            boombox.scale.y += (currentScale - boombox.scale.y) * 0.2;
+            boombox.scale.z += (currentScale - boombox.scale.z) * 0.2;
         }
 
         renderer.render(scene, camera);
