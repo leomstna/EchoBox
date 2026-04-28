@@ -38,6 +38,35 @@ const itemsPerPage = 12;
 
 const API_BASE_URL = 'https://api-musicbox-m275.onrender.com';
 
+// --- CONTROLE MODO LEVE (ALTERAÇÃO 2) ---
+const toggleLightMode = document.getElementById('toggle-light-mode');
+if(toggleLightMode) {
+    toggleLightMode.checked = localStorage.getItem('echo_light_mode') === 'true';
+    toggleLightMode.addEventListener('change', (e) => {
+        localStorage.setItem('echo_light_mode', e.target.checked);
+        window.location.reload(); // Recarrega pra aplicar/tirar o script do 3D
+    });
+}
+
+// --- FUNÇÃO GLOBAL DE EMPTY STATE (ALTERAÇÃO 3) ---
+const getEmptyStateHTML = () => {
+    return `
+        <div style="text-align: center; width: 100%; padding: 30px 0; opacity: 0.6;">
+            <i class="ph ph-vinyl-record" style="font-size: 3.5rem; margin-bottom: 10px; color: #aaa;"></i>
+            <p style="font-size: 0.9rem; margin-bottom: 15px; color: #ccc;">Nenhuma obra na estante.</p>
+            <button class="btn-ghost go-explore-btn" style="font-size: 0.8rem; border: 1px solid #444; padding: 6px 16px; border-radius: 20px; background: rgba(255,255,255,0.05);">Explorar Catálogo</button>
+        </div>
+    `;
+};
+const bindEmptyStateButton = (container) => {
+    container.querySelectorAll('.go-explore-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            modal.style.display = 'none'; publicModal.style.display = 'none';
+            showSection('search-section');
+        });
+    });
+};
+
 const scrollObserver = new IntersectionObserver((entries) => {
     let delay = 0;
     entries.forEach(entry => {
@@ -51,7 +80,6 @@ const scrollObserver = new IntersectionObserver((entries) => {
 
 document.querySelectorAll('.scroll-trigger').forEach(el => scrollObserver.observe(el));
 
-// --- LÓGICA DE ROTAS E SCROLL SMOOTH BLINDADA ---
 const sectionsMap = {
     '': 'home',
     '#home': 'home',
@@ -66,21 +94,13 @@ const showSection = (id, updateHash = true) => {
     const isHomeOrExplore = (id === 'home' || id === 'search-section');
     const isCurrentlyOnHomeOrExplore = (document.getElementById('home').style.display !== 'none');
 
-    // Navegação suave se estiver transitando apenas entre Home e Explorar
     if (isHomeOrExplore && isCurrentlyOnHomeOrExplore) {
-        if (id === 'search-section') {
-            document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' });
-        } else {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-        if(updateHash) {
-            const hash = (id === 'home') ? '#home' : '#explorar';
-            history.pushState(null, null, hash); // Muda a URL sem quebrar a tela
-        }
+        if (id === 'search-section') { document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' }); } 
+        else { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        if(updateHash) { history.pushState(null, null, (id === 'home') ? '#home' : '#explorar'); }
         return;
     }
 
-    // Transição com tela preta para outras seções
     overlay.style.display = 'flex'; void overlay.offsetWidth; overlay.style.opacity = '1';
 
     setTimeout(() => {
@@ -89,11 +109,8 @@ const showSection = (id, updateHash = true) => {
         if (isHomeOrExplore) { 
             document.getElementById('home').style.display = 'block'; 
             document.getElementById('search-section').style.display = 'block';
-            if (id === 'search-section') {
-                setTimeout(() => document.getElementById('search-section').scrollIntoView({ behavior: 'instant' }), 50);
-            } else {
-                window.scrollTo({ top: 0, behavior: 'instant' });
-            }
+            if (id === 'search-section') { setTimeout(() => document.getElementById('search-section').scrollIntoView({ behavior: 'instant' }), 50); } 
+            else { window.scrollTo({ top: 0, behavior: 'instant' }); }
         } else {
             document.getElementById(id).style.display = 'block';
             window.scrollTo({ top: 0, behavior: 'instant' });
@@ -104,8 +121,7 @@ const showSection = (id, updateHash = true) => {
             history.pushState(null, null, hash);
         }
 
-        overlay.style.opacity = '0'; 
-        setTimeout(() => { overlay.style.display = 'none'; }, 300);
+        overlay.style.opacity = '0'; setTimeout(() => { overlay.style.display = 'none'; }, 300);
     }, 300);
 };
 
@@ -115,18 +131,15 @@ window.addEventListener('load', () => {
     showSection(sectionId, false);
 });
 
-// Só dispara pelo "Voltar/Avançar" do navegador
 window.addEventListener('hashchange', () => {
     const sectionId = sectionsMap[window.location.hash] || 'home';
     showSection(sectionId, false);
 });
 
-// Botões da NAV
 document.getElementById('link-home').addEventListener('click', (e) => { e.preventDefault(); showSection('home'); });
 document.getElementById('link-explorar').addEventListener('click', (e) => { e.preventDefault(); showSection('search-section'); });
 document.getElementById('back-to-explore').addEventListener('click', () => showSection('search-section'));
 
-// --- FILTROS E SLIDERS ---
 const minSlider = document.getElementById('filter-year-min');
 const maxSlider = document.getElementById('filter-year-max');
 const minValText = document.getElementById('year-min-val');
@@ -136,43 +149,24 @@ const useYearFilter = document.getElementById('use-year-filter');
 const sliderWrapper = document.getElementById('slider-wrapper');
 
 function updateSlider() {
-    let min = parseInt(minSlider.min);
-    let max = parseInt(minSlider.max);
-    let val1 = parseInt(minSlider.value);
-    let val2 = parseInt(maxSlider.value);
-    let percent1 = ((val1 - min) / (max - min)) * 100;
-    let percent2 = ((val2 - min) / (max - min)) * 100;
-    sliderFill.style.left = percent1 + "%";
-    sliderFill.style.width = (percent2 - percent1) + "%";
+    let min = parseInt(minSlider.min); let max = parseInt(minSlider.max);
+    let val1 = parseInt(minSlider.value); let val2 = parseInt(maxSlider.value);
+    let percent1 = ((val1 - min) / (max - min)) * 100; let percent2 = ((val2 - min) / (max - min)) * 100;
+    sliderFill.style.left = percent1 + "%"; sliderFill.style.width = (percent2 - percent1) + "%";
 }
 
 if(minSlider && maxSlider) {
-    minSlider.addEventListener('input', () => {
-        if (parseInt(minSlider.value) > parseInt(maxSlider.value) - 1) minSlider.value = parseInt(maxSlider.value) - 1;
-        minValText.innerText = minSlider.value; updateSlider();
-    });
-
-    maxSlider.addEventListener('input', () => {
-        if (parseInt(maxSlider.value) < parseInt(minSlider.value) + 1) maxSlider.value = parseInt(minSlider.value) + 1;
-        maxValText.innerText = maxSlider.value; updateSlider();
-    });
+    minSlider.addEventListener('input', () => { if (parseInt(minSlider.value) > parseInt(maxSlider.value) - 1) minSlider.value = parseInt(maxSlider.value) - 1; minValText.innerText = minSlider.value; updateSlider(); });
+    maxSlider.addEventListener('input', () => { if (parseInt(maxSlider.value) < parseInt(minSlider.value) + 1) maxSlider.value = parseInt(minSlider.value) + 1; maxValText.innerText = maxSlider.value; updateSlider(); });
     updateSlider();
 
     useYearFilter.addEventListener('change', (e) => {
-        if (e.target.checked) {
-            sliderWrapper.style.opacity = '1'; sliderWrapper.style.pointerEvents = 'auto';
-        } else {
-            sliderWrapper.style.opacity = '0.3'; sliderWrapper.style.pointerEvents = 'none';
-        }
+        if (e.target.checked) { sliderWrapper.style.opacity = '1'; sliderWrapper.style.pointerEvents = 'auto'; } 
+        else { sliderWrapper.style.opacity = '0.3'; sliderWrapper.style.pointerEvents = 'none'; }
     });
 }
 
-// --- PLAYER DE MÚSICA YOUTUBE ---
-let ytPlayer = null;
-let isPlayerReady = false;
-let currentTrackId = null;
-let progressInterval = null;
-let currentPlayBtnUI = null;
+let ytPlayer = null; let isPlayerReady = false; let currentTrackId = null; let progressInterval = null; let currentPlayBtnUI = null;
 
 const globalPlayer = document.getElementById('global-player');
 const pPlayBtn = document.getElementById('player-play-btn');
@@ -195,17 +189,14 @@ window.onYouTubeIframeAPIReady = () => {
     });
 };
 
-const tag = document.createElement('script');
-tag.src = "https://www.youtube.com/iframe_api";
-const firstScriptTag = document.getElementsByTagName('script')[0];
-firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+const tag = document.createElement('script'); tag.src = "https://www.youtube.com/iframe_api";
+const firstScriptTag = document.getElementsByTagName('script')[0]; firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
 function onPlayerStateChange(event) {
     if (event.data === YT.PlayerState.PLAYING) {
         pPlayBtn.classList.replace('ph-play-circle', 'ph-pause-circle');
         if (currentPlayBtnUI) { currentPlayBtnUI.classList.remove('ph-spinner'); currentPlayBtnUI.classList.add('ph-pause-circle'); }
-        clearInterval(progressInterval);
-        progressInterval = setInterval(updateProgressBar, 500);
+        clearInterval(progressInterval); progressInterval = setInterval(updateProgressBar, 500);
     } else if (event.data === YT.PlayerState.PAUSED) {
         pPlayBtn.classList.replace('ph-pause-circle', 'ph-play-circle');
         if (currentPlayBtnUI) currentPlayBtnUI.classList.replace('ph-pause-circle', 'ph-play-circle');
@@ -213,18 +204,15 @@ function onPlayerStateChange(event) {
     } else if (event.data === YT.PlayerState.ENDED) {
         pPlayBtn.classList.replace('ph-pause-circle', 'ph-play-circle');
         if (currentPlayBtnUI) currentPlayBtnUI.classList.replace('ph-pause-circle', 'ph-play-circle');
-        clearInterval(progressInterval);
-        pBarFill.style.width = '0%'; pTimeCurr.innerText = '0:00';
+        clearInterval(progressInterval); pBarFill.style.width = '0%'; pTimeCurr.innerText = '0:00';
     }
 }
 
 function updateProgressBar() {
     if(!ytPlayer || !ytPlayer.getDuration) return;
-    const duration = ytPlayer.getDuration();
-    const current = ytPlayer.getCurrentTime();
+    const duration = ytPlayer.getDuration(); const current = ytPlayer.getCurrentTime();
     if(duration > 0) {
-        const progress = (current / duration) * 100;
-        pBarFill.style.width = `${progress}%`;
+        pBarFill.style.width = `${(current / duration) * 100}%`;
         let curMins = Math.floor(current / 60); let curSecs = Math.floor(current % 60);
         pTimeCurr.innerText = `${curMins}:${curSecs < 10 ? '0'+curSecs : curSecs}`;
         let durMins = Math.floor(duration / 60); let durSecs = Math.floor(duration % 60);
@@ -233,43 +221,28 @@ function updateProgressBar() {
 }
 
 if(volSlider) volSlider.addEventListener('input', (e) => { if(isPlayerReady) ytPlayer.setVolume(e.target.value * 100); });
-
 if(document.getElementById('progress-bar-bg')) {
     document.getElementById('progress-bar-bg').addEventListener('click', (e) => {
         if(!isPlayerReady || !currentTrackId) return;
-        const rect = e.target.getBoundingClientRect(); const percent = (e.clientX - rect.left) / rect.width;
-        ytPlayer.seekTo(ytPlayer.getDuration() * percent, true);
+        const rect = e.target.getBoundingClientRect(); ytPlayer.seekTo(ytPlayer.getDuration() * ((e.clientX - rect.left) / rect.width), true);
     });
 }
-
 if(pPlayBtn) {
     pPlayBtn.addEventListener('click', () => {
-        if(isPlayerReady && currentTrackId) {
-            if(ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
-            else ytPlayer.playVideo();
-        }
+        if(isPlayerReady && currentTrackId) { if(ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) ytPlayer.pauseVideo(); else ytPlayer.playVideo(); }
     });
 }
 
 const animateStars = (starArray, targetIndex) => {
-    starArray.forEach((s) => {
-        s.classList.remove('star-animate', 'star-explode');
-        s.style.color = '#444';
-        s.classList.replace('ph-fill', 'ph');
-    });
-    
+    starArray.forEach((s) => { s.classList.remove('star-animate', 'star-explode'); s.style.color = '#444'; s.classList.replace('ph-fill', 'ph'); });
     for(let i = 0; i <= targetIndex; i++) {
         setTimeout(() => {
-            const s = starArray[i];
-            s.style.color = '#fff';
-            s.classList.replace('ph', 'ph-fill');
-            if (i === 4 && targetIndex === 4) s.classList.add('star-explode');
-            else s.classList.add('star-animate');
+            const s = starArray[i]; s.style.color = '#fff'; s.classList.replace('ph', 'ph-fill');
+            if (i === 4 && targetIndex === 4) s.classList.add('star-explode'); else s.classList.add('star-animate');
         }, i * 80); 
     }
 };
 
-// --- ÁLBUM VIEW ---
 const loadAlbumView = async (album) => {
     showSection('album-view-section', false);
     document.getElementById('album-view-cover').src = album.image;
@@ -278,9 +251,7 @@ const loadAlbumView = async (album) => {
     
     const mediaTypeText = document.getElementById('album-view-media-type');
     const originalType = album.type || 'album';
-    if (originalType === 'single') mediaTypeText.innerText = 'Single';
-    else if (originalType === 'ep') mediaTypeText.innerText = 'EP';
-    else mediaTypeText.innerText = 'Álbum';
+    if (originalType === 'single') mediaTypeText.innerText = 'Single'; else if (originalType === 'ep') mediaTypeText.innerText = 'EP'; else mediaTypeText.innerText = 'Álbum';
 
     const trackContainer = document.getElementById('tracklist-container');
     trackContainer.innerHTML = '<p class="pulse-text">Buscando faixas<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span></p>';
@@ -288,37 +259,22 @@ const loadAlbumView = async (album) => {
     let warningText = document.getElementById('album-rating-warning');
     if (!warningText) {
         const starsContainer = document.getElementById('album-view-stars').parentElement;
-        warningText = document.createElement('div');
-        warningText.id = 'album-rating-warning';
-        
-        warningText.style.marginTop = '15px';
-        warningText.style.padding = '12px 15px';
-        warningText.style.borderRadius = '10px';
-        warningText.style.background = 'rgba(255, 255, 255, 0.05)';
-        warningText.style.border = '1px solid rgba(255, 255, 255, 0.1)';
-        warningText.style.display = 'flex';
-        warningText.style.gap = '10px';
-        warningText.style.alignItems = 'flex-start';
-        warningText.style.maxWidth = '420px';
-
+        warningText = document.createElement('div'); warningText.id = 'album-rating-warning';
+        warningText.style.cssText = 'margin-top: 15px; padding: 12px 15px; border-radius: 10px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); display: flex; gap: 10px; align-items: flex-start; max-width: 420px;';
         warningText.innerHTML = `
             <i class="ph ph-info" style="color: #aaa; font-size: 1.2rem; margin-top: 2px;"></i>
             <div>
                 <p style="color:#fff; font-size:0.75rem; font-weight:600; margin-bottom: 4px;">Avaliação Rápida</p>
                 <p style="color:#aaa; font-size:0.65rem; line-height: 1.4;">A nota dada aqui será distribuída para todas as faixas. Para uma curadoria precisa, avalie as músicas individualmente abaixo.</p>
-            </div>
-        `;
+            </div>`;
         starsContainer.parentElement.appendChild(warningText);
     }
 
     try {
         let url = `https://itunes.apple.com/lookup?id=${album.id}&entity=song`;
-        if (originalType === 'single' || !album.id || isNaN(album.id)) {
-            url = `https://itunes.apple.com/search?term=${encodeURIComponent(album.name + ' ' + album.artist)}&entity=song&limit=25`;
-        }
+        if (originalType === 'single' || !album.id || isNaN(album.id)) url = `https://itunes.apple.com/search?term=${encodeURIComponent(album.name + ' ' + album.artist)}&entity=song&limit=25`;
 
-        const res = await fetch(url);
-        const data = await res.json();
+        const res = await fetch(url); const data = await res.json();
         let tracks = data.results.filter(t => t.wrapperType === 'track');
         if (originalType === 'single' || isNaN(album.id)) tracks = tracks.filter(t => (t.collectionName && t.collectionName.includes(album.name)) || (t.trackName && t.trackName.includes(album.name)));
 
@@ -327,54 +283,35 @@ const loadAlbumView = async (album) => {
             const docSnap = await getDoc(doc(db, "users", currentUser.uid, "ratings", String(album.id)));
             if(docSnap.exists()) {
                 if (docSnap.data().tracks) savedData = docSnap.data().tracks;
-                
                 const overallRating = docSnap.data().rating || 0;
-                const albumStars = Array.from(document.querySelectorAll('#album-view-stars i'));
-                albumStars.forEach((s, i) => {
-                    if (i < overallRating) { s.style.color = '#fff'; s.classList.replace('ph', 'ph-fill'); } 
-                    else { s.style.color = '#444'; s.classList.replace('ph-fill', 'ph'); }
+                Array.from(document.querySelectorAll('#album-view-stars i')).forEach((s, i) => {
+                    if (i < overallRating) { s.style.color = '#fff'; s.classList.replace('ph', 'ph-fill'); } else { s.style.color = '#444'; s.classList.replace('ph-fill', 'ph'); }
                 });
             } else {
-                const albumStars = Array.from(document.querySelectorAll('#album-view-stars i'));
-                albumStars.forEach((s) => { s.style.color = '#444'; s.classList.replace('ph-fill', 'ph'); });
+                Array.from(document.querySelectorAll('#album-view-stars i')).forEach(s => { s.style.color = '#444'; s.classList.replace('ph-fill', 'ph'); });
             }
         }
         
         const albumStarsArray = Array.from(document.querySelectorAll('#album-view-stars i'));
         albumStarsArray.forEach((star, index) => {
-            const newStar = star.cloneNode(true);
-            star.parentNode.replaceChild(newStar, star);
-            
+            const newStar = star.cloneNode(true); star.parentNode.replaceChild(newStar, star);
             newStar.addEventListener('click', async () => {
                 if(!currentUser) return alert('Faça login para avaliar.');
                 const currentStarsNodes = Array.from(document.querySelectorAll('#album-view-stars i'));
-                
                 const isAlreadyRated = currentStarsNodes[index].classList.contains('ph-fill') && (index === 4 || !currentStarsNodes[index+1]?.classList.contains('ph-fill'));
                 const finalRating = isAlreadyRated ? 0 : index + 1;
 
                 animateStars(currentStarsNodes, finalRating - 1);
                 
                 tracks.forEach(track => {
-                    const tId = String(track.trackId);
-                    savedData[tId] = savedData[tId] || { comment: '' };
-                    savedData[tId].rating = finalRating;
-                    
+                    const tId = String(track.trackId); savedData[tId] = savedData[tId] || { comment: '' }; savedData[tId].rating = finalRating;
                     const trackStarsContainer = document.querySelector(`.track-stars[data-track="${tId}"]`);
-                    if(trackStarsContainer) {
-                        const tNodes = Array.from(trackStarsContainer.querySelectorAll('i'));
-                        animateStars(tNodes, finalRating - 1);
-                    }
+                    if(trackStarsContainer) animateStars(Array.from(trackStarsContainer.querySelectorAll('i')), finalRating - 1);
                 });
 
                 const docRef = doc(db, "users", currentUser.uid, "ratings", String(album.id));
-                if(finalRating === 0) {
-                    await deleteDoc(docRef);
-                } else {
-                    await setDoc(docRef, {
-                        id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: finalRating, timestamp: new Date(), type: originalType,
-                        tracks: savedData
-                    }, { merge: true });
-                }
+                if(finalRating === 0) await deleteDoc(docRef);
+                else await setDoc(docRef, { id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: finalRating, timestamp: new Date(), type: originalType, tracks: savedData }, { merge: true });
             });
         });
         
@@ -382,65 +319,33 @@ const loadAlbumView = async (album) => {
         if(tracks.length === 0) { trackContainer.innerHTML = '<p style="color:#aaa;">Nenhuma faixa individual encontrada para este registro.</p>'; return; }
 
         tracks.forEach((track, index) => {
-            const tId = String(track.trackId);
-            const myTrackData = savedData[tId] || { rating: 0, comment: '' };
-            
-            const div = document.createElement('div');
-            div.className = 'track-row liquid-glass scroll-trigger'; 
+            const tId = String(track.trackId); const myTrackData = savedData[tId] || { rating: 0, comment: '' };
+            const div = document.createElement('div'); div.className = 'track-row liquid-glass scroll-trigger'; 
             div.innerHTML = `
                 <div class="track-info">
-                    <span style="color:#666; font-size:0.8rem; width:15px;">${index + 1}</span>
-                    <i class="ph ph-play-circle play-btn"></i>
-                    <div class="track-info-text">
-                        <div class="t-name">${track.trackName}</div>
-                        <div style="color:#888; font-size:0.7rem;">${album.artist}</div>
-                    </div>
+                    <span style="color:#666; font-size:0.8rem; width:15px;">${index + 1}</span><i class="ph ph-play-circle play-btn"></i>
+                    <div class="track-info-text"><div class="t-name">${track.trackName}</div><div style="color:#888; font-size:0.7rem;">${album.artist}</div></div>
                 </div>
                 <div class="track-actions">
-                    <div class="stars track-stars" data-track="${tId}">
-                        ${[1,2,3,4,5].map(n => `<i class="${n <= myTrackData.rating ? 'ph-fill' : 'ph'} ph-star" style="color: ${n <= myTrackData.rating ? '#fff' : '#444'}"></i>`).join('')}
-                    </div>
+                    <div class="stars track-stars" data-track="${tId}">${[1,2,3,4,5].map(n => `<i class="${n <= myTrackData.rating ? 'ph-fill' : 'ph'} ph-star" style="color: ${n <= myTrackData.rating ? '#fff' : '#444'}"></i>`).join('')}</div>
                     <textarea class="track-comment custom-scroll" placeholder="Suas notas (máx 150 letras)..." data-track="${tId}" maxlength="150">${myTrackData.comment}</textarea>
-                </div>
-            `;
-            trackContainer.appendChild(div);
-            scrollObserver.observe(div); 
+                </div>`;
+            trackContainer.appendChild(div); scrollObserver.observe(div); 
 
             const playBtn = div.querySelector('.play-btn');
             playBtn.addEventListener('click', async () => {
                 if(!isPlayerReady) return alert("O reprodutor está iniciando, aguarde um momento.");
                 globalPlayer.style.display = 'flex';
-                
-                if (currentTrackId === tId) {
-                    if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
-                    else ytPlayer.playVideo();
-                } else {
-                    if (currentPlayBtnUI) {
-                        currentPlayBtnUI.classList.remove('ph-spinner');
-                        currentPlayBtnUI.classList.add('ph-play-circle');
-                        currentPlayBtnUI.classList.remove('ph-pause-circle');
-                    }
-                    currentPlayBtnUI = playBtn;
-                    playBtn.classList.replace('ph-play-circle', 'ph-spinner');
-                    playBtn.classList.remove('ph-pause-circle');
-                    
+                if (currentTrackId === tId) { if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) ytPlayer.pauseVideo(); else ytPlayer.playVideo(); } 
+                else {
+                    if (currentPlayBtnUI) { currentPlayBtnUI.classList.remove('ph-spinner', 'ph-pause-circle'); currentPlayBtnUI.classList.add('ph-play-circle'); }
+                    currentPlayBtnUI = playBtn; playBtn.classList.replace('ph-play-circle', 'ph-spinner'); playBtn.classList.remove('ph-pause-circle');
                     try {
-                        const searchUrl = `${API_BASE_URL}/yt-search?track=${encodeURIComponent(track.trackName)}&artist=${encodeURIComponent(album.artist)}`;
-                        const ytRes = await fetch(searchUrl);
+                        const ytRes = await fetch(`${API_BASE_URL}/yt-search?track=${encodeURIComponent(track.trackName)}&artist=${encodeURIComponent(album.artist)}`);
                         const ytData = await ytRes.json();
-                        
-                        if(ytData.videoId) {
-                            currentTrackId = tId;
-                            ytPlayer.loadVideoById(ytData.videoId);
-                            pTitle.innerText = track.trackName; pArtist.innerText = album.artist; pCover.src = album.image;
-                        } else {
-                            alert("Faixa não encontrada no YouTube Music.");
-                            playBtn.classList.replace('ph-spinner', 'ph-play-circle');
-                        }
-                    } catch(e) {
-                        alert("Erro ao conectar com o servidor musical.");
-                        playBtn.classList.replace('ph-spinner', 'ph-play-circle');
-                    }
+                        if(ytData.videoId) { currentTrackId = tId; ytPlayer.loadVideoById(ytData.videoId); pTitle.innerText = track.trackName; pArtist.innerText = album.artist; pCover.src = album.image; } 
+                        else { alert("Faixa não encontrada no YouTube Music."); playBtn.classList.replace('ph-spinner', 'ph-play-circle'); }
+                    } catch(e) { alert("Erro ao conectar com o servidor musical."); playBtn.classList.replace('ph-spinner', 'ph-play-circle'); }
                 }
             });
 
@@ -448,34 +353,20 @@ const loadAlbumView = async (album) => {
             stars.forEach((star, sIndex) => {
                 star.addEventListener('click', async () => {
                     if(!currentUser) return alert('Faça login.');
-                    
                     const isAlreadyRated = stars[sIndex].classList.contains('ph-fill') && (sIndex === 4 || !stars[sIndex+1]?.classList.contains('ph-fill'));
                     const finalRating = isAlreadyRated ? 0 : sIndex + 1;
-                    
                     animateStars(stars, finalRating - 1);
 
-                    savedData[tId] = savedData[tId] || { comment: '' };
-                    savedData[tId].rating = finalRating;
+                    savedData[tId] = savedData[tId] || { comment: '' }; savedData[tId].rating = finalRating;
 
                     let sum = 0; let count = 0;
-                    Object.values(savedData).forEach(t => {
-                        if (t.rating && t.rating > 0) { sum += t.rating; count++; }
-                    });
+                    Object.values(savedData).forEach(t => { if (t.rating && t.rating > 0) { sum += t.rating; count++; } });
                     const avgRating = count > 0 ? Math.round(sum / count) : 0;
-
-                    const albumStarsNodes = Array.from(document.querySelectorAll('#album-view-stars i'));
-                    animateStars(albumStarsNodes, avgRating - 1);
+                    animateStars(Array.from(document.querySelectorAll('#album-view-stars i')), avgRating - 1);
 
                     const docRef = doc(db, "users", currentUser.uid, "ratings", String(album.id));
-                    
-                    if (avgRating === 0 && count === 0) {
-                        await deleteDoc(docRef);
-                    } else {
-                        await setDoc(docRef, {
-                            id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: avgRating, timestamp: new Date(), type: originalType,
-                            tracks: savedData
-                        }, { merge: true });
-                    }
+                    if (avgRating === 0 && count === 0) await deleteDoc(docRef);
+                    else await setDoc(docRef, { id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: avgRating, timestamp: new Date(), type: originalType, tracks: savedData }, { merge: true });
                 });
             });
 
@@ -484,39 +375,55 @@ const loadAlbumView = async (album) => {
                 clearTimeout(timeout);
                 timeout = setTimeout(async () => {
                     if(!currentUser) return;
-                    const currentStars = Array.from(div.querySelectorAll('.track-stars .ph-fill')).length;
-                    
-                    savedData[tId] = savedData[tId] || { rating: 0 };
-                    savedData[tId].comment = e.target.value;
-
-                    await setDoc(doc(db, "users", currentUser.uid, "ratings", String(album.id)), {
-                        id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', timestamp: new Date(), type: originalType,
-                        tracks: savedData
-                    }, { merge: true });
+                    savedData[tId] = savedData[tId] || { rating: 0 }; savedData[tId].comment = e.target.value;
+                    await setDoc(doc(db, "users", currentUser.uid, "ratings", String(album.id)), { id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', timestamp: new Date(), type: originalType, tracks: savedData }, { merge: true });
                 }, 1000);
             });
         });
     } catch(e) { trackContainer.innerHTML = '<p style="color:red;">Erro de conexão com o catálogo musical.</p>'; }
 };
 
-// --- BUSCA E FEED ---
+// --- RENDERIZAR EM ALTA NA HOME (ALTERAÇÃO 1) ---
+const renderHomeTrending = (data) => {
+    const homeGrid = document.getElementById('home-trending-grid');
+    if(!homeGrid) return;
+    homeGrid.innerHTML = '';
+    
+    // Pega os 12 primeiros pra home
+    data.slice(0, 12).forEach((album, i) => {
+        const div = document.createElement('div');
+        div.className = 'rated-album-mini liquid-glass';
+        div.style.minWidth = '140px'; div.style.padding = '10px'; div.style.borderRadius = '10px';
+        div.style.animationDelay = `${i * 0.05}s`;
+        div.style.cursor = 'pointer';
+        div.innerHTML = `
+            <img src="${album.image}" style="width: 100%; height: 120px; border-radius: 6px; object-fit: cover; margin-bottom: 8px;">
+            <p style="font-size: 0.85rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600;" title="${album.name}">${album.name}</p>
+            <p style="font-size: 0.7rem; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${album.artist}</p>
+        `;
+        div.addEventListener('click', () => loadAlbumView(album));
+        homeGrid.appendChild(div);
+    });
+};
+
 const loadTrending = async () => {
     loadingText.innerHTML = 'Buscando registros<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span>';
     loadingText.style.display = 'block'; albumGrid.innerHTML = ''; document.getElementById('pagination-controls').style.display = 'none';
-    
     let timeoutAlert = setTimeout(() => { if(renderToast) renderToast.classList.add('show'); }, 3000);
 
     try {
         const response = await fetch(`${API_BASE_URL}/trending`);
-        clearTimeout(timeoutAlert);
-        if(renderToast) renderToast.classList.remove('show');
+        clearTimeout(timeoutAlert); if(renderToast) renderToast.classList.remove('show');
         const data = await response.json();
         loadingText.style.display = 'none';
         if (!data || data.length === 0) { albumGrid.innerHTML = '<p style="text-align:center; color:#666;">Nenhum lançamento encontrado.</p>'; return; }
-        currentAlbums = data; currentPage = 1; renderPage();
+        
+        currentAlbums = data; currentPage = 1; 
+        renderPage(); // Renderiza na aba Explorar
+        renderHomeTrending(data); // Renderiza na aba Home
+
     } catch (error) { 
-        clearTimeout(timeoutAlert);
-        if(renderToast) renderToast.classList.remove('show');
+        clearTimeout(timeoutAlert); if(renderToast) renderToast.classList.remove('show');
         loadingText.style.display = 'none'; albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333;">Conexão falhou.</p>'; 
     }
 };
@@ -526,60 +433,38 @@ const performSearch = async () => {
     if (!rawQuery) { loadTrending(); return; }
 
     loadingText.innerHTML = 'Buscando registros<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span>';
-    loadingText.style.display = 'block';
-    albumGrid.innerHTML = ''; 
-    document.getElementById('pagination-controls').style.display = 'none';
-
+    loadingText.style.display = 'block'; albumGrid.innerHTML = ''; document.getElementById('pagination-controls').style.display = 'none';
     let timeoutAlert = setTimeout(() => { if(renderToast) renderToast.classList.add('show'); }, 3000);
 
     try {
         const selectedType = document.querySelector('input[name="search-type"]:checked').value;
-        let fetchUrl = `${API_BASE_URL}/search?q=${encodeURIComponent(rawQuery)}&type=${selectedType}`;
-        
-        const response = await fetch(fetchUrl);
-        clearTimeout(timeoutAlert);
-        if(renderToast) renderToast.classList.remove('show');
+        const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(rawQuery)}&type=${selectedType}`);
+        clearTimeout(timeoutAlert); if(renderToast) renderToast.classList.remove('show');
 
         if (!response.ok) throw new Error('A API devolveu um erro.');
-
-        let data = await response.json();
-        loadingText.style.display = 'none';
+        let data = await response.json(); loadingText.style.display = 'none';
         
-        if (data.error || !data || data.length === 0) { 
-            albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registro encontrado.</p>'; 
-            return; 
-        }
+        if (data.error || !data || data.length === 0) { albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registro encontrado.</p>'; return; }
 
-        const useYear = document.getElementById('use-year-filter').checked;
-        if (useYear) {
-            const minYear = parseInt(minSlider.value) || 0;
-            const maxYear = parseInt(maxSlider.value) || 9999;
-            data = data.filter(album => {
-                const year = parseInt(album.year);
-                if (isNaN(year)) return true;
-                return year >= minYear && year <= maxYear;
-            });
+        if (document.getElementById('use-year-filter').checked) {
+            const minYear = parseInt(minSlider.value) || 0; const maxYear = parseInt(maxSlider.value) || 9999;
+            data = data.filter(album => { const year = parseInt(album.year); return isNaN(year) ? true : (year >= minYear && year <= maxYear); });
         }
 
         if (data.length === 0) { albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registro encontrado nesta faixa de anos.</p>'; return; }
-
         currentAlbums = data; currentPage = 1; renderPage();
     } catch (error) { 
-        clearTimeout(timeoutAlert);
-        if(renderToast) renderToast.classList.remove('show');
-        loadingText.style.display = 'none'; 
-        albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333; width:100%;">A conexão falhou. Tente novamente.</p>'; 
+        clearTimeout(timeoutAlert); if(renderToast) renderToast.classList.remove('show');
+        loadingText.style.display = 'none'; albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333; width:100%;">A conexão falhou. Tente novamente.</p>'; 
     }
 };
 
 searchBtn.addEventListener('click', performSearch);
 searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
-
 document.querySelectorAll('input[name="search-type"]').forEach(radio => { radio.addEventListener('change', performSearch); });
-minSlider.addEventListener('change', performSearch);
-maxSlider.addEventListener('change', performSearch);
-useYearFilter.addEventListener('change', performSearch);
+minSlider.addEventListener('change', performSearch); maxSlider.addEventListener('change', performSearch); useYearFilter.addEventListener('change', performSearch);
 
+// --- FEED DA COMUNIDADE FOCADO EM CONTEÚDO (ALTERAÇÃO 5) ---
 const loadFriendsFeed = async () => {
     if(!currentUser) return;
     const feed = document.getElementById('friends-feed');
@@ -591,19 +476,11 @@ const loadFriendsFeed = async () => {
 
         let allActivities = [];
         for(const friendDoc of friendsSnap.docs) {
-            const friendId = friendDoc.id;
-            const friendProf = await getDoc(doc(db, "users", friendId));
-            const pData = friendProf.data() || {};
-            
+            const friendId = friendDoc.id; const friendProf = await getDoc(doc(db, "users", friendId)); const pData = friendProf.data() || {};
             const ratingsSnap = await getDocs(collection(db, "users", friendId, "ratings"));
             ratingsSnap.forEach(rDoc => {
                 const rData = rDoc.data();
-                if(rData.timestamp) {
-                    allActivities.push({
-                        friendName: pData.name || 'Anônimo', friendPfp: pData.photoURL || 'https://placehold.co/40x40/1a1a1a/888888?text=U',
-                        timeMs: rData.timestamp.toMillis ? rData.timestamp.toMillis() : 0, ...rData
-                    });
-                }
+                if(rData.timestamp) allActivities.push({ friendName: pData.name || 'Anônimo', friendPfp: pData.photoURL || 'https://placehold.co/40x40/1a1a1a/888888?text=U', timeMs: rData.timestamp.toMillis ? rData.timestamp.toMillis() : 0, ...rData });
             });
         }
 
@@ -616,34 +493,39 @@ const loadFriendsFeed = async () => {
         recentActs.forEach(act => {
             const overallRating = act.rating || 0;
             const originalType = act.type || 'album';
-            let typeLabel = 'Álbum';
-            if (originalType === 'single') typeLabel = 'Single';
-            else if (originalType === 'ep') typeLabel = 'EP';
+            let typeLabel = 'Álbum'; if (originalType === 'single') typeLabel = 'Single'; else if (originalType === 'ep') typeLabel = 'EP';
+
+            let highlightComment = '';
+            if(act.tracks) {
+                const tracksWithComments = Object.values(act.tracks).filter(t => t.comment && t.comment.trim() !== '');
+                if(tracksWithComments.length > 0) highlightComment = tracksWithComments[0].comment;
+            }
 
             const div = document.createElement('div');
             div.className = 'feed-item liquid-glass scroll-trigger'; 
             div.style.marginBottom = '15px'; div.style.borderRadius = '12px';
             
-            let highlightComment = '';
-            if(act.tracks) {
-                const tracksWithComments = Object.values(act.tracks).filter(t => t.comment && t.comment.trim() !== '');
-                if(tracksWithComments.length > 0) highlightComment = `<p style="font-style:italic; color:#aaa; font-size:0.8rem; margin-top:5px;">"${tracksWithComments[0].comment}"</p>`;
-            }
-
             div.innerHTML = `
-                <div class="pfp-container-mini"><img src="${act.friendPfp}"></div>
-                <div style="flex:1;">
-                    <p style="font-size:0.8rem; color:#888;"><b>${act.friendName}</b> avaliou um ${typeLabel}:</p>
-                    <h4 style="color:#fff; margin:5px 0; cursor:pointer;" class="feed-title">${act.name} <span style="color:#aaa; font-weight:normal; font-size:0.8rem;">- ${act.artist}</span></h4>
-                    <p style="color:#fff; font-size:1rem; text-shadow: 0 0 10px rgba(255,255,255,0.5);">${'★'.repeat(overallRating)}${'<span style="color:#444; text-shadow:none;">' + '☆'.repeat(5 - overallRating) + '</span>'}</p>
-                    ${highlightComment}
+                <div style="display: flex; gap: 15px; width: 100%;">
+                    <div class="pfp-container-mini" style="flex-shrink: 0;"><img src="${act.friendPfp}"></div>
+                    <div style="flex:1; min-width: 0;">
+                        <p style="font-size:0.75rem; color:#888;"><b>${act.friendName}</b> avaliou um ${typeLabel}:</p>
+                        
+                        <div style="display: flex; gap: 15px; align-items: flex-start; margin-top: 10px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
+                            <img src="${act.image}" class="cover" data-id="open-album" title="Abrir Álbum" style="width: 70px; height: 70px; border-radius: 6px; cursor: pointer; flex-shrink: 0;">
+                            
+                            <div style="flex: 1;">
+                                <h4 style="color:#fff; margin: 0 0 5px 0; cursor:pointer; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" class="feed-title">${act.name} <span style="color:#aaa; font-weight:normal; font-size:0.8rem;">- ${act.artist}</span></h4>
+                                <p style="color:#fff; font-size:1.1rem; text-shadow: 0 0 10px rgba(255,255,255,0.3); margin-bottom: 8px;">${'★'.repeat(overallRating)}${'<span style="color:#444; text-shadow:none;">' + '☆'.repeat(5 - overallRating) + '</span>'}</p>
+                                ${highlightComment ? `<p style="color:#ddd; font-size:0.85rem; font-style: italic; line-height: 1.4; border-left: 2px solid #555; padding-left: 10px;">"${highlightComment}"</p>` : ''}
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <img src="${act.image}" class="cover" data-id="open-album" title="Abrir Álbum">
             `;
             div.querySelector('.cover').addEventListener('click', () => loadAlbumView(act));
             div.querySelector('.feed-title').addEventListener('click', () => loadAlbumView(act));
-            feed.appendChild(div);
-            scrollObserver.observe(div); 
+            feed.appendChild(div); scrollObserver.observe(div); 
         });
     } catch(e) { feed.innerHTML = '<p style="color:red;">Erro ao puxar o feed.</p>'; }
 };
@@ -654,22 +536,16 @@ const renderUsers = (usersList) => {
     if (usersList.length === 0) { usersGrid.innerHTML = '<p style="color:#aaa;">Nenhum usuário encontrado.</p>'; return; }
 
     usersList.forEach(userObj => {
-        const data = userObj.data;
-        const uid = userObj.id;
-        const userCard = document.createElement('div');
-        userCard.className = 'user-card liquid-glass scroll-trigger'; 
+        const data = userObj.data; const uid = userObj.id;
+        const userCard = document.createElement('div'); userCard.className = 'user-card liquid-glass scroll-trigger'; 
         userCard.innerHTML = `
             <div class="user-info-click" style="display:flex; align-items:center; gap:10px; width: 100%;">
                 <div class="pfp-container-mini"><img src="${data.photoURL || 'https://placehold.co/50x50/1a1a1a/888888?text=U'}"></div>
-                <div>
-                    <h4 class="glow-text" style="color:#fff;">${data.name || 'Anônimo'}</h4>
-                    <p style="font-size:0.7rem; color:#aaa;">${data.bio ? data.bio.substring(0, 30) + '...' : 'Sem biografia'}</p>
-                </div>
+                <div><h4 class="glow-text" style="color:#fff;">${data.name || 'Anônimo'}</h4><p style="font-size:0.7rem; color:#aaa;">${data.bio ? data.bio.substring(0, 30) + '...' : 'Sem biografia'}</p></div>
             </div>
             <button class="btn-follow" data-id="${uid}">Seguir</button>
         `;
-        usersGrid.appendChild(userCard);
-        scrollObserver.observe(userCard); 
+        usersGrid.appendChild(userCard); scrollObserver.observe(userCard); 
         userCard.querySelector('.user-info-click').addEventListener('click', () => openPublicProfile(uid, data));
     });
 
@@ -688,11 +564,9 @@ const renderUsers = (usersList) => {
 
 document.getElementById('link-rede').addEventListener('click', async (e) => {
     e.preventDefault(); showSection('network-section'); loadFriendsFeed();
-    const usersGrid = document.getElementById('users-grid');
-    usersGrid.innerHTML = '<p class="pulse-text">Buscando usuários...</p>';
+    const usersGrid = document.getElementById('users-grid'); usersGrid.innerHTML = '<p class="pulse-text">Buscando usuários...</p>';
     try {
-        const usersSnap = await getDocs(collection(db, "users"));
-        allUsersData = [];
+        const usersSnap = await getDocs(collection(db, "users")); allUsersData = [];
         usersSnap.forEach(docSnap => { if(currentUser && docSnap.id === currentUser.uid) return; allUsersData.push({ id: docSnap.id, data: docSnap.data() }); });
         if (allUsersData.length === 0) usersGrid.innerHTML = '<p style="color:#aaa;">Você é o único usuário no momento.</p>'; else renderUsers(allUsersData);
     } catch (err) { usersGrid.innerHTML = '<p style="color:#ff3333;">Falha ao acessar dados.</p>'; }
@@ -701,8 +575,7 @@ document.getElementById('link-rede').addEventListener('click', async (e) => {
 if(document.getElementById('user-search-input')) {
     document.getElementById('user-search-input').addEventListener('input', (e) => {
         const term = e.target.value.toLowerCase();
-        const filtered = allUsersData.filter(u => (u.data.name || "").toLowerCase().includes(term));
-        renderUsers(filtered);
+        renderUsers(allUsersData.filter(u => (u.data.name || "").toLowerCase().includes(term)));
     });
 }
 
@@ -715,14 +588,11 @@ const openPublicProfile = async (uid, userData) => {
     container.innerHTML = '<p style="color: #888; font-size: 0.8rem;">Buscando obras...</p>';
     try {
         const snap = await getDocs(collection(db, "users", uid, "ratings"));
-        if (snap.empty) { container.innerHTML = '<p style="color: #444; font-size: 0.8rem;">Nenhuma obra avaliada.</p>'; return; }
+        if (snap.empty) { container.innerHTML = getEmptyStateHTML(); bindEmptyStateButton(container); return; }
         container.innerHTML = ''; let animDelay = 0;
         snap.forEach((docSnap) => {
-            const data = docSnap.data();
-            const originalType = data.type || 'album';
-            let typeLabel = 'Álbum';
-            if (originalType === 'single') typeLabel = 'Single';
-            else if (originalType === 'ep') typeLabel = 'EP';
+            const data = docSnap.data(); const originalType = data.type || 'album';
+            let typeLabel = 'Álbum'; if (originalType === 'single') typeLabel = 'Single'; else if (originalType === 'ep') typeLabel = 'EP';
 
             const div = document.createElement('div'); div.className = 'rated-album-mini'; div.style.animationDelay = `${animDelay}s`;
             div.innerHTML = `
@@ -763,14 +633,11 @@ navPfp.addEventListener('click', async () => {
     ratedContainer.innerHTML = '<p style="color: #888; font-size: 0.8rem;">Acessando dados da conta...</p>';
     try {
         const querySnapshot = await getDocs(collection(db, "users", currentUser.uid, "ratings"));
-        if (querySnapshot.empty) { ratedContainer.innerHTML = '<p style="color: #444; font-size: 0.8rem;">Nenhuma obra avaliada.</p>'; return; }
+        if (querySnapshot.empty) { ratedContainer.innerHTML = getEmptyStateHTML(); bindEmptyStateButton(ratedContainer); return; }
         ratedContainer.innerHTML = ''; let animDelay = 0; 
         querySnapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            const originalType = data.type || 'album';
-            let typeLabel = 'Álbum';
-            if (originalType === 'single') typeLabel = 'Single';
-            else if (originalType === 'ep') typeLabel = 'EP';
+            const data = docSnap.data(); const originalType = data.type || 'album';
+            let typeLabel = 'Álbum'; if (originalType === 'single') typeLabel = 'Single'; else if (originalType === 'ep') typeLabel = 'EP';
 
             const div = document.createElement('div'); div.className = 'rated-album-mini'; div.style.animationDelay = `${animDelay}s`;
             div.innerHTML = `
@@ -804,7 +671,6 @@ document.getElementById('edit-pfp-file').addEventListener('change', function(e) 
 });
 
 document.getElementById('close-crop-modal').addEventListener('click', () => { cropModal.style.display = 'none'; if (cropper) cropper.destroy(); });
-
 document.getElementById('save-crop-btn').addEventListener('click', () => {
     if (cropper) {
         const canvas = cropper.getCroppedCanvas({ width: 250, height: 250 });
@@ -825,8 +691,7 @@ document.getElementById('save-profile').addEventListener('click', async () => {
 
 const renderPage = () => {
     albumGrid.innerHTML = '';
-    const start = (currentPage - 1) * itemsPerPage;
-    const pageData = currentAlbums.slice(start, start + itemsPerPage);
+    const start = (currentPage - 1) * itemsPerPage; const pageData = currentAlbums.slice(start, start + itemsPerPage);
 
     if (currentAlbums.length > itemsPerPage) {
         document.getElementById('pagination-controls').style.display = 'flex';
@@ -836,14 +701,9 @@ const renderPage = () => {
     } else { document.getElementById('pagination-controls').style.display = 'none'; }
 
     pageData.forEach(album => {
-        const card = document.createElement('div');
-        card.className = 'album-card liquid-glass scroll-trigger'; 
-        card.style.cursor = 'pointer'; 
-        
+        const card = document.createElement('div'); card.className = 'album-card liquid-glass scroll-trigger'; card.style.cursor = 'pointer'; 
         const originalType = album.type || 'album';
-        let typeLabel = 'Álbum';
-        if (originalType === 'single') typeLabel = 'Single';
-        else if (originalType === 'ep') typeLabel = 'EP';
+        let typeLabel = 'Álbum'; if (originalType === 'single') typeLabel = 'Single'; else if (originalType === 'ep') typeLabel = 'EP';
 
         card.innerHTML = `
             <img src="${album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa'}" alt="Capa">
@@ -851,37 +711,24 @@ const renderPage = () => {
             <div class="album-artist">${album.artist}</div>
             <div class="rating-ui">
                 <span style="font-size: 0.6rem; color: #888; text-transform:uppercase; letter-spacing:1px; border: 1px solid rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px;">${typeLabel}</span>
-                <div class="stars card-stars">
-                    <i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i>
-                </div>
-            </div>
-        `;
-        albumGrid.appendChild(card);
-        scrollObserver.observe(card);
+                <div class="stars card-stars"><i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i></div>
+            </div>`;
+        albumGrid.appendChild(card); scrollObserver.observe(card);
 
-        // CLIQUE PRA ABRIR O ÁLBUM NO CARD INTEIRO
         card.addEventListener('click', () => loadAlbumView(album));
 
         const stars = Array.from(card.querySelectorAll('.card-stars i'));
         stars.forEach((star, index) => {
             star.addEventListener('click', async (e) => {
-                e.stopPropagation(); // ISSO AQUI impede que clicar na estrela abra a tela de músicas junto
-                
+                e.stopPropagation(); 
                 if(!currentUser) return alert('Faça login para avaliar esta obra.'); 
-                
                 const isAlreadyRated = stars[index].classList.contains('ph-fill') && (index === 4 || !stars[index+1]?.classList.contains('ph-fill'));
                 const finalRating = isAlreadyRated ? 0 : index + 1;
-                
                 animateStars(stars, finalRating - 1); 
                 
                 const docRef = doc(db, "users", currentUser.uid, "ratings", String(album.id));
-                if (finalRating === 0) {
-                    await deleteDoc(docRef);
-                } else {
-                    await setDoc(docRef, {
-                        id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: finalRating, timestamp: new Date(), type: originalType
-                    }, { merge: true });
-                }
+                if (finalRating === 0) await deleteDoc(docRef);
+                else await setDoc(docRef, { id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: finalRating, timestamp: new Date(), type: originalType }, { merge: true });
             });
         });
     });
@@ -890,9 +737,4 @@ const renderPage = () => {
 document.getElementById('prev-page').addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderPage(); document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' }); } });
 document.getElementById('next-page').addEventListener('click', () => { if ((currentPage * itemsPerPage) < currentAlbums.length) { currentPage++; renderPage(); document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' }); } });
 
-// Inicia a busca silenciosamente no fundo assim que o site abre
-window.addEventListener('DOMContentLoaded', () => {
-    if (currentAlbums.length === 0) {
-        loadTrending();
-    }
-});
+window.addEventListener('DOMContentLoaded', () => { if (currentAlbums.length === 0) { loadTrending(); } });
