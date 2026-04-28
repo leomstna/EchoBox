@@ -35,6 +35,10 @@ let currentAlbums = [];
 let currentPage = 1;
 const itemsPerPage = 12;
 
+// --- CHAVEADOR DE API (LOCAL OU PRODUÇÃO) ---
+const API_BASE_URL = 'http://127.0.0.1:5000'; // Deixe essa pra testar no seu PC
+// const API_BASE_URL = 'https://api-musicbox-m275.onrender.com'; // Descomente essa quando subir pro Render
+
 const scrollObserver = new IntersectionObserver((entries) => {
     let delay = 0;
     entries.forEach(entry => {
@@ -312,7 +316,7 @@ const loadAlbumView = async (album) => {
                     playBtn.classList.remove('ph-pause-circle');
                     
                     try {
-                        const searchUrl = `https://api-musicbox-m275.onrender.com/yt-search?track=${encodeURIComponent(track.trackName)}&artist=${encodeURIComponent(album.artist)}`;
+                        const searchUrl = `${API_BASE_URL}/yt-search?track=${encodeURIComponent(track.trackName)}&artist=${encodeURIComponent(album.artist)}`;
                         const ytRes = await fetch(searchUrl);
                         const ytData = await ytRes.json();
                         
@@ -370,7 +374,7 @@ const loadTrending = async () => {
     let timeoutAlert = setTimeout(() => { loadingText.innerHTML = 'O servidor Render está acordando da hibernação. Aguenta aí (pode levar até 1 minuto)...'; }, 5000);
 
     try {
-        const response = await fetch(`https://api-musicbox-m275.onrender.com/trending`);
+        const response = await fetch(`${API_BASE_URL}/trending`);
         clearTimeout(timeoutAlert);
         const data = await response.json();
         loadingText.style.display = 'none';
@@ -695,7 +699,7 @@ searchBtn.addEventListener('click', async () => {
 
     try {
         const selectedType = document.querySelector('input[name="search-type"]:checked').value;
-        let fetchUrl = `https://api-musicbox-m275.onrender.com/search?q=${encodeURIComponent(rawQuery)}&type=${selectedType}`;
+        let fetchUrl = `${API_BASE_URL}/search?q=${encodeURIComponent(rawQuery)}&type=${selectedType}`;
         
         const response = await fetch(fetchUrl);
         clearTimeout(timeoutAlert);
