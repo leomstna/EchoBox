@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EchoBox</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
-    <link rel="stylesheet" href="style.css?v=17">
+    <link rel="stylesheet" href="style.css?v=18">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 <body class="site-enter">
     <div id="canvas-3d-container" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none;"></div>
+    
     <div id="page-transition" class="transition-overlay" style="display: none;">
         <div class="pulse-text" style="font-size: 3rem;">
             <span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span>
@@ -242,97 +243,103 @@
     <script>
     const container = document.getElementById('canvas-3d-container');
     const scene = new THREE.Scene();
-    
-    // Configura a câmera
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.z = 5;
 
-    // Fundo transparente pra mesclar com o #050505 do seu CSS
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
     container.appendChild(renderer.domElement);
 
-    // Iluminação caprichada pra destacar o reflexo do plástico do CD
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     scene.add(ambientLight);
-    const pointLight = new THREE.PointLight(0xffffff, 2);
-    pointLight.position.set(2, 3, 4);
+    const pointLight = new THREE.PointLight(0xffffff, 1.5);
+    pointLight.position.set(5, 5, 5);
     scene.add(pointLight);
 
     const loader = new THREE.GLTFLoader();
     let disco, boombox, cdCase;
 
-    // 1. O CD Jewel Case (Central)
+    // Alvos de posição para transições
+    let targets = {
+        cd: { pos: new THREE.Vector3(0, 0, -2), scale: 2.5 },
+        disco: { pos: new THREE.Vector3(-8, 0, -5), scale: 0.5 },
+        boombox: { pos: new THREE.Vector3(8, 0, -5), scale: 0.4 }
+    };
+
     loader.load('./modelos/cd/scene.gltf', (gltf) => {
         cdCase = gltf.scene;
-        cdCase.position.set(0, 0, -2); // Bem no meio
-        cdCase.scale.set(2.5, 2.5, 2.5); // Um pouco maior pra dar destaque
+        cdCase.position.copy(targets.cd.pos);
+        cdCase.scale.set(targets.cd.scale, targets.cd.scale, targets.cd.scale);
         scene.add(cdCase);
     });
 
-    // 2. O Disco de Acetato (Na esquerda)
     loader.load('./modelos/disco/scene.gltf', (gltf) => {
         disco = gltf.scene;
-        disco.position.set(-4, 1.5, -4); 
-        disco.scale.set(0.5, 0.5, 0.5);
+        disco.position.copy(targets.disco.pos);
+        disco.scale.set(targets.disco.scale, targets.disco.scale, targets.disco.scale);
         disco.rotation.x = Math.PI / 3;
         scene.add(disco);
     });
 
-    // 3. O Boombox (Na direita)
     loader.load('./modelos/boombox/scene.gltf', (gltf) => {
         boombox = gltf.scene;
-        boombox.position.set(4, -1.5, -4); 
-        boombox.scale.set(0.4, 0.4, 0.4);
+        boombox.position.copy(targets.boombox.pos);
+        boombox.scale.set(targets.boombox.scale, targets.boombox.scale, targets.boombox.scale);
         scene.add(boombox);
     });
 
-    // Variáveis do Parallax
-    let mouseX = 0;
-    let mouseY = 0;
-    let targetX = 0;
-    let targetY = 0;
+    window.update3DScene = function(sectionId) {
+        if (sectionId === 'home') {
+            targets.cd.pos.set(0, 0, -2); targets.cd.scale = 2.5;
+            targets.disco.pos.set(-10, 2, -5); targets.disco.scale = 0.4;
+            targets.boombox.pos.set(10, -2, -5); targets.boombox.scale = 0.3;
+        } else if (sectionId === 'search-section') {
+            targets.disco.pos.set(0, 0, -2); targets.disco.scale = 1.2;
+            targets.cd.pos.set(10, 2, -5); targets.cd.scale = 1;
+            targets.boombox.pos.set(-10, -2, -5); targets.boombox.scale = 0.3;
+        } else if (sectionId === 'network-section') {
+            targets.boombox.pos.set(0, 0, -2); targets.boombox.scale = 1.0;
+            targets.cd.pos.set(-10, 2, -5); targets.cd.scale = 1;
+            targets.disco.pos.set(10, -2, -5); targets.disco.scale = 0.4;
+        }
+    };
 
-    const windowHalfX = window.innerWidth / 2;
-    const windowHalfY = window.innerHeight / 2;
-
-    // Rastreio do mouse
-    document.addEventListener('mousemove', (event) => {
-        mouseX = (event.clientX - windowHalfX);
-        mouseY = (event.clientY - windowHalfY);
+    let mouseX = 0, mouseY = 0;
+    document.addEventListener('mousemove', (e) => {
+        mouseX = (e.clientX - window.innerWidth / 2) * 0.0005;
+        mouseY = (e.clientY - window.innerHeight / 2) * 0.0005;
     });
 
-    // Loop de animação
     function animate() {
         requestAnimationFrame(animate);
 
-        // Suavização do movimento
-        targetX = mouseX * 0.0008;
-        targetY = mouseY * 0.0008;
+        const lerpSpeed = 0.05;
 
-        // Animação do CD Case (Parallax suave + Rotação de vitrine)
         if (cdCase) {
-            cdCase.rotation.y += 0.005; 
-            cdCase.rotation.x += 0.05 * (targetY - cdCase.rotation.x);
-            cdCase.rotation.z += 0.05 * (targetX * 0.5 - cdCase.rotation.z);
+            cdCase.position.lerp(targets.cd.pos, lerpSpeed);
+            const s = THREE.MathUtils.lerp(cdCase.scale.x, targets.cd.scale, lerpSpeed);
+            cdCase.scale.set(s, s, s);
+            cdCase.rotation.y += 0.005;
+            cdCase.rotation.x += (mouseY - cdCase.rotation.x) * 0.1;
         }
-
-        // Animação dos outros pra não ficarem parados
         if (disco) {
+            disco.position.lerp(targets.disco.pos, lerpSpeed);
+            const s = THREE.MathUtils.lerp(disco.scale.x, targets.disco.scale, lerpSpeed);
+            disco.scale.set(s, s, s);
             disco.rotation.y -= 0.01;
-            disco.position.y += Math.sin(Date.now() * 0.001) * 0.002;
         }
-
         if (boombox) {
-            boombox.rotation.y = targetX;
-            boombox.position.y = -1.5 + Math.cos(Date.now() * 0.001) * 0.1;
+            boombox.position.lerp(targets.boombox.pos, lerpSpeed);
+            const s = THREE.MathUtils.lerp(boombox.scale.x, targets.boombox.scale, lerpSpeed);
+            boombox.scale.set(s, s, s);
+            boombox.rotation.y += (mouseX - boombox.rotation.y) * 0.1;
         }
 
         renderer.render(scene, camera);
     }
     animate();
 
-    // Mantém responsivo
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
