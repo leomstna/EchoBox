@@ -3,6 +3,13 @@
 <head>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EchoBox</title>
@@ -252,7 +259,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
     <script type="module" src="script.js"></script>
 
-<script>
+    <script>
     const container = document.getElementById('canvas-3d-container');
     const scene = new THREE.Scene();
     
@@ -261,18 +268,37 @@
 
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio); 
+    renderer.toneMapping = THREE.ReinhardToneMapping; 
     container.appendChild(renderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+    // --- CONFIGURAÇÃO DO POST-PROCESSING (BRILHO/GLOW) ---
+    const renderScene = new THREE.RenderPass(scene, camera);
+    const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+    bloomPass.threshold = 0.2;
+    bloomPass.strength = 1.8;
+    bloomPass.radius = 1.0;
+
+    const composer = new THREE.EffectComposer(renderer);
+    composer.addPass(renderScene);
+    composer.addPass(bloomPass);
+    // -----------------------------------------------------
+
+    // ILUMINAÇÃO NEON (Ciano/Azul)
+    const ambientLight = new THREE.AmbientLight(0x050505, 1);
     scene.add(ambientLight);
-    const dirLight = new THREE.DirectionalLight(0x88ccff, 1.8);
+    
+    const dirLight = new THREE.DirectionalLight(0x00ffff, 4);
     dirLight.position.set(5, 10, 7.5);
     scene.add(dirLight);
+
+    const rimLight = new THREE.PointLight(0x0000ff, 3);
+    rimLight.position.set(-5, -5, -2);
+    scene.add(rimLight);
 
     const loader = new THREE.GLTFLoader();
     let boombox;
 
-    // FIXADO NO CANTO SUPERIOR DIREITO
     const fixedPosX = 3.5;
     const fixedPosY = 2.2; 
     const fixedPosZ = -4.0;
@@ -290,7 +316,6 @@
 
     let mouseX = 0, mouseY = 0;
     document.addEventListener('mousemove', (e) => {
-        // Reduzi o multiplicador pela metade pra ficar menos sensível
         mouseX = (e.clientX - window.innerWidth / 2) * 0.0003;
         mouseY = (e.clientY - window.innerHeight / 2) * 0.0003;
     });
@@ -301,17 +326,14 @@
         requestAnimationFrame(animate);
 
         if (boombox) {
-            // FLUTUAÇÃO ORGÂNICA (Seno + Cosseno no eixo Y)
             let floatY = fixedPosY + (Math.sin(Date.now() * 0.001) * 0.1) + (Math.cos(Date.now() * 0.0008) * 0.05);
             boombox.position.y = floatY;
 
-            // ROTAÇÃO COM PARALLAX SUAVIZADO (Lerp)
             let targetRotationX = fixedRotX + mouseY;
             let targetRotationY = fixedRotY + mouseX;
             boombox.rotation.x += (targetRotationX - boombox.rotation.x) * 0.05;
             boombox.rotation.y += (targetRotationY - boombox.rotation.y) * 0.05;
 
-            // BATIDA DA MÚSICA (Kick Grave)
             let currentScaleX = baseScale;
             let currentScaleY = baseScale;
             let currentScaleZ = baseScale;
@@ -328,7 +350,7 @@
             boombox.scale.z += (currentScaleZ - boombox.scale.z) * 0.2;
         }
 
-        renderer.render(scene, camera);
+        composer.render(); 
     }
     animate();
 
@@ -336,6 +358,7 @@
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
+        composer.setSize(window.innerWidth, window.innerHeight); 
     });
     </script>
     
