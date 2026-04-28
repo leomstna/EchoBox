@@ -252,32 +252,37 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     container.appendChild(renderer.domElement);
 
-    // Iluminação (coloquei um tom levemente azulado pra combinar com a estética Frutiger Aero)
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    // Iluminação caprichada pra destacar o reflexo do plástico do CD
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     scene.add(ambientLight);
-    const dirLight = new THREE.DirectionalLight(0x88ccff, 1.5);
-    dirLight.position.set(5, 10, 7.5);
-    scene.add(dirLight);
+    const pointLight = new THREE.PointLight(0xffffff, 2);
+    pointLight.position.set(2, 3, 4);
+    scene.add(pointLight);
 
     const loader = new THREE.GLTFLoader();
-    let disco, boombox;
+    let disco, boombox, cdCase;
 
-    // 1. Carrega o Disco de Acetato
-    loader.load('./acetate_disc/scene.gltf', (gltf) => {
+    // 1. O CD Jewel Case (Central)
+    loader.load('./modelos/cd/scene.gltf', (gltf) => {
+        cdCase = gltf.scene;
+        cdCase.position.set(0, 0, -2); // Bem no meio
+        cdCase.scale.set(2.5, 2.5, 2.5); // Um pouco maior pra dar destaque
+        scene.add(cdCase);
+    });
+
+    // 2. O Disco de Acetato (Na esquerda)
+    loader.load('./modelos/disco/scene.gltf', (gltf) => {
         disco = gltf.scene;
-        // Posição: Esquerda, altura média, um pouco para trás
-        disco.position.set(-3.5, 1, -2); 
-        disco.scale.set(0.6, 0.6, 0.6);
-        // Ajusta a rotação inicial pra ele não ficar de lado
-        disco.rotation.x = Math.PI / 4; 
+        disco.position.set(-4, 1.5, -4); 
+        disco.scale.set(0.5, 0.5, 0.5);
+        disco.rotation.x = Math.PI / 3;
         scene.add(disco);
     });
 
-    // 2. Carrega o Boombox
-    loader.load('./bluetooth_music_boombox/scene.gltf', (gltf) => {
+    // 3. O Boombox (Na direita)
+    loader.load('./modelos/boombox/scene.gltf', (gltf) => {
         boombox = gltf.scene;
-        // Posição: Direita, mais pra baixo
-        boombox.position.set(3.5, -1, -3); 
+        boombox.position.set(4, -1.5, -4); 
         boombox.scale.set(0.4, 0.4, 0.4);
         scene.add(boombox);
     });
@@ -302,20 +307,25 @@
         requestAnimationFrame(animate);
 
         // Suavização do movimento
-        targetX = mouseX * 0.001;
-        targetY = mouseY * 0.001;
+        targetX = mouseX * 0.0008;
+        targetY = mouseY * 0.0008;
 
+        // Animação do CD Case (Parallax suave + Rotação de vitrine)
+        if (cdCase) {
+            cdCase.rotation.y += 0.005; 
+            cdCase.rotation.x += 0.05 * (targetY - cdCase.rotation.x);
+            cdCase.rotation.z += 0.05 * (targetX * 0.5 - cdCase.rotation.z);
+        }
+
+        // Animação dos outros pra não ficarem parados
         if (disco) {
-            disco.rotation.y += 0.002; // Rotação contínua e lenta
-            disco.rotation.x += 0.05 * (targetY - disco.rotation.x);
+            disco.rotation.y -= 0.01;
+            disco.position.y += Math.sin(Date.now() * 0.001) * 0.002;
         }
 
         if (boombox) {
-            // Efeito parallax
-            boombox.rotation.y += 0.05 * (targetX - boombox.rotation.y);
-            boombox.rotation.x += 0.05 * (targetY - boombox.rotation.x);
-            // Flutuação pra dar um charme
-            boombox.position.y = -1 + Math.sin(Date.now() * 0.002) * 0.1; 
+            boombox.rotation.y = targetX;
+            boombox.position.y = -1.5 + Math.cos(Date.now() * 0.001) * 0.1;
         }
 
         renderer.render(scene, camera);
@@ -328,7 +338,6 @@
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
-</script>
-    
+    </script>
 </body>
 </html>
