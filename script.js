@@ -400,7 +400,7 @@ const loadAlbumView = async (album) => {
                     <div class="stars track-stars" data-track="${tId}">
                         ${[1,2,3,4,5].map(n => `<i class="${n <= myTrackData.rating ? 'ph-fill' : 'ph'} ph-star" style="color: ${n <= myTrackData.rating ? '#fff' : '#444'}"></i>`).join('')}
                     </div>
-                    <input type="text" class="track-comment" placeholder="Suas notas sobre a faixa..." value="${myTrackData.comment}" data-track="${tId}">
+                    <textarea class="track-comment custom-scroll" placeholder="Suas notas (máx 150 letras)..." data-track="${tId}" maxlength="150">${myTrackData.comment}</textarea>
                 </div>
             `;
             trackContainer.appendChild(div);
