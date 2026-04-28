@@ -219,6 +219,6 @@ html {
     100% { transform: rotate(360deg); }
 }
 
+/* SUBSTITUI POR ISTO: */
 .ph-spinner { animation: spin 1s linear infinite; }
-@keyframes spin { 100% { transform: rotate(360deg); } }
 .cropper-container { border-radius: 8px; }
