@@ -438,25 +438,58 @@ const getGridSkeletons = () => Array(8).fill('<div class="skeleton skel-card"></
 const loadTrending = async () => {
     isSearchMode = false;
     loadingText.style.display = 'none'; 
-    albumGrid.innerHTML = getGridSkeletons(); 
     document.getElementById('top-result-wrapper').style.display = 'none';
     document.getElementById('pagination-controls').style.display = 'none';
-    let timeoutAlert = setTimeout(() => { if(renderToast) renderToast.classList.add('show'); }, 3000);
+    
+    // SISTEMA DE CACHE: Tenta carregar do disco instantaneamente
+    const cachedTrending = localStorage.getItem('echo_trending_cache');
+    if (cachedTrending) {
+        try {
+            const data = JSON.parse(cachedTrending);
+            currentAlbums = data; 
+            currentPage = 1; 
+            renderPage(); 
+            renderHomeTrending(data);
+        } catch(e) {
+            console.error("Erro ao ler cache", e);
+            albumGrid.innerHTML = getGridSkeletons(); 
+        }
+    } else {
+        albumGrid.innerHTML = getGridSkeletons(); 
+    }
+
+    // Só mostra o aviso de "Hibernação" se não tiver nada no cache pra mostrar na tela
+    let timeoutAlert = setTimeout(() => { 
+        if(renderToast && !cachedTrending) renderToast.classList.add('show'); 
+    }, 3000);
 
     try {
         const response = await fetch(`${API_BASE_URL}/trending`);
-        clearTimeout(timeoutAlert); if(renderToast) renderToast.classList.remove('show');
+        clearTimeout(timeoutAlert); 
+        if(renderToast) renderToast.classList.remove('show');
+        
         const data = await response.json();
         
-        if (!data || data.length === 0) { albumGrid.innerHTML = '<p style="text-align:center; color:#666;">Nenhum lançamento encontrado.</p>'; return; }
+        // SALVA NO CACHE PARA A PRÓXIMA VISITA FICAR INSTANTÂNEA
+        localStorage.setItem('echo_trending_cache', JSON.stringify(data));
         
-        currentAlbums = data; currentPage = 1; 
+        if (!data || data.length === 0) { 
+            if(!cachedTrending) albumGrid.innerHTML = '<p style="text-align:center; color:#666;">Nenhum lançamento encontrado.</p>'; 
+            return; 
+        }
+        
+        // Atualiza a tela com os dados mais recentes por cima do cache
+        currentAlbums = data; 
+        currentPage = 1; 
         renderPage(); 
         renderHomeTrending(data); 
 
     } catch (error) { 
-        clearTimeout(timeoutAlert); if(renderToast) renderToast.classList.remove('show');
-        albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333;">Conexão falhou.</p>'; 
+        clearTimeout(timeoutAlert); 
+        if(renderToast) renderToast.classList.remove('show');
+        if(!cachedTrending) {
+            albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333;">Conexão falhou.</p>'; 
+        }
     }
 };
 
