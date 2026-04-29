@@ -47,16 +47,8 @@ if(toggleLightMode) {
     toggleLightMode.checked = localStorage.getItem('echo_light_mode') === 'true';
     toggleLightMode.addEventListener('change', (e) => {
         localStorage.setItem('echo_light_mode', e.target.checked);
-        const canvasContainer = document.getElementById('canvas-3d-container');
-        if (e.target.checked) {
-            if(canvasContainer) {
-                canvasContainer.style.opacity = '0';
-                canvasContainer.style.transform = 'translateY(50px)';
-                setTimeout(() => { canvasContainer.style.display = 'none'; }, 800);
-            }
-        } else {
-            window.location.reload(); 
-        }
+        // Avisa o HTML pra sumir só com o rádio, sem piscar a tela
+        window.echoLightMode = e.target.checked;
     });
 }
 
@@ -92,13 +84,12 @@ const scrollObserver = new IntersectionObserver((entries) => {
 
 document.querySelectorAll('.scroll-trigger').forEach(el => scrollObserver.observe(el));
 
-// AQUI TÁ A ANIMAÇÃO DO REACT: Observer contínuo de subida e descida
+// AQUI: OBSERVER DA TRACKLIST QUE ANIMA NA SUBIDA E DESCIDA
 const trackObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             entry.target.classList.add('track-animated');
         } else {
-            // Remove a classe pra reanimar na próxima vez que aparecer na tela
             entry.target.classList.remove('track-animated');
         }
     });
@@ -139,7 +130,7 @@ const showSection = (id, updateHash = true) => {
     }, 300);
 };
 
-// CONTROLE DE REFRESH COM MEMÓRIA (Impede que F5 volte pra Home se estiver num álbum)
+// CONTROLE DO F5 (Recarrega na página do álbum se tiver)
 window.addEventListener('load', () => { 
     const currentHash = window.location.hash; 
     if (currentHash === '#album') {
@@ -350,7 +341,6 @@ const animateStars = (starArray, targetIndex) => {
 const loadAlbumView = async (album) => {
     showSection('album-view-section', false);
     
-    // NOVIDADE: Salva o álbum na sessão e muda o Link lá em cima para #album
     sessionStorage.setItem('echo_current_album', JSON.stringify(album));
     history.pushState(null, null, '#album');
 
@@ -465,10 +455,7 @@ const loadAlbumView = async (album) => {
 
         tracks.forEach((track, index) => {
             const tId = String(track.trackId); const myTrackData = savedData[tId] || { rating: 0, comment: '' };
-            const div = document.createElement('div'); 
-            // CLASSE INJETADA AQUI PARA O EFEITO REACT DO OBSERVER
-            div.className = 'track-row liquid-glass track-trigger'; 
-            
+            const div = document.createElement('div'); div.className = 'track-row liquid-glass track-trigger'; 
             div.innerHTML = `
                 <div class="track-info">
                     <span style="color:#666; font-size:0.8rem; width:15px;">${index + 1}</span><i class="ph ph-play-circle play-btn"></i>
@@ -478,8 +465,7 @@ const loadAlbumView = async (album) => {
                     <div class="stars track-stars" data-track="${tId}">${[1,2,3,4,5].map(n => `<i class="${n <= myTrackData.rating ? 'ph-fill' : 'ph'} ph-star" style="color: ${n <= myTrackData.rating ? '#fff' : '#444'}"></i>`).join('')}</div>
                     <textarea class="track-comment custom-scroll" placeholder="Suas notas (máx 150 letras)..." data-track="${tId}" maxlength="150">${myTrackData.comment}</textarea>
                 </div>`;
-            trackContainer.appendChild(div); 
-            trackObserver.observe(div); // OBSERVA PRA FAZER EFEITO CASCADE
+            trackContainer.appendChild(div); trackObserver.observe(div); 
 
             const playBtn = div.querySelector('.play-btn');
             playBtn.addEventListener('click', async () => {
