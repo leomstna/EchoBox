@@ -31,7 +31,6 @@ const searchBtn = document.getElementById('search-btn');
 const searchInput = document.getElementById('search-input');
 const albumGrid = document.getElementById('album-grid');
 const loadingText = document.getElementById('loading-text');
-const renderToast = document.getElementById('render-toast');
 
 let currentUser = null;
 let allUsersData = [];
@@ -157,6 +156,13 @@ window.addEventListener('hashchange', () => {
     } else {
         showSection(sectionsMap[hash] || 'home', false); 
     }
+});
+
+window.addEventListener('popstate', (e) => {
+    if (modal) modal.style.display = 'none';
+    if (publicModal) publicModal.style.display = 'none';
+    if (artistModal) artistModal.style.display = 'none';
+    if (cropModal) cropModal.style.display = 'none';
 });
 
 document.getElementById('link-home').addEventListener('click', (e) => { e.preventDefault(); showSection('home'); });
@@ -678,14 +684,8 @@ const loadTrending = async () => {
         albumGrid.innerHTML = getGridSkeletons();
     }
 
-    let timeoutAlert = setTimeout(() => {
-        if(renderToast && !cachedTrending) renderToast.classList.add('show');
-    }, 3000);
-
     try {
         const response = await fetch(`${API_BASE_URL}/trending`);
-        clearTimeout(timeoutAlert);
-        if(renderToast) renderToast.classList.remove('show');
 
         const data = await response.json();
 
@@ -702,21 +702,15 @@ const loadTrending = async () => {
         renderHomeTrending(data);
 
     } catch (error) {
-        clearTimeout(timeoutAlert);
-        if(renderToast) renderToast.classList.remove('show');
         if(!cachedTrending) {
             albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333;">Conexão falhou.</p>';
         }
     }
 };
 
-// ====================================================================
-// CORREÇÃO: MEMÓRIA DE CACHE LOCAL (ANTI-FLICADA) E ESQUELETOS
-// ====================================================================
 const performSearch = async () => {
     let rawQuery = searchInput.value.trim();
     
-    // Se a pesquisa for vazia, não faz sentido filtrar, trava e volta pras tendências
     if (!rawQuery) { 
         if (isSearchMode) {
             loadTrending(); 
@@ -726,7 +720,6 @@ const performSearch = async () => {
 
     const selectedType = document.querySelector('input[name="search-type"]:checked').value;
 
-    // SE SÓ O FILTRO DE ANO MUDOU, NÃO CHAMA A API, FILTRA LOCAL INSTANTANEAMENTE
     if (rawQuery === lastQuery && selectedType === lastType && lastFetchedData.length > 0) {
         let data = lastFetchedData;
         if (document.getElementById('use-year-filter').checked) {
@@ -751,13 +744,11 @@ const performSearch = async () => {
         return;
     }
 
-    // SE É PESQUISA NOVA, CHAMA A API E BOTA OS SKELETONS BONITINHOS DE VOLTA
     isSearchMode = true;
     lastQuery = rawQuery;
     lastType = selectedType;
     loadingText.style.display = 'none'; 
     
-    // Tira a gambiarra da opacidade e bota a tela de loading braba
     albumGrid.style.opacity = '1';
     albumGrid.style.pointerEvents = 'none';
     albumGrid.innerHTML = getGridSkeletons();
@@ -765,11 +756,8 @@ const performSearch = async () => {
     document.getElementById('top-result-wrapper').style.display = 'none';
     document.getElementById('pagination-controls').style.display = 'none';
 
-    let timeoutAlert = setTimeout(() => { if(renderToast) renderToast.classList.add('show'); }, 3000);
-
     try {
         const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(rawQuery)}&type=${selectedType}`);
-        clearTimeout(timeoutAlert); if(renderToast) renderToast.classList.remove('show');
 
         if (!response.ok) throw new Error('A API devolveu um erro.');
         let data = await response.json(); 
@@ -804,7 +792,6 @@ const performSearch = async () => {
         renderPage();
     } catch (error) { 
         albumGrid.style.pointerEvents = 'auto';
-        clearTimeout(timeoutAlert); if(renderToast) renderToast.classList.remove('show');
         albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333; width:100%;">A conexão falhou. Tente novamente.</p>'; 
     }
 };
@@ -812,7 +799,6 @@ const performSearch = async () => {
 searchBtn.addEventListener('click', performSearch);
 searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
 
-// TRAVA DE SEGURANÇA: Só pesquisa nos botões de rádio se a barra de pesquisa não tiver vazia
 document.querySelectorAll('input[name="search-type"]').forEach(radio => { 
     radio.addEventListener('change', () => {
         if (searchInput.value.trim() !== '') {

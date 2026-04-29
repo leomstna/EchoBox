@@ -20,14 +20,6 @@
         </div>
     </div>
 
-    <div id="render-toast">
-        <div class="toast-spinner"></div>
-        <div style="font-size: 0.85rem;">
-            <p style="color: #fff; font-weight: 600;">Servidor em hibernação</p>
-            <p style="color: #aaa;">Acordando a API... Aguarde uns instantes.</p>
-        </div>
-    </div>
-
     <nav class="pill-nav liquid-glass">
         <div class="logo glow-text">EchoBox</div>
         <div class="nav-links">
@@ -137,7 +129,8 @@
         <div class="album-header liquid-glass scroll-trigger" style="display:flex; gap:30px; padding:30px; border-radius:16px; align-items: flex-start;">
             
             <figure class="interactive-album-figure" id="interactive-album-figure" style="width: 220px; height: 220px; margin: 0; flex-shrink: 0; perspective: 1000px;">
-                <div class="interactive-album-inner" id="interactive-album-inner">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/Compact_disc.svg" class="cd-disc" alt="Mídia Física">
+                <div class="interactive-album-inner" id="interactive-album-inner" style="z-index: 2;">
                     <span class="edge-light"></span>
                     <img id="album-view-cover" class="tilted-card-img" src="" alt="Capa">
                     <img src="./cd-overlay.png" class="tilted-card-overlay" alt="Acrílico">
@@ -207,7 +200,7 @@
         </div>
         <div class="player-controls">
             <div style="display: flex; gap: 20px; align-items: center; justify-content: center; margin-bottom: 5px;">
-                <i id="player-play-btn" class="ph ph-play-circle play-btn" style="color:#fff; font-size: 2.2rem;"></i>
+                <i id="player-play-btn" class="ph ph-play-circle play-btn" style="color:#fff; font-size: 2.2rem;" aria-label="Reproduzir música" role="button" tabindex="0"></i>
             </div>
             <div class="progress-container">
                 <span id="player-time-current" style="width: 35px; text-align: right;">0:00</span>
