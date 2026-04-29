@@ -15,7 +15,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
-    <link rel="stylesheet" href="style.css?v=25">
+    <link rel="stylesheet" href="style.css?v=26">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 <body class="site-enter">
@@ -183,12 +183,15 @@
     </main>
 
     <main id="network-section" class="section-page scroll-trigger" style="display: none;">
-        <h2 class="glow-text scroll-trigger" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">Comunidade</h2>
-        <input type="text" id="user-search-input" class="dark-input liquid-glass scroll-trigger" placeholder="Buscar perfil por nome..." style="max-width: 400px; margin-bottom: 30px;">
+        <h2 class="glow-text scroll-trigger" style="max-width: 1400px; margin: 0 auto 20px auto; padding: 0 5%; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">Comunidade</h2>
+        <div style="max-width: 1400px; margin: 0 auto; padding: 0 5%;">
+            <input type="text" id="user-search-input" class="dark-input liquid-glass scroll-trigger" placeholder="Buscar perfil por nome..." style="max-width: 400px; margin-bottom: 30px; display: block;">
+        </div>
+        
         <div id="users-grid" class="grid-container" style="margin-bottom: 50px;"></div>
 
-        <h2 class="glow-text scroll-trigger" style="margin-top: 50px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">Atividade dos Amigos</h2>
-        <div id="friends-feed" style="max-width: 800px; margin: 0 auto 120px auto;">
+        <h2 class="glow-text scroll-trigger" style="max-width: 1400px; margin: 50px auto 20px auto; padding: 0 5%; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">Atividade dos Amigos</h2>
+        <div id="friends-feed" style="max-width: 1400px; margin: 0 auto 120px auto; padding: 0 5%;">
             <p style="color:#aaa;">As avaliações recentes aparecerão aqui.</p>
         </div>
     </main>
@@ -324,12 +327,12 @@
         </div>
     </div>
 
-    <div style="position: fixed; left: -9999px; bottom: 0; width: 10px; height: 10px; opacity: 0.01; pointer-events: none; z-index: -9999;">
+    <div style="position: fixed; left: 0; bottom: 0; width: 250px; height: 250px; opacity: 0; pointer-events: none; z-index: -9999;">
         <div id="yt-player"></div>
     </div>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
-    <script type="module" src="script.js?v=25"></script>
+    <script type="module" src="script.js?v=26"></script>
 
     <script>
     window.addEventListener('load', () => {
