@@ -70,12 +70,70 @@ textarea.dark-input { resize: none; max-height: 80px; }
 
 .filters-row { position: relative; width: 100%; }
 .range-slider-wrapper { margin-top: 10px; position: relative; }
-.slider-track { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 5px; position: absolute; z-index: 1; pointer-events: none; }
-.slider-fill { height: 100%; background: #fff; border-radius: 5px; position: absolute; z-index: 2; box-shadow: 0 0 10px rgba(255,255,255,0.5); }
 
-.range-slider-wrapper input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; position: absolute; left: 0; background: transparent; pointer-events: none; z-index: 3; margin: 0; }
-.range-slider-wrapper input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #fff; cursor: pointer; pointer-events: auto; box-shadow: 0 0 10px rgba(0,0,0,0.5); border: 2px solid #fff; }
-.range-slider-wrapper input[type=range]::-moz-range-thumb { appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #fff; cursor: pointer; pointer-events: auto; border: 2px solid #fff; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+/* FIX DO SLIDER DE FILTRAGEM DE ANO */
+.slider-track { 
+    width: 100%; 
+    height: 4px; 
+    background: rgba(255,255,255,0.1); 
+    border-radius: 5px; 
+    position: absolute; 
+    top: 50%; 
+    transform: translateY(-50%);
+    z-index: 1; 
+    pointer-events: none; 
+}
+
+.slider-fill { 
+    height: 100%; 
+    background: #fff; 
+    border-radius: 5px; 
+    position: absolute; 
+    z-index: 2; 
+    box-shadow: 0 0 10px rgba(255,255,255,0.5); 
+}
+
+.range-slider-wrapper input[type=range] { 
+    -webkit-appearance: none; 
+    appearance: none; 
+    width: 100%; 
+    position: absolute; 
+    top: 50%; 
+    transform: translateY(-50%);
+    left: 0; 
+    background: transparent; 
+    pointer-events: none; 
+    z-index: 3; 
+    margin: 0; 
+    outline: none;
+}
+
+.range-slider-wrapper input[type=range]::-webkit-slider-runnable-track { background: transparent; border: none; }
+.range-slider-wrapper input[type=range]::-moz-range-track { background: transparent; border: none; }
+
+.range-slider-wrapper input[type=range]::-webkit-slider-thumb { 
+    -webkit-appearance: none; 
+    height: 16px; 
+    width: 16px; 
+    border-radius: 50%; 
+    background: #fff; 
+    cursor: pointer; 
+    pointer-events: auto; 
+    box-shadow: 0 0 10px rgba(0,0,0,0.5); 
+    border: 2px solid #fff; 
+}
+
+.range-slider-wrapper input[type=range]::-moz-range-thumb { 
+    appearance: none; 
+    height: 16px; 
+    width: 16px; 
+    border-radius: 50%; 
+    background: #fff; 
+    cursor: pointer; 
+    pointer-events: auto; 
+    border: 2px solid #fff; 
+    box-shadow: 0 0 10px rgba(0,0,0,0.5); 
+}
 
 .type-options { display: flex; gap: 10px; }
 .type-options input[type="radio"] { display: none; }
@@ -189,31 +247,6 @@ main.section-page { padding-bottom: 120px !important; }
 .skel-mini { width: 140px; height: 180px; border-radius: 10px; flex-shrink: 0; }
 .skel-row { width: 100%; height: 50px; border-radius: 8px; margin-bottom: 10px; }
 
-/* ANIMAÇÃO REACT BITS (PORTADA PRA VANILLA JS) */
-.tracklist-wrapper {
-    position: relative;
-    width: 100%;
-}
-
-#tracklist-container {
-    max-height: 400px;
-    overflow-y: auto;
-    padding-right: 10px;
-    padding-bottom: 20px;
-    position: relative;
-}
-
-.track-trigger {
-    opacity: 0;
-    transform: scale(0.7);
-    transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.track-animated {
-    opacity: 1 !important;
-    transform: scale(1) !important;
-}
-
 /* EFEITO REACT BITS ANIMATED LIST (Vanilla JS + CSS) */
 .tracklist-wrapper {
     position: relative;
@@ -224,7 +257,6 @@ main.section-page { padding-bottom: 120px !important; }
     max-height: 400px;
     overflow-y: auto;
     padding: 10px 10px 20px 0;
-    /* Essa máscara apaga os cantos baseada na transparência, sem usar cores sólidas */
     -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
     mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
 }
