@@ -7,7 +7,7 @@
     
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
-    <link rel="stylesheet" href="style.css?v=39">
+    <link rel="stylesheet" href="style.css?v=40">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 <body class="site-enter">
@@ -95,17 +95,16 @@
                             <span style="color: #aaa; font-size: 0.8rem; text-transform: uppercase;">Filtrar Ano</span>
                         </div>
                         
-                            <div class="range-slider-wrapper" id="slider-wrapper" style="opacity: 0.3; pointer-events: none; flex: 1; margin-top: 0;">
-                                <div class="range-values glow-text" style="font-size: 0.9rem; margin-bottom: 5px; text-align: center;">
-                                    <span id="year-min-val">1900</span> - <span id="year-max-val">2026</span>
+                        <div class="range-slider-wrapper" id="slider-wrapper" style="opacity: 0.3; pointer-events: none; flex: 1; margin-top: 0;">
+                            <div class="range-values glow-text" style="font-size: 0.9rem; margin-bottom: 5px; text-align: center;">
+                                <span id="year-min-val">1900</span> - <span id="year-max-val">2026</span>
+                            </div>
+                            <div style="position: relative; height: 24px; width: 100%;">
+                                <div class="slider-track">
+                                    <div class="slider-fill" id="slider-fill"></div>
                                 </div>
-                                <div style="position: relative; height: 24px; width: 100%;">
-                                    <div class="slider-track">
-                                        <div class="slider-fill" id="slider-fill"></div>
-                                    </div>
-                                    <input type="range" id="filter-year-min" min="1900" max="2026" value="1900">
-                                    <input type="range" id="filter-year-max" min="1900" max="2026" value="2026">
-                                </div>
+                                <input type="range" id="filter-year-min" min="1900" max="2026" value="1900">
+                                <input type="range" id="filter-year-max" min="1900" max="2026" value="2026">
                             </div>
                         </div>
                     </div>
@@ -137,16 +136,13 @@
         
         <div class="album-header liquid-glass scroll-trigger" style="display:flex; gap:30px; padding:30px; border-radius:16px; align-items: flex-start;">
             
-            <div class="interactive-album-wrapper" id="interactive-album-wrapper">
-                <div class="interactive-album-card" id="interactive-album-card">
+            <figure class="interactive-album-figure" id="interactive-album-figure" style="width: 220px; height: 220px; margin: 0; flex-shrink: 0; perspective: 1000px;">
+                <div class="interactive-album-inner" id="interactive-album-inner">
                     <span class="edge-light"></span>
-                    <div class="spotlight-layer"></div>
-                    <div class="interactive-album-inner">
-                        <img id="album-view-cover" src="" alt="Capa do Álbum">
-                    </div>
-                    <img src="./cd-overlay.png" class="cd-overlay-3d" alt="Caixa Acrílica">
+                    <img id="album-view-cover" class="tilted-card-img" src="" alt="Capa">
+                    <img src="./cd-overlay.png" class="tilted-card-overlay" alt="Acrílico">
                 </div>
-            </div>
+            </figure>
 
             <div style="flex: 1;">
                 <p id="album-view-media-type" style="font-size:0.8rem; text-transform:uppercase; letter-spacing:2px; color:#fff; font-weight:700;">Álbum</p>
@@ -348,7 +344,7 @@
     </div>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
-    <script type="module" src="script.js?v=39"></script>
+    <script type="module" src="script.js?v=40"></script>
 
     <script>
     window.addEventListener('load', () => {
@@ -361,9 +357,9 @@
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.z = 5;
 
-            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio); 
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); 
             container.appendChild(renderer.domElement);
 
             const silkVertexShader = `
@@ -401,9 +397,9 @@
 
             const silkUniforms = {
                 uTime: { value: 0 },
-                uColor: { value: new THREE.Color('#0A080C') }, // Sombrio e Elegante
+                uColor: { value: new THREE.Color('#0A080C') }, 
                 uSpeed: { value: 3.0 }, 
-                uScale: { value: 0.5 }, // Ondas super esticadas
+                uScale: { value: 0.5 }, 
                 uOpacity: { value: 1.0 } 
             };
 
