@@ -201,7 +201,7 @@ const pTimeCurr = document.getElementById('player-time-current');
 const pTimeTot = document.getElementById('player-time-total');
 
 // ====================================================================
-// FÍSICA DO ELASTIC SLIDER (AGORA SÓ ESTICA PRA ESQUERDA)
+// FÍSICA DO ELASTIC SLIDER 
 // ====================================================================
 const MAX_OVERFLOW = 50;
 let volValue = 0.5;
@@ -240,7 +240,6 @@ function updateElasticSlider() {
             scaleY = 1 - (Math.abs(volOverflow) / MAX_OVERFLOW) * 0.2;
         }
 
-        // Âncora fixa na direita para esticar macio pra esquerda
         volTrackWrap.style.transform = `scaleX(${scaleX}) scaleY(${scaleY})`;
         volTrackWrap.style.transformOrigin = 'right center';
 
@@ -248,7 +247,6 @@ function updateElasticSlider() {
         let leftScale = volRegion === 'left' && Math.abs(volOverflow) > 5 ? 1.2 : 1;
 
         volIconLeft.style.transform = `translateX(${leftX}px) scale(${leftScale})`;
-        // Ícone da direita fica totalmente estático agora
         volIconRight.style.transform = `translateX(0px) scale(1)`;
     }
     requestAnimationFrame(updateElasticSlider);
@@ -267,12 +265,10 @@ if(volWrapper) {
         let rawValue = (e.clientX - rect.left) / rect.width;
 
         if (rawValue < 0) {
-            // Se puxar abaixo de 0, estica pra esquerda
             volRegion = 'left';
             volOverflow = decay((0 - rawValue) * rect.width, MAX_OVERFLOW);
             volValue = 0;
         } else if (rawValue > 1) {
-            // Se puxar acima de 1, não faz overflow, só trava no 1
             volRegion = 'middle';
             volOverflow = 0;
             volValue = 1;
@@ -302,7 +298,6 @@ if(volWrapper) {
     volRoot.addEventListener('pointerup', handlePointerUp);
     volRoot.addEventListener('pointercancel', handlePointerUp);
 }
-// ====================================================================
 
 pCover.style.cursor = 'pointer';
 pCover.addEventListener('click', () => {
@@ -454,7 +449,6 @@ const loadAlbumView = async (album) => {
 
     const trackContainer = document.getElementById('tracklist-container');
     trackContainer.innerHTML = Array(5).fill('<div class="skeleton skel-row"></div>').join('');
-    trackContainer.scrollTop = 0;
     
     let warningText = document.getElementById('album-rating-warning');
     if (!warningText) {
@@ -617,8 +611,6 @@ const loadAlbumView = async (album) => {
                 }, 1000);
             });
         });
-
-        setTimeout(() => { trackContainer.dispatchEvent(new Event('scroll')); }, 200);
 
     } catch(e) { trackContainer.innerHTML = '<p style="color:red;">Erro de conexão com o catálogo musical.</p>'; }
 };
@@ -1171,49 +1163,86 @@ const renderPage = () => {
 document.getElementById('prev-page').addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderPage(); document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' }); } });
 document.getElementById('next-page').addEventListener('click', () => { if ((currentPage * itemsPerPage) < currentAlbums.length) { currentPage++; renderPage(); document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' }); } });
 
+window.addEventListener('DOMContentLoaded', () => { if (currentAlbums.length === 0) { loadTrending(); } });
+
 // ====================================================================
 // FÍSICA DA CAPA DO ÁLBUM (TILT 3D + SPOTLIGHT + GLOW MOUSE TRACKING)
 // ====================================================================
-const albumWrapper = document.getElementById('interactive-album-wrapper');
-const albumCard = document.getElementById('interactive-album-card');
+const albumFigure = document.getElementById('interactive-album-figure');
+const albumInner = document.getElementById('interactive-album-inner');
 
-if (albumWrapper && albumCard) {
-    albumWrapper.addEventListener('mousemove', (e) => {
-        const rect = albumWrapper.getBoundingClientRect();
+if (albumFigure && albumInner) {
+    let currentRotateX = 0;
+    let currentRotateY = 0;
+    let targetRotateX = 0;
+    let targetRotateY = 0;
+    let currentScale = 1;
+    let targetScale = 1;
+    let isHovering = false;
+
+    const rotateAmplitude = 14;
+    const scaleOnHover = 1.08;
+
+    function lerp(start, end, factor) {
+        return start + (end - start) * factor;
+    }
+
+    function updateTransform() {
+        if (isHovering) {
+            currentRotateX = lerp(currentRotateX, targetRotateX, 0.1);
+            currentRotateY = lerp(currentRotateY, targetRotateY, 0.1);
+            currentScale = lerp(currentScale, targetScale, 0.1);
+        } else {
+            currentRotateX = lerp(currentRotateX, 0, 0.1);
+            currentRotateY = lerp(currentRotateY, 0, 0.1);
+            currentScale = lerp(currentScale, 1, 0.1);
+        }
+
+        albumInner.style.transform = `scale(${currentScale}) rotateX(${currentRotateX}deg) rotateY(${currentRotateY}deg)`;
+        requestAnimationFrame(updateTransform);
+    }
+    updateTransform(); 
+
+    albumFigure.addEventListener('mousemove', (e) => {
+        const rect = albumFigure.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-        
-        // 1. TiltedCard (Física de inclinação 3D)
+
+        const offsetX = x - rect.width / 2;
+        const offsetY = y - rect.height / 2;
+        targetRotateX = (offsetY / (rect.height / 2)) * -rotateAmplitude;
+        targetRotateY = (offsetX / (rect.width / 2)) * rotateAmplitude;
+
+        albumInner.style.setProperty('--mouse-x', `${x}px`);
+        albumInner.style.setProperty('--mouse-y', `${y}px`);
+
         const cx = rect.width / 2;
         const cy = rect.height / 2;
-        const rotateX = ((y - cy) / cy) * -15; // Amplitude X
-        const rotateY = ((x - cx) / cx) * 15;  // Amplitude Y
-        
-        // 2. SpotlightCard (Luz radial mapeando coordenadas px)
-        albumCard.style.setProperty('--mouse-x', `${x}px`);
-        albumCard.style.setProperty('--mouse-y', `${y}px`);
-        
-        // 3. BorderGlow (Trigonometria pra proximidade e ângulo)
         const dx = x - cx;
         const dy = y - cy;
+        
         let kx = Infinity, ky = Infinity;
         if (dx !== 0) kx = cx / Math.abs(dx);
         if (dy !== 0) ky = cy / Math.abs(dy);
         const edge = Math.min(Math.max(1 / Math.min(kx, ky), 0), 1);
-        
+
         let degrees = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
         if (degrees < 0) degrees += 360;
-        
-        albumCard.style.setProperty('--edge-proximity', (edge * 100).toFixed(3));
-        albumCard.style.setProperty('--cursor-angle', `${degrees.toFixed(3)}deg`);
-        
-        // Aplica o Scale Hover e as Rotações na peça inteira
-        albumCard.style.transform = `scale(1.08) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+
+        albumInner.style.setProperty('--edge-proximity', (edge * 100).toFixed(3));
+        albumInner.style.setProperty('--cursor-angle', `${degrees.toFixed(3)}deg`);
     });
 
-    albumWrapper.addEventListener('mouseleave', () => {
-        // Reseta tudo pra posição zero suavemente quando o mouse sai
-        albumCard.style.transform = `scale(1) rotateX(0deg) rotateY(0deg)`;
-        albumCard.style.setProperty('--edge-proximity', '0');
+    albumFigure.addEventListener('mouseenter', () => {
+        isHovering = true;
+        targetScale = scaleOnHover;
+    });
+
+    albumFigure.addEventListener('mouseleave', () => {
+        isHovering = false;
+        targetScale = 1;
+        targetRotateX = 0;
+        targetRotateY = 0;
+        albumInner.style.setProperty('--edge-proximity', '0');
     });
 }
