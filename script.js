@@ -234,7 +234,7 @@ const loadArtistProfile = async (artistName, artistImage) => {
 
 document.getElementById('close-artist-modal').addEventListener('click', () => { artistModal.style.display = 'none'; });
 
-// O HACK DO AUTOPLAY MUTADO FOI INJETADO AQUI PRA NÃO BUGAR NO CHROME
+// O HACK DO AUTOPLAY MUTADO FOI INJETADO AQUI DE NOVO (Obrigatório pro Chrome rodar a API)
 window.onYouTubeIframeAPIReady = () => {
     ytPlayer = new YT.Player('yt-player', {
         height: '250', width: '250', videoId: 'M7lc1UVf-VE',
