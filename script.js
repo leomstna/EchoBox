@@ -1171,4 +1171,49 @@ const renderPage = () => {
 document.getElementById('prev-page').addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderPage(); document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' }); } });
 document.getElementById('next-page').addEventListener('click', () => { if ((currentPage * itemsPerPage) < currentAlbums.length) { currentPage++; renderPage(); document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' }); } });
 
-window.addEventListener('DOMContentLoaded', () => { if (currentAlbums.length === 0) { loadTrending(); } });
+// ====================================================================
+// FÍSICA DA CAPA DO ÁLBUM (TILT 3D + SPOTLIGHT + GLOW MOUSE TRACKING)
+// ====================================================================
+const albumWrapper = document.getElementById('interactive-album-wrapper');
+const albumCard = document.getElementById('interactive-album-card');
+
+if (albumWrapper && albumCard) {
+    albumWrapper.addEventListener('mousemove', (e) => {
+        const rect = albumWrapper.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        // 1. TiltedCard (Física de inclinação 3D)
+        const cx = rect.width / 2;
+        const cy = rect.height / 2;
+        const rotateX = ((y - cy) / cy) * -15; // Amplitude X
+        const rotateY = ((x - cx) / cx) * 15;  // Amplitude Y
+        
+        // 2. SpotlightCard (Luz radial mapeando coordenadas px)
+        albumCard.style.setProperty('--mouse-x', `${x}px`);
+        albumCard.style.setProperty('--mouse-y', `${y}px`);
+        
+        // 3. BorderGlow (Trigonometria pra proximidade e ângulo)
+        const dx = x - cx;
+        const dy = y - cy;
+        let kx = Infinity, ky = Infinity;
+        if (dx !== 0) kx = cx / Math.abs(dx);
+        if (dy !== 0) ky = cy / Math.abs(dy);
+        const edge = Math.min(Math.max(1 / Math.min(kx, ky), 0), 1);
+        
+        let degrees = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
+        if (degrees < 0) degrees += 360;
+        
+        albumCard.style.setProperty('--edge-proximity', (edge * 100).toFixed(3));
+        albumCard.style.setProperty('--cursor-angle', `${degrees.toFixed(3)}deg`);
+        
+        // Aplica o Scale Hover e as Rotações na peça inteira
+        albumCard.style.transform = `scale(1.08) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    });
+
+    albumWrapper.addEventListener('mouseleave', () => {
+        // Reseta tudo pra posição zero suavemente quando o mouse sai
+        albumCard.style.transform = `scale(1) rotateX(0deg) rotateY(0deg)`;
+        albumCard.style.setProperty('--edge-proximity', '0');
+    });
+}
