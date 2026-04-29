@@ -25,6 +25,7 @@ const userMenu = document.getElementById('user-menu');
 const navPfp = document.getElementById('nav-pfp');
 const modal = document.getElementById('profile-modal');
 const publicModal = document.getElementById('public-profile-modal');
+const artistModal = document.getElementById('artist-profile-modal'); // NOVO MODAL
 const cropModal = document.getElementById('crop-modal');
 const searchBtn = document.getElementById('search-btn');
 const searchInput = document.getElementById('search-input');
@@ -41,12 +42,24 @@ let isSearchMode = false;
 
 const API_BASE_URL = 'https://api-musicbox-m275.onrender.com';
 
+// FUNÇÃO DE FADE SUAVE DO RÁDIO 3D
 const toggleLightMode = document.getElementById('toggle-light-mode');
 if(toggleLightMode) {
     toggleLightMode.checked = localStorage.getItem('echo_light_mode') === 'true';
     toggleLightMode.addEventListener('change', (e) => {
         localStorage.setItem('echo_light_mode', e.target.checked);
-        window.location.reload(); 
+        const canvasContainer = document.getElementById('canvas-3d-container');
+        if (e.target.checked) {
+            // FADE OUT SEM REFRESH
+            if(canvasContainer) {
+                canvasContainer.style.opacity = '0';
+                canvasContainer.style.transform = 'translateY(50px)';
+                setTimeout(() => { canvasContainer.style.display = 'none'; }, 800);
+            }
+        } else {
+            // PRA LIGAR ELE PRECISA RENDERIZAR OS MODELOS, ENTÃO DA REFRESH
+            window.location.reload(); 
+        }
     });
 }
 
@@ -171,39 +184,58 @@ pCover.addEventListener('click', () => {
     if (currentAlbumData) {
         if(modal) modal.style.display = 'none';
         if(publicModal) publicModal.style.display = 'none';
+        if(artistModal) artistModal.style.display = 'none';
         loadAlbumView(currentAlbumData);
     }
 });
 
-window.onYouTubeIframeAPIReady = () => {
-    ytPlayer = new YT.Player('yt-player', {
-        height: '1', width: '1', videoId: 'M7lc1UVf-VE',
-        playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'fs': 0, 'origin': window.location.origin, 'enablejsapi': 1 },
-        events: {
-            'onReady': () => { isPlayerReady = true; if(volSlider) ytPlayer.setVolume(volSlider.value * 100); ytPlayer.pauseVideo(); },
-            'onStateChange': onPlayerStateChange
-        }
-    });
+const loadArtistProfile = async (artistName, artistImage) => {
+    artistModal.style.display = 'flex';
+    document.getElementById('artist-profile-name').innerText = artistName;
+    document.getElementById('artist-profile-image').src = artistImage;
+
+    const albumsGrid = document.getElementById('artist-albums-grid');
+    const singlesGrid = document.getElementById('artist-singles-grid');
+    albumsGrid.innerHTML = '<p style="color:#aaa;">Buscando álbuns...</p>';
+    singlesGrid.innerHTML = '<p style="color:#aaa;">Buscando singles...</p>';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(artistName)}&type=artist_works`);
+        const data = await response.json();
+
+        albumsGrid.innerHTML = '';
+        singlesGrid.innerHTML = '';
+
+        const albums = data.filter(d => d.type === 'album');
+        const singles = data.filter(d => d.type === 'single' || d.type === 'ep');
+
+        const renderCards = (list, container) => {
+            if(list.length === 0) { container.innerHTML = '<p style="color:#666; font-size: 0.8rem;">Nada encontrado nesta categoria.</p>'; return; }
+            list.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'rated-album-mini liquid-glass';
+                div.style.flexShrink = '0';
+                div.style.minWidth = '130px';
+                div.style.padding = '10px';
+                div.innerHTML = `
+                    <img src="${item.image}" style="width: 100%; height: 110px; border-radius: 8px; object-fit: cover;">
+                    <p style="font-size: 0.8rem; color: #fff; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px;" title="${item.name}">${item.name}</p>
+                    <p style="font-size: 0.65rem; color: #aaa; text-transform:uppercase; letter-spacing:1px; margin-top: 2px;">${item.type === 'single' ? 'Single' : (item.type === 'ep' ? 'EP' : 'Álbum')}</p>
+                `;
+                div.addEventListener('click', () => { artistModal.style.display = 'none'; loadAlbumView(item); });
+                container.appendChild(div);
+            });
+        };
+
+        renderCards(albums, albumsGrid);
+        renderCards(singles, singlesGrid);
+    } catch (e) {
+        albumsGrid.innerHTML = '<p style="color:red;">Erro ao carregar discografia.</p>';
+        singlesGrid.innerHTML = '';
+    }
 };
 
-const tag = document.createElement('script'); tag.src = "https://www.youtube.com/iframe_api";
-const firstScriptTag = document.getElementsByTagName('script')[0]; firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-function onPlayerStateChange(event) {
-    if (event.data === YT.PlayerState.PLAYING) {
-        pPlayBtn.classList.replace('ph-play-circle', 'ph-pause-circle');
-        if (currentPlayBtnUI) { currentPlayBtnUI.classList.remove('ph-spinner'); currentPlayBtnUI.classList.add('ph-pause-circle'); }
-        clearInterval(progressInterval); progressInterval = setInterval(updateProgressBar, 500);
-    } else if (event.data === YT.PlayerState.PAUSED) {
-        pPlayBtn.classList.replace('ph-pause-circle', 'ph-play-circle');
-        if (currentPlayBtnUI) currentPlayBtnUI.classList.replace('ph-pause-circle', 'ph-play-circle');
-        clearInterval(progressInterval);
-    } else if (event.data === YT.PlayerState.ENDED) {
-        pPlayBtn.classList.replace('ph-pause-circle', 'ph-play-circle');
-        if (currentPlayBtnUI) currentPlayBtnUI.classList.replace('ph-pause-circle', 'ph-play-circle');
-        clearInterval(progressInterval); pBarFill.style.width = '0%'; pTimeCurr.innerText = '0:00';
-    }
-}
+document.getElementById('close-artist-modal').addEventListener('click', () => { artistModal.style.display = 'none'; });
 
 function updateProgressBar() {
     if(!ytPlayer || !ytPlayer.getDuration) return;
@@ -447,12 +479,11 @@ const loadTrending = async () => {
     document.getElementById('top-result-wrapper').style.display = 'none';
     document.getElementById('pagination-controls').style.display = 'none';
 
-    // SISTEMA DE CACHE BLINDADO: Não carrega se for erro gravado sem querer
     const cachedTrending = localStorage.getItem('echo_trending_cache');
     if (cachedTrending) {
         try {
             const data = JSON.parse(cachedTrending);
-            if (Array.isArray(data) && data.length > 0) {
+            if (Array.isArray(data) && data.length > 0 && !data.error) {
                 currentAlbums = data;
                 currentPage = 1;
                 renderPage();
@@ -486,7 +517,6 @@ const loadTrending = async () => {
             return;
         }
 
-        // SALVA NO CACHE SÓ SE FOR DADO VÁLIDO E LIMPO
         localStorage.setItem('echo_trending_cache', JSON.stringify(data));
 
         currentAlbums = data;
@@ -850,43 +880,59 @@ const renderPage = () => {
         itemsToRender = currentAlbums.slice(1);
         
         const originalType = topAlbum.type || 'album';
-        let typeLabel = 'Álbum'; if (originalType === 'single') typeLabel = 'Single'; else if (originalType === 'ep') typeLabel = 'EP';
+        let typeLabel = 'Álbum'; 
+        if (originalType === 'single') typeLabel = 'Single'; 
+        else if (originalType === 'ep') typeLabel = 'EP';
+        else if (originalType === 'artist') typeLabel = 'Artista';
 
         const topCard = document.createElement('div');
         topCard.className = 'top-result-card liquid-glass scroll-trigger';
-        topCard.innerHTML = `
-            <img src="${topAlbum.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa'}" alt="Capa">
-            <div class="top-result-info">
-                <h2 class="glow-text" style="font-size: 2rem; margin-bottom: 5px; line-height: 1.1;">${topAlbum.name}</h2>
-                <div style="color: #aaa; font-size: 1rem; margin-bottom: 15px;">${topAlbum.artist}</div>
-                <div class="rating-ui" style="border: none; justify-content: flex-start; gap: 20px; padding: 0;">
-                    <span style="font-size: 0.7rem; color: #888; text-transform:uppercase; letter-spacing:1px; border: 1px solid rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 10px;">${typeLabel}</span>
-                    <div class="stars card-stars">
-                        <i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i>
+        
+        if (originalType === 'artist') {
+            topCard.innerHTML = `
+                <img src="${topAlbum.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Artista'}" alt="Capa" style="border-radius: 50%;">
+                <div class="top-result-info">
+                    <h2 class="glow-text" style="font-size: 2rem; margin-bottom: 5px; line-height: 1.1;">${topAlbum.name}</h2>
+                    <div style="color: #aaa; font-size: 1rem; margin-bottom: 15px;">Perfil do Artista</div>
+                    <div class="rating-ui" style="border: none; justify-content: flex-start; gap: 20px; padding: 0;">
+                        <span style="font-size: 0.7rem; color: #888; text-transform:uppercase; letter-spacing:1px; border: 1px solid rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 10px;">${typeLabel}</span>
                     </div>
                 </div>
-            </div>
-        `;
+            `;
+            topCard.addEventListener('click', () => loadArtistProfile(topAlbum.name, topAlbum.image));
+        } else {
+            topCard.innerHTML = `
+                <img src="${topAlbum.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa'}" alt="Capa">
+                <div class="top-result-info">
+                    <h2 class="glow-text" style="font-size: 2rem; margin-bottom: 5px; line-height: 1.1;">${topAlbum.name}</h2>
+                    <div style="color: #aaa; font-size: 1rem; margin-bottom: 15px;">${topAlbum.artist}</div>
+                    <div class="rating-ui" style="border: none; justify-content: flex-start; gap: 20px; padding: 0;">
+                        <span style="font-size: 0.7rem; color: #888; text-transform:uppercase; letter-spacing:1px; border: 1px solid rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 10px;">${typeLabel}</span>
+                        <div class="stars card-stars">
+                            <i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i>
+                        </div>
+                    </div>
+                </div>
+            `;
+            topCard.addEventListener('click', (e) => {
+                if(!e.target.closest('.card-stars')) loadAlbumView(topAlbum);
+            });
+            const stars = Array.from(topCard.querySelectorAll('.card-stars i'));
+            stars.forEach((star, index) => {
+                star.addEventListener('click', async (e) => {
+                    e.stopPropagation(); 
+                    if(!currentUser) return alert('Faça login para avaliar esta obra.'); 
+                    animateStars(stars, index); 
+                    const rating = index + 1;
+                    await setDoc(doc(db, "users", currentUser.uid, "ratings", String(topAlbum.id)), {
+                        id: String(topAlbum.id), name: topAlbum.name, artist: topAlbum.artist, image: topAlbum.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: rating, timestamp: new Date(), type: originalType
+                    }, { merge: true });
+                });
+            });
+        }
         
         topResultContainer.appendChild(topCard);
         scrollObserver.observe(topCard);
-
-        topCard.addEventListener('click', (e) => {
-            if(!e.target.closest('.card-stars')) loadAlbumView(topAlbum);
-        });
-
-        const stars = Array.from(topCard.querySelectorAll('.card-stars i'));
-        stars.forEach((star, index) => {
-            star.addEventListener('click', async (e) => {
-                e.stopPropagation(); 
-                if(!currentUser) return alert('Faça login para avaliar esta obra.'); 
-                animateStars(stars, index); 
-                const rating = index + 1;
-                await setDoc(doc(db, "users", currentUser.uid, "ratings", String(topAlbum.id)), {
-                    id: String(topAlbum.id), name: topAlbum.name, artist: topAlbum.artist, image: topAlbum.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: rating, timestamp: new Date(), type: originalType
-                }, { merge: true });
-            });
-        });
     }
 
     const start = (currentPage - 1) * itemsPerPage;
@@ -902,32 +948,48 @@ const renderPage = () => {
     pageData.forEach(album => {
         const card = document.createElement('div'); card.className = 'album-card liquid-glass scroll-trigger'; card.style.cursor = 'pointer'; 
         const originalType = album.type || 'album';
-        let typeLabel = 'Álbum'; if (originalType === 'single') typeLabel = 'Single'; else if (originalType === 'ep') typeLabel = 'EP';
+        let typeLabel = 'Álbum'; 
+        if (originalType === 'single') typeLabel = 'Single'; 
+        else if (originalType === 'ep') typeLabel = 'EP';
+        else if (originalType === 'artist') typeLabel = 'Artista';
 
-        card.innerHTML = `
-            <img src="${album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa'}" alt="Capa" class="capa-click">
-            <div class="album-title glow-text capa-click">${album.name}</div>
-            <div class="album-artist">${album.artist}</div>
-            <div class="rating-ui">
-                <span style="font-size: 0.6rem; color: #888; text-transform:uppercase; letter-spacing:1px; border: 1px solid rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px;">${typeLabel}</span>
-                <div class="stars card-stars"><i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i></div>
-            </div>`;
-        albumGrid.appendChild(card); scrollObserver.observe(card);
+        if (originalType === 'artist') {
+            card.innerHTML = `
+                <img src="${album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Artista'}" alt="Capa" class="capa-click" style="border-radius: 50%; width: 140px; height: 140px; object-fit: cover; margin: 0 auto 15px auto; display: block;">
+                <div class="album-title glow-text capa-click" style="text-align: center;">${album.name}</div>
+                <div style="text-align: center; color: #aaa; font-size: 0.8rem; margin-bottom: 10px;">Perfil do Artista</div>
+                <div style="text-align: center;">
+                    <span style="font-size: 0.6rem; color: #888; text-transform:uppercase; letter-spacing:1px; border: 1px solid rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px;">${typeLabel}</span>
+                </div>
+            `;
+            albumGrid.appendChild(card); scrollObserver.observe(card);
+            card.addEventListener('click', () => loadArtistProfile(album.name, album.image));
+        } else {
+            card.innerHTML = `
+                <img src="${album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa'}" alt="Capa" class="capa-click">
+                <div class="album-title glow-text capa-click">${album.name}</div>
+                <div class="album-artist">${album.artist}</div>
+                <div class="rating-ui">
+                    <span style="font-size: 0.6rem; color: #888; text-transform:uppercase; letter-spacing:1px; border: 1px solid rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px;">${typeLabel}</span>
+                    <div class="stars card-stars"><i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i></div>
+                </div>`;
+            albumGrid.appendChild(card); scrollObserver.observe(card);
 
-        card.addEventListener('click', (e) => {
-            if(!e.target.closest('.card-stars')) loadAlbumView(album);
-        });
-
-        const stars = Array.from(card.querySelectorAll('.card-stars i'));
-        stars.forEach((star, index) => {
-            star.addEventListener('click', async (e) => {
-                e.stopPropagation(); 
-                if(!currentUser) return alert('Faça login para avaliar esta obra.'); 
-                animateStars(stars, index); 
-                const rating = index + 1;
-                await setDoc(doc(db, "users", currentUser.uid, "ratings", String(album.id)), { id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: rating, timestamp: new Date(), type: originalType }, { merge: true });
+            card.addEventListener('click', (e) => {
+                if(!e.target.closest('.card-stars')) loadAlbumView(album);
             });
-        });
+
+            const stars = Array.from(card.querySelectorAll('.card-stars i'));
+            stars.forEach((star, index) => {
+                star.addEventListener('click', async (e) => {
+                    e.stopPropagation(); 
+                    if(!currentUser) return alert('Faça login para avaliar esta obra.'); 
+                    animateStars(stars, index); 
+                    const rating = index + 1;
+                    await setDoc(doc(db, "users", currentUser.uid, "ratings", String(album.id)), { id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: rating, timestamp: new Date(), type: originalType }, { merge: true });
+                });
+            });
+        }
     });
 };
 
