@@ -36,6 +36,7 @@ const renderToast = document.getElementById('render-toast');
 let currentUser = null;
 let allUsersData = [];
 let currentAlbums = [];
+let currentFriends = []; // <-- Memória global dos teus amigos
 let currentPage = 1;
 const itemsPerPage = 12;
 let isSearchMode = false;
@@ -801,6 +802,9 @@ const loadFriendsFeed = async () => {
     } catch(e) { feed.innerHTML = '<p style="color:red;">Erro ao puxar o feed.</p>'; }
 };
 
+// ====================================================================
+// RENDERIZAÇÃO DE USUÁRIOS E BOTÃO DE SEGUIR COM MEMÓRIA GLOBAL
+// ====================================================================
 const renderUsers = (usersList) => {
     const usersGrid = document.getElementById('users-grid');
     usersGrid.innerHTML = '';
@@ -808,6 +812,12 @@ const renderUsers = (usersList) => {
 
     usersList.forEach(userObj => {
         const data = userObj.data; const uid = userObj.id;
+        
+        // Verifica na memória global se tu já segue esse cara
+        const isFollowing = currentFriends.includes(uid);
+        const btnClass = isFollowing ? 'btn-follow following' : 'btn-follow';
+        const btnText = isFollowing ? 'Seguindo' : 'Seguir';
+        
         const userCard = document.createElement('div'); userCard.className = 'user-card liquid-glass scroll-trigger'; 
         userCard.innerHTML = `
             <div class="user-info-click" style="display:flex; align-items:center; gap:10px; flex: 1; min-width: 0;">
@@ -817,7 +827,7 @@ const renderUsers = (usersList) => {
                     <p style="font-size:0.7rem; color:#aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0;">${data.bio ? data.bio : 'Sem biografia'}</p>
                 </div>
             </div>
-            <button class="btn-follow" data-id="${uid}" style="flex-shrink: 0; padding: 6px 16px; margin: 0;">Seguir</button>
+            <button class="${btnClass}" data-id="${uid}" style="flex-shrink: 0; padding: 6px 16px; margin: 0;">${btnText}</button>
         `;
         usersGrid.appendChild(userCard); scrollObserver.observe(userCard); 
         userCard.querySelector('.user-info-click').addEventListener('click', () => openPublicProfile(uid, data));
@@ -829,8 +839,20 @@ const renderUsers = (usersList) => {
             if(!currentUser) return alert("Faça login para adicionar amigos.");
             const targetId = e.target.getAttribute('data-id');
             const followRef = doc(db, "users", currentUser.uid, "friends", targetId);
-            if (e.target.classList.contains('following')) { await deleteDoc(followRef); e.target.classList.remove('following'); e.target.innerText = 'Seguir'; } 
-            else { await setDoc(followRef, { addedAt: new Date() }); e.target.classList.add('following'); e.target.innerText = 'Seguindo'; }
+            
+            if (e.target.classList.contains('following')) { 
+                await deleteDoc(followRef); 
+                e.target.classList.remove('following'); 
+                e.target.innerText = 'Seguir'; 
+                // Remove da memória global
+                currentFriends = currentFriends.filter(id => id !== targetId);
+            } else { 
+                await setDoc(followRef, { addedAt: new Date() }); 
+                e.target.classList.add('following'); 
+                e.target.innerText = 'Seguindo'; 
+                // Adiciona na memória global
+                currentFriends.push(targetId);
+            }
             loadFriendsFeed(); 
         });
     });
@@ -840,6 +862,13 @@ document.getElementById('link-rede').addEventListener('click', async (e) => {
     e.preventDefault(); showSection('network-section'); loadFriendsFeed();
     const usersGrid = document.getElementById('users-grid'); usersGrid.innerHTML = '<p class="pulse-text">Buscando usuários...</p>';
     try {
+        currentFriends = []; // Limpa a memória
+        // Busca quem tu segue antes de desenhar a tela
+        if (currentUser) {
+            const friendsSnap = await getDocs(collection(db, "users", currentUser.uid, "friends"));
+            friendsSnap.forEach(docSnap => currentFriends.push(docSnap.id));
+        }
+        
         const usersSnap = await getDocs(collection(db, "users")); allUsersData = [];
         usersSnap.forEach(docSnap => { if(currentUser && docSnap.id === currentUser.uid) return; allUsersData.push({ id: docSnap.id, data: docSnap.data() }); });
         if (allUsersData.length === 0) usersGrid.innerHTML = '<p style="color:#aaa;">Você é o único usuário no momento.</p>'; else renderUsers(allUsersData);
