@@ -84,6 +84,8 @@
                     <div class="type-options" id="filter-type">
                         <input type="radio" id="type-all" name="search-type" value="all" checked>
                         <label for="type-all" class="btn-ghost">Todos</label>
+                        <input type="radio" id="type-artist" name="search-type" value="artist">
+                        <label for="type-artist" class="btn-ghost">Artista</label>
                         <input type="radio" id="type-album" name="search-type" value="album">
                         <label for="type-album" class="btn-ghost">Álbum</label>
                         <input type="radio" id="type-ep" name="search-type" value="ep">
@@ -247,7 +249,7 @@
                 <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
                     <h3 style="font-size: 1rem; margin-bottom: 10px; color: #aaa;">Top 3 Favoritos <i class="ph-fill ph-heart" style="color: #1ed760; margin-left: 5px;"></i></h3>
                     <div id="user-favorite-albums" style="display: flex; gap: 15px; margin-bottom: 20px;">
-                        </div>
+                    </div>
                 </div>
 
                 <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
@@ -289,7 +291,7 @@
                 <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; text-align: left;">
                     <h3 style="font-size: 1rem; margin-bottom: 10px; color: #aaa;">Top 3 Favoritos <i class="ph-fill ph-heart" style="color: #1ed760; margin-left: 5px;"></i></h3>
                     <div id="public-favorite-albums" style="display: flex; gap: 15px; margin-bottom: 20px;">
-                        </div>
+                    </div>
                 </div>
 
                 <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; text-align: left;">
@@ -307,7 +309,7 @@
     </div>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
-    <script type="module" src="script.js?v=20"></script>
+    <script type="module" src="script.js?v=21"></script>
 
     <script>
     const isLightMode = localStorage.getItem('echo_light_mode') === 'true';
