@@ -332,3 +332,138 @@ main.section-page { padding-bottom: 120px !important; }
     display: flex;
     transition: transform 0.1s ease-out;
 }
+
+/* =========================================================
+   FUSÃO: TILTED CARD + SPOTLIGHT + BORDER GLOW + CD 3D 
+========================================================= */
+
+.interactive-album-wrapper {
+    position: relative;
+    width: 230px;
+    height: 230px;
+    flex-shrink: 0;
+    perspective: 1000px;
+    z-index: 20;
+}
+
+.interactive-album-card {
+    --edge-proximity: 0;
+    --cursor-angle: 90deg;
+    --mouse-x: 50%;
+    --mouse-y: 50%;
+    --edge-sensitivity: 30;
+    --color-sensitivity: 50; 
+    
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    transform-style: preserve-3d;
+    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: #0a0a0a;
+    border: 1px solid rgba(255,255,255,0.1);
+    isolation: isolate;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.8);
+    cursor: crosshair;
+}
+
+/* 1. SPOTLIGHT EFFECT */
+.spotlight-layer {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(circle at var(--mouse-x) var(--mouse-y), rgba(255,255,255,0.15), transparent 60%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 5; /* Fica acima da capa, abaixo do CD */
+}
+.interactive-album-card:hover .spotlight-layer {
+    opacity: 1;
+}
+
+/* 2. BORDER GLOW EFFECT */
+.interactive-album-card::before,
+.interactive-album-card::after,
+.interactive-album-card > .edge-light {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    transition: opacity 0.25s ease-out;
+    z-index: -1;
+}
+
+.interactive-album-card:not(:hover)::before,
+.interactive-album-card:not(:hover)::after,
+.interactive-album-card:not(:hover) > .edge-light {
+    opacity: 0;
+    transition: opacity 0.75s ease-in-out;
+}
+
+/* O gradiente que desenha a borda mágica */
+.interactive-album-card::before {
+    border: 1px solid transparent;
+    background:
+        linear-gradient(#0a0a0a 0 100%) padding-box,
+        linear-gradient(transparent 0% 100%) border-box,
+        radial-gradient(at 80% 55%, #c084fc 0px, transparent 50%) border-box,
+        radial-gradient(at 69% 34%, #f472b6 0px, transparent 50%) border-box,
+        radial-gradient(at 8% 6%, #38bdf8 0px, transparent 50%) border-box,
+        linear-gradient(#c084fc 0 100%) border-box;
+    opacity: calc((var(--edge-proximity) - var(--color-sensitivity)) / (100 - var(--color-sensitivity)));
+    -webkit-mask-image: conic-gradient(from var(--cursor-angle) at center, black 25%, transparent 40%, transparent 60%, black 75%);
+    mask-image: conic-gradient(from var(--cursor-angle) at center, black 25%, transparent 40%, transparent 60%, black 75%);
+}
+
+/* O brilho projetado pra fora do card */
+.interactive-album-card > .edge-light {
+    inset: -30px;
+    pointer-events: none;
+    -webkit-mask-image: conic-gradient(from var(--cursor-angle) at center, black 2.5%, transparent 10%, transparent 90%, black 97.5%);
+    mask-image: conic-gradient(from var(--cursor-angle) at center, black 2.5%, transparent 10%, transparent 90%, black 97.5%);
+    opacity: calc((var(--edge-proximity) - var(--edge-sensitivity)) / (100 - var(--edge-sensitivity)));
+    mix-blend-mode: plus-lighter;
+}
+
+.interactive-album-card > .edge-light::before {
+    content: "";
+    position: absolute;
+    inset: 30px;
+    border-radius: inherit;
+    box-shadow: 
+        inset 0 0 0 1px hsla(280, 100%, 76%, 0.8),
+        0 0 15px 0 hsla(280, 100%, 76%, 0.5),
+        0 0 30px 2px hsla(280, 100%, 76%, 0.2);
+}
+
+/* 3. CAPA E CD OVERLAY 3D PARALLAX */
+.interactive-album-inner {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    transform-style: preserve-3d;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.interactive-album-inner img#album-view-cover {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: translateZ(0); 
+}
+
+.cd-overlay-3d {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    border-radius: 8px;
+    /* Joga o CD 40px na frente da tela pra criar um efeito de que ele está solto da capa quando tu gira */
+    transform: translateZ(40px) scale(1.04);
+    z-index: 10;
+    filter: drop-shadow(15px 15px 20px rgba(0,0,0,0.6));
+}
