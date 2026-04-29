@@ -201,7 +201,7 @@ const pTimeCurr = document.getElementById('player-time-current');
 const pTimeTot = document.getElementById('player-time-total');
 
 // ====================================================================
-// FÍSICA DO ELASTIC SLIDER 
+// FÍSICA DO ELASTIC SLIDER (AGORA SÓ ESTICA PRA ESQUERDA)
 // ====================================================================
 const MAX_OVERFLOW = 50;
 let volValue = 0.5;
@@ -240,17 +240,16 @@ function updateElasticSlider() {
             scaleY = 1 - (Math.abs(volOverflow) / MAX_OVERFLOW) * 0.2;
         }
 
+        // Âncora fixa na direita para esticar macio pra esquerda
         volTrackWrap.style.transform = `scaleX(${scaleX}) scaleY(${scaleY})`;
-        volTrackWrap.style.transformOrigin = volRegion === 'left' ? 'left center' : 'right center';
+        volTrackWrap.style.transformOrigin = 'right center';
 
         let leftX = volRegion === 'left' ? -Math.abs(volOverflow) : 0;
-        let rightX = volRegion === 'right' ? Math.abs(volOverflow) : 0;
-        
         let leftScale = volRegion === 'left' && Math.abs(volOverflow) > 5 ? 1.2 : 1;
-        let rightScale = volRegion === 'right' && Math.abs(volOverflow) > 5 ? 1.2 : 1;
 
         volIconLeft.style.transform = `translateX(${leftX}px) scale(${leftScale})`;
-        volIconRight.style.transform = `translateX(${rightX}px) scale(${rightScale})`;
+        // Ícone da direita fica totalmente estático agora
+        volIconRight.style.transform = `translateX(0px) scale(1)`;
     }
     requestAnimationFrame(updateElasticSlider);
 }
@@ -268,12 +267,14 @@ if(volWrapper) {
         let rawValue = (e.clientX - rect.left) / rect.width;
 
         if (rawValue < 0) {
+            // Se puxar abaixo de 0, estica pra esquerda
             volRegion = 'left';
             volOverflow = decay((0 - rawValue) * rect.width, MAX_OVERFLOW);
             volValue = 0;
         } else if (rawValue > 1) {
-            volRegion = 'right';
-            volOverflow = decay((rawValue - 1) * rect.width, MAX_OVERFLOW);
+            // Se puxar acima de 1, não faz overflow, só trava no 1
+            volRegion = 'middle';
+            volOverflow = 0;
             volValue = 1;
         } else {
             volRegion = 'middle';
@@ -301,6 +302,7 @@ if(volWrapper) {
     volRoot.addEventListener('pointerup', handlePointerUp);
     volRoot.addEventListener('pointercancel', handlePointerUp);
 }
+// ====================================================================
 
 pCover.style.cursor = 'pointer';
 pCover.addEventListener('click', () => {
