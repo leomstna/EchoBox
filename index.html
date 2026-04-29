@@ -15,7 +15,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
-    <link rel="stylesheet" href="style.css?v=29">
+    <link rel="stylesheet" href="style.css?v=30">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 <body class="site-enter">
@@ -176,9 +176,15 @@
                 <span># Título</span>
                 <span>Avaliação & Notas Pessoais</span>
             </div>
-            <div id="tracklist-container">
-                <p class="pulse-text">Carregando faixas<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span></p>
+            
+            <div class="tracklist-wrapper">
+                <div class="track-top-gradient" id="track-top-gradient"></div>
+                <div id="tracklist-container" class="custom-scroll">
+                    <p class="pulse-text">Carregando faixas<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span></p>
+                </div>
+                <div class="track-bottom-gradient" id="track-bottom-gradient"></div>
             </div>
+
         </div>
     </main>
 
@@ -332,7 +338,7 @@
     </div>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
-    <script type="module" src="script.js?v=29"></script>
+    <script type="module" src="script.js?v=30"></script>
 
     <script>
     window.addEventListener('load', () => {
