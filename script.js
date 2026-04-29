@@ -42,25 +42,7 @@ let isSearchMode = false;
 
 const API_BASE_URL = 'https://api-musicbox-m275.onrender.com';
 
-const toggleLightMode = document.getElementById('toggle-light-mode');
-if(toggleLightMode) {
-    toggleLightMode.checked = localStorage.getItem('echo_light_mode') === 'true';
-    toggleLightMode.addEventListener('change', (e) => {
-        localStorage.setItem('echo_light_mode', e.target.checked);
-        const canvasContainer = document.getElementById('canvas-3d-container');
-        if (e.target.checked) {
-            if(canvasContainer) {
-                canvasContainer.style.opacity = '0';
-                canvasContainer.style.transform = 'translateY(50px)';
-                setTimeout(() => { canvasContainer.style.display = 'none'; }, 800);
-            }
-        } else {
-            window.location.reload(); 
-        }
-    });
-}
-
-// AQUI: LÓGICA DO NOVO BOTÃO DE OCULTAR O FUNDO SEDA
+// LÓGICA DO BOTÃO DE OCULTAR O FUNDO SEDA
 const toggleSilkMode = document.getElementById('toggle-silk-mode');
 if(toggleSilkMode) {
     toggleSilkMode.checked = localStorage.getItem('echo_silk_mode') === 'true';
