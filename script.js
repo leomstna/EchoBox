@@ -59,6 +59,7 @@ const getEmptyStateHTML = () => {
         </div>
     `;
 };
+
 const bindEmptyStateButton = (container) => {
     container.querySelectorAll('.go-explore-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -141,13 +142,18 @@ if(minSlider && maxSlider) {
     minSlider.addEventListener('input', () => { if (parseInt(minSlider.value) > parseInt(maxSlider.value) - 1) minSlider.value = parseInt(maxSlider.value) - 1; minValText.innerText = minSlider.value; updateSlider(); });
     maxSlider.addEventListener('input', () => { if (parseInt(maxSlider.value) < parseInt(minSlider.value) + 1) maxSlider.value = parseInt(minSlider.value) + 1; maxValText.innerText = maxSlider.value; updateSlider(); });
     updateSlider();
+
     useYearFilter.addEventListener('change', (e) => {
         if (e.target.checked) { sliderWrapper.style.opacity = '1'; sliderWrapper.style.pointerEvents = 'auto'; } 
         else { sliderWrapper.style.opacity = '0.3'; sliderWrapper.style.pointerEvents = 'none'; }
     });
 }
 
-let ytPlayer = null; let isPlayerReady = false; let currentTrackId = null; let progressInterval = null; let currentPlayBtnUI = null;
+let ytPlayer = null; 
+let isPlayerReady = false; 
+let currentTrackId = null; 
+let progressInterval = null; 
+let currentPlayBtnUI = null;
 let currentAlbumData = null; 
 
 const globalPlayer = document.getElementById('global-player');
@@ -173,7 +179,10 @@ window.onYouTubeIframeAPIReady = () => {
     ytPlayer = new YT.Player('yt-player', {
         height: '1', width: '1', videoId: 'M7lc1UVf-VE',
         playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'fs': 0, 'origin': window.location.origin, 'enablejsapi': 1 },
-        events: { 'onReady': () => { isPlayerReady = true; if(volSlider) ytPlayer.setVolume(volSlider.value * 100); ytPlayer.pauseVideo(); }, 'onStateChange': onPlayerStateChange }
+        events: {
+            'onReady': () => { isPlayerReady = true; if(volSlider) ytPlayer.setVolume(volSlider.value * 100); ytPlayer.pauseVideo(); },
+            'onStateChange': onPlayerStateChange
+        }
     });
 };
 
@@ -291,11 +300,8 @@ const loadAlbumView = async (album) => {
     });
 
     try {
-        // INJEÇÃO DA LOJA DO BRASIL (country=BR) AQUI PARA DESTRAVAR FAIXAS REGIONAIS
         let url = `https://itunes.apple.com/lookup?id=${album.id}&entity=song&country=BR`;
-        if (originalType === 'single' || !album.id || isNaN(album.id)) {
-            url = `https://itunes.apple.com/search?term=${encodeURIComponent(album.name + ' ' + album.artist)}&entity=song&limit=25&country=BR`;
-        }
+        if (originalType === 'single' || !album.id || isNaN(album.id)) url = `https://itunes.apple.com/search?term=${encodeURIComponent(album.name + ' ' + album.artist)}&entity=song&limit=25&country=BR`;
 
         const res = await fetch(url); const data = await res.json();
         let tracks = data.results.filter(t => t.wrapperType === 'track');
@@ -440,55 +446,59 @@ const loadTrending = async () => {
     loadingText.style.display = 'none'; 
     document.getElementById('top-result-wrapper').style.display = 'none';
     document.getElementById('pagination-controls').style.display = 'none';
-    
-    // SISTEMA DE CACHE: Tenta carregar do disco instantaneamente
+
+    // SISTEMA DE CACHE BLINDADO: Não carrega se for erro gravado sem querer
     const cachedTrending = localStorage.getItem('echo_trending_cache');
     if (cachedTrending) {
         try {
             const data = JSON.parse(cachedTrending);
-            currentAlbums = data; 
-            currentPage = 1; 
-            renderPage(); 
-            renderHomeTrending(data);
+            if (Array.isArray(data) && data.length > 0) {
+                currentAlbums = data;
+                currentPage = 1;
+                renderPage();
+                renderHomeTrending(data);
+            } else {
+                localStorage.removeItem('echo_trending_cache');
+                albumGrid.innerHTML = getGridSkeletons();
+            }
         } catch(e) {
             console.error("Erro ao ler cache", e);
-            albumGrid.innerHTML = getGridSkeletons(); 
+            localStorage.removeItem('echo_trending_cache');
+            albumGrid.innerHTML = getGridSkeletons();
         }
     } else {
-        albumGrid.innerHTML = getGridSkeletons(); 
+        albumGrid.innerHTML = getGridSkeletons();
     }
 
-    // Só mostra o aviso de "Hibernação" se não tiver nada no cache pra mostrar na tela
-    let timeoutAlert = setTimeout(() => { 
-        if(renderToast && !cachedTrending) renderToast.classList.add('show'); 
+    let timeoutAlert = setTimeout(() => {
+        if(renderToast && !cachedTrending) renderToast.classList.add('show');
     }, 3000);
 
     try {
         const response = await fetch(`${API_BASE_URL}/trending`);
-        clearTimeout(timeoutAlert); 
+        clearTimeout(timeoutAlert);
         if(renderToast) renderToast.classList.remove('show');
-        
-        const data = await response.json();
-        
-        // SALVA NO CACHE PARA A PRÓXIMA VISITA FICAR INSTANTÂNEA
-        localStorage.setItem('echo_trending_cache', JSON.stringify(data));
-        
-        if (!data || data.length === 0) { 
-            if(!cachedTrending) albumGrid.innerHTML = '<p style="text-align:center; color:#666;">Nenhum lançamento encontrado.</p>'; 
-            return; 
-        }
-        
-        // Atualiza a tela com os dados mais recentes por cima do cache
-        currentAlbums = data; 
-        currentPage = 1; 
-        renderPage(); 
-        renderHomeTrending(data); 
 
-    } catch (error) { 
-        clearTimeout(timeoutAlert); 
+        const data = await response.json();
+
+        if (!data || data.error || !Array.isArray(data) || data.length === 0) {
+            if(!cachedTrending) albumGrid.innerHTML = '<p style="text-align:center; color:#666;">Nenhum lançamento encontrado.</p>';
+            return;
+        }
+
+        // SALVA NO CACHE SÓ SE FOR DADO VÁLIDO E LIMPO
+        localStorage.setItem('echo_trending_cache', JSON.stringify(data));
+
+        currentAlbums = data;
+        currentPage = 1;
+        renderPage();
+        renderHomeTrending(data);
+
+    } catch (error) {
+        clearTimeout(timeoutAlert);
         if(renderToast) renderToast.classList.remove('show');
         if(!cachedTrending) {
-            albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333;">Conexão falhou.</p>'; 
+            albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333;">Conexão falhou.</p>';
         }
     }
 };
@@ -924,51 +934,4 @@ const renderPage = () => {
 document.getElementById('prev-page').addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderPage(); document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' }); } });
 document.getElementById('next-page').addEventListener('click', () => { if ((currentPage * itemsPerPage) < currentAlbums.length) { currentPage++; renderPage(); document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' }); } });
 
-searchBtn.addEventListener('click', async () => {
-    let rawQuery = searchInput.value.trim();
-    if (!rawQuery) { loadTrending(); return; }
-
-    isSearchMode = true;
-    loadingText.innerHTML = 'Buscando registros<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span>';
-    loadingText.style.display = 'block'; albumGrid.innerHTML = ''; document.getElementById('top-result-wrapper').style.display = 'none'; document.getElementById('pagination-controls').style.display = 'none';
-
-    let timeoutAlert = setTimeout(() => { loadingText.innerHTML = 'O servidor Render está acordando da hibernação. Aguenta aí (pode levar até 1 minuto)...'; }, 5000);
-
-    try {
-        const selectedType = document.querySelector('input[name="search-type"]:checked').value;
-        let fetchUrl = `https://api-musicbox-m275.onrender.com/search?q=${encodeURIComponent(rawQuery)}&type=${selectedType}`;
-        
-        const response = await fetch(fetchUrl);
-        clearTimeout(timeoutAlert);
-        
-        if (!response.ok) throw new Error('A API devolveu um erro.');
-
-        let data = await response.json();
-        loadingText.style.display = 'none';
-        
-        if (data.error || !data || data.length === 0) { 
-            albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registro encontrado.</p>'; 
-            return; 
-        }
-
-        const useYear = document.getElementById('use-year-filter').checked;
-        if (useYear) {
-            const minYear = parseInt(minSlider.value) || 0;
-            const maxYear = parseInt(maxSlider.value) || 9999;
-            data = data.filter(album => {
-                const year = parseInt(album.year);
-                if (isNaN(year)) return false; 
-                return year >= minYear && year <= maxYear;
-            });
-        }
-
-        if (data.length === 0) { albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registro encontrado nesta faixa de anos.</p>'; return; }
-
-        currentAlbums = data; currentPage = 1; renderPage();
-    } catch (error) { 
-        clearTimeout(timeoutAlert);
-        loadingText.style.display = 'none'; 
-        albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333; width:100%;">A conexão falhou. Tente novamente.</p>'; 
-    }
-});
-searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchBtn.click(); });
+window.addEventListener('DOMContentLoaded', () => { if (currentAlbums.length === 0) { loadTrending(); } });
