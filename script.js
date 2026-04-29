@@ -42,7 +42,6 @@ let isSearchMode = false;
 
 const API_BASE_URL = 'https://api-musicbox-m275.onrender.com';
 
-// LÓGICA DO BOTÃO DE OCULTAR O FUNDO SEDA
 const toggleSilkMode = document.getElementById('toggle-silk-mode');
 if(toggleSilkMode) {
     toggleSilkMode.checked = localStorage.getItem('echo_silk_mode') === 'true';
@@ -200,7 +199,108 @@ const pCover = document.getElementById('player-cover');
 const pBarFill = document.getElementById('progress-bar-fill');
 const pTimeCurr = document.getElementById('player-time-current');
 const pTimeTot = document.getElementById('player-time-total');
-const volSlider = document.getElementById('volume-slider');
+
+// ====================================================================
+// FÍSICA DO ELASTIC SLIDER 
+// ====================================================================
+const MAX_OVERFLOW = 50;
+let volValue = 0.5;
+let volOverflow = 0;
+let volIsDragging = false;
+let volRegion = 'middle'; 
+
+const volWrapper = document.getElementById('volume-slider-wrapper');
+const volRoot = document.getElementById('volume-slider-root');
+const volTrackWrap = document.getElementById('volume-track-wrapper');
+const volRange = document.getElementById('volume-range');
+const volIconLeft = document.getElementById('volume-icon-left');
+const volIconRight = document.getElementById('volume-icon-right');
+
+function decay(value, max) {
+    if (max === 0) return 0;
+    const entry = value / max;
+    const sigmoid = 2 * (1 / (1 + Math.exp(-entry)) - 0.5);
+    return sigmoid * max;
+}
+
+function updateElasticSlider() {
+    if(volRange) volRange.style.width = `${volValue * 100}%`;
+
+    if (!volIsDragging) {
+        volOverflow += (0 - volOverflow) * 0.15; 
+    }
+
+    if(volRoot) {
+        const rect = volRoot.getBoundingClientRect();
+        let scaleX = 1;
+        let scaleY = 1;
+
+        if (Math.abs(volOverflow) > 0.1) {
+            scaleX = 1 + Math.abs(volOverflow) / rect.width;
+            scaleY = 1 - (Math.abs(volOverflow) / MAX_OVERFLOW) * 0.2;
+        }
+
+        volTrackWrap.style.transform = `scaleX(${scaleX}) scaleY(${scaleY})`;
+        volTrackWrap.style.transformOrigin = volRegion === 'left' ? 'left center' : 'right center';
+
+        let leftX = volRegion === 'left' ? -Math.abs(volOverflow) : 0;
+        let rightX = volRegion === 'right' ? Math.abs(volOverflow) : 0;
+        
+        let leftScale = volRegion === 'left' && Math.abs(volOverflow) > 5 ? 1.2 : 1;
+        let rightScale = volRegion === 'right' && Math.abs(volOverflow) > 5 ? 1.2 : 1;
+
+        volIconLeft.style.transform = `translateX(${leftX}px) scale(${leftScale})`;
+        volIconRight.style.transform = `translateX(${rightX}px) scale(${rightScale})`;
+    }
+    requestAnimationFrame(updateElasticSlider);
+}
+if(volWrapper) updateElasticSlider();
+
+if(volWrapper) {
+    volWrapper.addEventListener('pointerenter', () => volWrapper.classList.add('hovered'));
+    volWrapper.addEventListener('pointerleave', () => {
+        if(!volIsDragging) volWrapper.classList.remove('hovered');
+    });
+
+    const handlePointerMove = (e) => {
+        if (!volIsDragging) return;
+        const rect = volRoot.getBoundingClientRect();
+        let rawValue = (e.clientX - rect.left) / rect.width;
+
+        if (rawValue < 0) {
+            volRegion = 'left';
+            volOverflow = decay((0 - rawValue) * rect.width, MAX_OVERFLOW);
+            volValue = 0;
+        } else if (rawValue > 1) {
+            volRegion = 'right';
+            volOverflow = decay((rawValue - 1) * rect.width, MAX_OVERFLOW);
+            volValue = 1;
+        } else {
+            volRegion = 'middle';
+            volOverflow = 0;
+            volValue = rawValue;
+        }
+
+        if(isPlayerReady && ytPlayer) ytPlayer.setVolume(volValue * 100);
+    };
+
+    volRoot.addEventListener('pointerdown', (e) => {
+        volIsDragging = true;
+        volRoot.setPointerCapture(e.pointerId);
+        handlePointerMove(e);
+    });
+
+    volRoot.addEventListener('pointermove', handlePointerMove);
+
+    const handlePointerUp = (e) => {
+        volIsDragging = false;
+        volRoot.releasePointerCapture(e.pointerId);
+        if (!volWrapper.matches(':hover')) volWrapper.classList.remove('hovered');
+    };
+
+    volRoot.addEventListener('pointerup', handlePointerUp);
+    volRoot.addEventListener('pointercancel', handlePointerUp);
+}
 
 pCover.style.cursor = 'pointer';
 pCover.addEventListener('click', () => {
@@ -277,7 +377,7 @@ window.onYouTubeIframeAPIReady = () => {
             'onReady': () => { 
                 isPlayerReady = true; 
                 ytPlayer.unMute();
-                if(volSlider) ytPlayer.setVolume(volSlider.value * 100); 
+                if(ytPlayer) ytPlayer.setVolume(volValue * 100); 
                 ytPlayer.pauseVideo(); 
             },
             'onStateChange': onPlayerStateChange
@@ -313,7 +413,6 @@ function updateProgressBar() {
     }
 }
 
-if(volSlider) volSlider.addEventListener('input', (e) => { if(isPlayerReady) ytPlayer.setVolume(e.target.value * 100); });
 if(document.getElementById('progress-bar-bg')) {
     document.getElementById('progress-bar-bg').addEventListener('click', (e) => {
         if(!isPlayerReady || !currentTrackId) return;
