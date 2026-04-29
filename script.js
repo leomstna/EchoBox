@@ -234,12 +234,18 @@ const loadArtistProfile = async (artistName, artistImage) => {
 
 document.getElementById('close-artist-modal').addEventListener('click', () => { artistModal.style.display = 'none'; });
 
+// O HACK DO AUTOPLAY MUTADO FOI INJETADO AQUI PRA NÃO BUGAR NO CHROME
 window.onYouTubeIframeAPIReady = () => {
     ytPlayer = new YT.Player('yt-player', {
-        height: '10', width: '10', videoId: 'M7lc1UVf-VE',
-        playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'fs': 0, 'origin': window.location.origin, 'enablejsapi': 1 },
+        height: '250', width: '250', videoId: 'M7lc1UVf-VE',
+        playerVars: { 'autoplay': 1, 'mute': 1, 'controls': 0, 'disablekb': 1, 'fs': 0, 'origin': window.location.origin, 'enablejsapi': 1 },
         events: {
-            'onReady': () => { isPlayerReady = true; if(volSlider) ytPlayer.setVolume(volSlider.value * 100); ytPlayer.pauseVideo(); },
+            'onReady': () => { 
+                isPlayerReady = true; 
+                ytPlayer.unMute();
+                if(volSlider) ytPlayer.setVolume(volSlider.value * 100); 
+                ytPlayer.pauseVideo(); 
+            },
             'onStateChange': onPlayerStateChange
         }
     });
@@ -596,7 +602,6 @@ searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') perform
 document.querySelectorAll('input[name="search-type"]').forEach(radio => { radio.addEventListener('change', performSearch); });
 minSlider.addEventListener('change', performSearch); maxSlider.addEventListener('change', performSearch); useYearFilter.addEventListener('change', performSearch);
 
-// CORREÇÃO DO LAYOUT DO FEED (TRAVA DE WIDTH: 800PX)
 const loadFriendsFeed = async () => {
     if(!currentUser) return;
     const feed = document.getElementById('friends-feed');
@@ -636,7 +641,7 @@ const loadFriendsFeed = async () => {
             const div = document.createElement('div');
             div.className = 'feed-item liquid-glass scroll-trigger'; 
             div.style.marginBottom = '15px'; div.style.borderRadius = '12px';
-            div.style.maxWidth = '800px'; // O BLOQUEIO DE LARGURA DO FEED ENTRA AQUI
+            div.style.maxWidth = '800px'; 
             
             div.innerHTML = `
                 <div class="pfp-container-mini" style="flex-shrink: 0;"><img src="${act.friendPfp}"></div>
