@@ -36,12 +36,12 @@ const renderToast = document.getElementById('render-toast');
 let currentUser = null;
 let allUsersData = [];
 let currentAlbums = [];
-let currentFriends = []; 
+let currentFriends = [];
 let currentPage = 1;
 const itemsPerPage = 12;
 let isSearchMode = false;
 
-// VARIÁVEIS NOVAS: Memória anti-flicada
+// MEMÓRIA ANTI-FLICADA
 let lastFetchedData = [];
 let lastQuery = "";
 let lastType = "";
@@ -206,6 +206,9 @@ const pBarFill = document.getElementById('progress-bar-fill');
 const pTimeCurr = document.getElementById('player-time-current');
 const pTimeTot = document.getElementById('player-time-total');
 
+// ====================================================================
+// FÍSICA DO ELASTIC SLIDER 
+// ====================================================================
 const MAX_OVERFLOW = 50;
 let volValue = 0.5;
 let volOverflow = 0;
@@ -641,8 +644,15 @@ const renderHomeTrending = (data) => {
 
 const getGridSkeletons = () => Array(8).fill('<div class="skeleton skel-card"></div>').join('');
 
+let isTrendingLoaded = false;
+
 const loadTrending = async () => {
+    if (isTrendingLoaded && !isSearchMode) return;
+    
     isSearchMode = false;
+    isTrendingLoaded = true;
+    lastQuery = "";
+    lastType = "";
     loadingText.style.display = 'none'; 
     document.getElementById('top-result-wrapper').style.display = 'none';
     document.getElementById('pagination-controls').style.display = 'none';
@@ -702,15 +712,22 @@ const loadTrending = async () => {
 };
 
 // ====================================================================
-// CORREÇÃO: MEMÓRIA DE CACHE LOCAL (ANTI-FLICADA)
+// CORREÇÃO: MEMÓRIA DE CACHE LOCAL (ANTI-FLICADA) E PREVENÇÃO DE BUG
 // ====================================================================
 const performSearch = async () => {
     let rawQuery = searchInput.value.trim();
-    if (!rawQuery) { loadTrending(); return; }
+    
+    // Se a pesquisa for vazia, não faz sentido filtrar.
+    if (!rawQuery) { 
+        if (isSearchMode) {
+            loadTrending(); // Volta pras tendências só se estava numa busca antes
+        }
+        return; 
+    }
 
     const selectedType = document.querySelector('input[name="search-type"]:checked').value;
 
-    // SE SÓ O FILTRO DE ANO MUDOU, ELE NÃO CHAMA A API, SÓ FILTRA LOCAL INSTANTANEAMENTE
+    // SE SÓ O FILTRO DE ANO MUDOU, NÃO CHAMA A API, FILTRA LOCAL INSTANTANEAMENTE
     if (rawQuery === lastQuery && selectedType === lastType && lastFetchedData.length > 0) {
         let data = lastFetchedData;
         if (document.getElementById('use-year-filter').checked) {
@@ -735,7 +752,7 @@ const performSearch = async () => {
         return;
     }
 
-    // SE É PESQUISA NOVA, CHAMA A API, MAS COM OPACIDADE SUAVE EM VEZ DE SKELETONS
+    // SE É PESQUISA NOVA, CHAMA A API COM OPACIDADE SUAVE (SEM SKELETONS PISCANDO)
     isSearchMode = true;
     lastQuery = rawQuery;
     lastType = selectedType;
@@ -796,7 +813,15 @@ const performSearch = async () => {
 
 searchBtn.addEventListener('click', performSearch);
 searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
-document.querySelectorAll('input[name="search-type"]').forEach(radio => { radio.addEventListener('change', performSearch); });
+
+// TRAVA: Só executa pesquisa por filtro se a barra de pesquisa não tiver vazia
+document.querySelectorAll('input[name="search-type"]').forEach(radio => { 
+    radio.addEventListener('change', () => {
+        if (searchInput.value.trim() !== '') {
+            performSearch();
+        }
+    }); 
+});
 minSlider.addEventListener('change', performSearch); maxSlider.addEventListener('change', performSearch); useYearFilter.addEventListener('change', performSearch);
 
 const loadFriendsFeed = async () => {
