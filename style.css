@@ -360,20 +360,24 @@ main.section-page { padding-bottom: 120px !important; }
 }
 
 .cd-disc {
-    position: absolute;
-    top: 2%;
-    right: 0;
-    width: 95%;
-    height: 95%;
-    object-fit: contain;
-    z-index: 0; 
-    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), rotate 0.8s linear;
-    pointer-events: none;
+  position: absolute;
+  top: 2%;
+  right: 0;
+  width: 95%;
+  height: 95%;
+  object-fit: cover;
+  border-radius: 50%;
+  z-index: -1; /* Força ele pra camada de baixo */
+  /* Empurra o CD 50px pra trás no espaço 3D */
+  transform: translateZ(-50px);
+  /* Unifica a transição numa propriedade só pra não dar glitch de rotação */
+  transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  pointer-events: none;
 }
 
 .album-header:hover .cd-disc {
-    transform: translateX(45%);
-    rotate: 90deg;
+  /* Mantém ele no fundo (-50px), joga pra direita (45%) e gira (180deg) */
+  transform: translateZ(-50px) translateX(45%) rotate(180deg);
 }
 
 .interactive-album-inner {
