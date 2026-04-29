@@ -15,12 +15,12 @@
     <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
-    <link rel="stylesheet" href="style.css?v=32">
+    <link rel="stylesheet" href="style.css?v=33">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 <body class="site-enter">
 
-    <div id="canvas-3d-container" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; transition: opacity 0.8s ease, transform 0.8s ease;"></div>
+    <div id="canvas-3d-container" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none;"></div>
     
     <div id="page-transition" class="transition-overlay" style="display: none;">
         <div class="pulse-text" style="font-size: 3rem;">
@@ -246,7 +246,7 @@
                 <textarea id="edit-bio" class="dark-input liquid-glass" rows="3" placeholder="Escreva algo sobre você..."></textarea>
                 
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px; padding: 12px 15px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-                    <span style="color: #aaa; font-size: 0.8rem; text-transform: uppercase;">Modo Leve (Desativar 3D)</span>
+                    <span style="color: #aaa; font-size: 0.8rem; text-transform: uppercase;">Modo Leve (Desativar Rádio)</span>
                     <label class="switch">
                         <input type="checkbox" id="toggle-light-mode">
                         <span class="slider-toggle"></span>
@@ -331,18 +331,19 @@
         </div>
     </div>
 
-    <div style="position: fixed; left: 0; bottom: 0; width: 250px; height: 250px; z-index: -9999; pointer-events: none; overflow: hidden; opacity: 0;">
+    <div style="position: fixed; left: 0; bottom: 0; width: 250px; height: 250px; z-index: -9999; pointer-events: none; overflow: hidden; opacity: 0.01;">
         <div id="yt-player"></div>
     </div>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
-    <script type="module" src="script.js?v=32"></script>
+    <script type="module" src="script.js?v=33"></script>
 
     <script>
     window.addEventListener('load', () => {
-        const isLightMode = localStorage.getItem('echo_light_mode') === 'true';
+        // Inicializa a variável de controle lendo o cache
+        window.echoLightMode = localStorage.getItem('echo_light_mode') === 'true';
 
-        if (!isLightMode && typeof THREE !== 'undefined') {
+        if (typeof THREE !== 'undefined') {
             const container = document.getElementById('canvas-3d-container');
             const scene = new THREE.Scene();
             
@@ -357,8 +358,8 @@
 
             const renderScene = new THREE.RenderPass(scene, camera);
             const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-            bloomPass.threshold = 0.5; // Elevado pra Silk não explodir de brilho
-            bloomPass.strength = 1.8;
+            bloomPass.threshold = 0.3; // Corta o brilho estourado
+            bloomPass.strength = 1.2; // Reduz a força
             bloomPass.radius = 1.0;
 
             const composer = new THREE.EffectComposer(renderer);
@@ -376,7 +377,7 @@
             rimLight.position.set(-5, -5, -2);
             scene.add(rimLight);
 
-            // ======== INTEGRAÇÃO DO COMPONENTE SILK (React Bits -> Vanilla) ========
+            // ======== INTEGRAÇÃO DO COMPONENTE SILK ========
             const silkVertexShader = `
             varying vec2 vUv;
             varying vec3 vPosition;
@@ -434,9 +435,9 @@
 
             const silkUniforms = {
                 uTime: { value: 0 },
-                uColor: { value: new THREE.Color('#7B7481') }, // Cor original pedida
-                uSpeed: { value: 5.0 },
-                uScale: { value: 1.0 },
+                uColor: { value: new THREE.Color('#18151A') }, // Cor escura pra não cegar o usuário
+                uSpeed: { value: 2.0 },
+                uScale: { value: 3.5 }, // Escala aumentada pra detalhar a seda
                 uRotation: { value: 0.0 },
                 uNoiseIntensity: { value: 1.5 }
             };
@@ -449,7 +450,7 @@
                 depthWrite: false
             });
             const silkMesh = new THREE.Mesh(silkGeo, silkMat);
-            silkMesh.position.z = -15; // Jogado pro fundo
+            silkMesh.position.z = -15; 
             scene.add(silkMesh);
             // ========================================================================
 
@@ -462,10 +463,12 @@
             const baseScale = 0.45;
             const fixedRotX = 0.2;
             const fixedRotY = -0.6;
+            
+            window.currentBoomboxY = window.echoLightMode ? -15.0 : fixedPosY;
 
             loader.load('./modelos/boombox/scene.gltf', (gltf) => {
                 boombox = gltf.scene;
-                boombox.position.set(fixedPosX, fixedPosY, fixedPosZ);
+                boombox.position.set(fixedPosX, window.currentBoomboxY, fixedPosZ);
                 boombox.rotation.set(fixedRotX, fixedRotY, 0);
                 boombox.scale.set(baseScale, baseScale, baseScale);
                 scene.add(boombox);
@@ -482,11 +485,14 @@
             function animate() {
                 requestAnimationFrame(animate);
 
-                // Anima o Silk Background
                 silkUniforms.uTime.value += 0.002; 
 
                 if (boombox) {
-                    let floatY = fixedPosY + (Math.sin(Date.now() * 0.001) * 0.1) + (Math.cos(Date.now() * 0.0008) * 0.05);
+                    // LÓGICA DE FADE DO BOOMBOX COM GRAVIDADE
+                    let targetY = window.echoLightMode ? -15.0 : fixedPosY;
+                    window.currentBoomboxY += (targetY - window.currentBoomboxY) * 0.05;
+
+                    let floatY = window.currentBoomboxY + (Math.sin(Date.now() * 0.001) * 0.1) + (Math.cos(Date.now() * 0.0008) * 0.05);
                     boombox.position.y = floatY;
 
                     let targetRotationX = fixedRotX + mouseY;
@@ -498,7 +504,7 @@
                     let currentScaleY = baseScale;
                     let currentScaleZ = baseScale;
 
-                    if (playBtn && playBtn.classList.contains('ph-pause-circle')) {
+                    if (playBtn && playBtn.classList.contains('ph-pause-circle') && !window.echoLightMode) {
                         let beat = Math.pow(Math.abs(Math.sin(Date.now() * 0.006)), 4); 
                         currentScaleX += beat * 0.03;
                         currentScaleY += beat * 0.03;
@@ -520,9 +526,6 @@
                 renderer.setSize(window.innerWidth, window.innerHeight);
                 composer.setSize(window.innerWidth, window.innerHeight); 
             });
-        } else {
-            const canvasContainer = document.getElementById('canvas-3d-container');
-            if(canvasContainer) canvasContainer.style.display = 'none';
         }
     });
     </script>
