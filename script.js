@@ -47,8 +47,26 @@ if(toggleLightMode) {
     toggleLightMode.checked = localStorage.getItem('echo_light_mode') === 'true';
     toggleLightMode.addEventListener('change', (e) => {
         localStorage.setItem('echo_light_mode', e.target.checked);
-        // Avisa o HTML pra sumir só com o rádio, sem piscar a tela
-        window.echoLightMode = e.target.checked;
+        const canvasContainer = document.getElementById('canvas-3d-container');
+        if (e.target.checked) {
+            if(canvasContainer) {
+                canvasContainer.style.opacity = '0';
+                canvasContainer.style.transform = 'translateY(50px)';
+                setTimeout(() => { canvasContainer.style.display = 'none'; }, 800);
+            }
+        } else {
+            window.location.reload(); 
+        }
+    });
+}
+
+// AQUI: LÓGICA DO NOVO BOTÃO DE OCULTAR O FUNDO SEDA
+const toggleSilkMode = document.getElementById('toggle-silk-mode');
+if(toggleSilkMode) {
+    toggleSilkMode.checked = localStorage.getItem('echo_silk_mode') === 'true';
+    toggleSilkMode.addEventListener('change', (e) => {
+        localStorage.setItem('echo_silk_mode', e.target.checked);
+        window.echoSilkMode = e.target.checked;
     });
 }
 
@@ -84,7 +102,6 @@ const scrollObserver = new IntersectionObserver((entries) => {
 
 document.querySelectorAll('.scroll-trigger').forEach(el => scrollObserver.observe(el));
 
-// AQUI: OBSERVER DA TRACKLIST QUE ANIMA NA SUBIDA E DESCIDA
 const trackObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -130,7 +147,6 @@ const showSection = (id, updateHash = true) => {
     }, 300);
 };
 
-// CONTROLE DO F5 (Recarrega na página do álbum se tiver)
 window.addEventListener('load', () => { 
     const currentHash = window.location.hash; 
     if (currentHash === '#album') {
@@ -355,6 +371,7 @@ const loadAlbumView = async (album) => {
 
     const trackContainer = document.getElementById('tracklist-container');
     trackContainer.innerHTML = Array(5).fill('<div class="skeleton skel-row"></div>').join('');
+    trackContainer.scrollTop = 0;
     
     let warningText = document.getElementById('album-rating-warning');
     if (!warningText) {
@@ -517,6 +534,9 @@ const loadAlbumView = async (album) => {
                 }, 1000);
             });
         });
+
+        setTimeout(() => { trackContainer.dispatchEvent(new Event('scroll')); }, 200);
+
     } catch(e) { trackContainer.innerHTML = '<p style="color:red;">Erro de conexão com o catálogo musical.</p>'; }
 };
 
