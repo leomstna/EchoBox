@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EchoBox</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
-    <link rel="stylesheet" href="style.css?v=18">
+    <link rel="stylesheet" href="style.css?v=20">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 <body class="site-enter">
@@ -301,12 +301,12 @@
         </div>
     </div>
 
-    <div style="position: absolute; width: 0; height: 0; overflow: hidden; z-index: -9999; visibility: hidden; pointer-events: none;">
+    <div style="position: absolute; left: -9999px; top: -9999px; width: 10px; height: 10px; opacity: 0; pointer-events: none;">
         <div id="yt-player"></div>
     </div>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
-    <script type="module" src="script.js"></script>
+    <script type="module" src="script.js?v=20"></script>
 
     <script>
     const isLightMode = localStorage.getItem('echo_light_mode') === 'true';
