@@ -36,10 +36,15 @@ const renderToast = document.getElementById('render-toast');
 let currentUser = null;
 let allUsersData = [];
 let currentAlbums = [];
-let currentFriends = []; // <-- Memória global dos teus amigos
+let currentFriends = []; 
 let currentPage = 1;
 const itemsPerPage = 12;
 let isSearchMode = false;
+
+// VARIÁVEIS NOVAS: Memória anti-flicada
+let lastFetchedData = [];
+let lastQuery = "";
+let lastType = "";
 
 const API_BASE_URL = 'https://api-musicbox-m275.onrender.com';
 
@@ -201,9 +206,6 @@ const pBarFill = document.getElementById('progress-bar-fill');
 const pTimeCurr = document.getElementById('player-time-current');
 const pTimeTot = document.getElementById('player-time-total');
 
-// ====================================================================
-// FÍSICA DO ELASTIC SLIDER 
-// ====================================================================
 const MAX_OVERFLOW = 50;
 let volValue = 0.5;
 let volOverflow = 0;
@@ -699,35 +701,94 @@ const loadTrending = async () => {
     }
 };
 
+// ====================================================================
+// CORREÇÃO: MEMÓRIA DE CACHE LOCAL (ANTI-FLICADA)
+// ====================================================================
 const performSearch = async () => {
     let rawQuery = searchInput.value.trim();
     if (!rawQuery) { loadTrending(); return; }
 
+    const selectedType = document.querySelector('input[name="search-type"]:checked').value;
+
+    // SE SÓ O FILTRO DE ANO MUDOU, ELE NÃO CHAMA A API, SÓ FILTRA LOCAL INSTANTANEAMENTE
+    if (rawQuery === lastQuery && selectedType === lastType && lastFetchedData.length > 0) {
+        let data = lastFetchedData;
+        if (document.getElementById('use-year-filter').checked) {
+            const minYear = parseInt(minSlider.value) || 0; 
+            const maxYear = parseInt(maxSlider.value) || 9999;
+            data = data.filter(album => { 
+                const year = parseInt(album.year); 
+                return isNaN(year) ? true : (year >= minYear && year <= maxYear); 
+            });
+        }
+        
+        if (data.length === 0) { 
+            albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registro encontrado nesta faixa de anos.</p>'; 
+            document.getElementById('top-result-wrapper').style.display = 'none';
+            document.getElementById('pagination-controls').style.display = 'none';
+            return; 
+        }
+        
+        currentAlbums = data;
+        currentPage = 1;
+        renderPage();
+        return;
+    }
+
+    // SE É PESQUISA NOVA, CHAMA A API, MAS COM OPACIDADE SUAVE EM VEZ DE SKELETONS
     isSearchMode = true;
+    lastQuery = rawQuery;
+    lastType = selectedType;
     loadingText.style.display = 'none'; 
-    albumGrid.innerHTML = getGridSkeletons(); 
+    
+    albumGrid.style.opacity = '0.3';
+    albumGrid.style.pointerEvents = 'none';
+    albumGrid.style.transition = 'opacity 0.2s ease';
+    
     document.getElementById('top-result-wrapper').style.display = 'none';
     document.getElementById('pagination-controls').style.display = 'none';
+
     let timeoutAlert = setTimeout(() => { if(renderToast) renderToast.classList.add('show'); }, 3000);
 
     try {
-        const selectedType = document.querySelector('input[name="search-type"]:checked').value;
         const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(rawQuery)}&type=${selectedType}`);
         clearTimeout(timeoutAlert); if(renderToast) renderToast.classList.remove('show');
 
         if (!response.ok) throw new Error('A API devolveu um erro.');
         let data = await response.json(); 
         
-        if (data.error || !data || data.length === 0) { albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registro encontrado.</p>'; return; }
+        albumGrid.style.opacity = '1';
+        albumGrid.style.pointerEvents = 'auto';
 
-        if (document.getElementById('use-year-filter').checked) {
-            const minYear = parseInt(minSlider.value) || 0; const maxYear = parseInt(maxSlider.value) || 9999;
-            data = data.filter(album => { const year = parseInt(album.year); return isNaN(year) ? true : (year >= minYear && year <= maxYear); });
+        if (data.error || !data || data.length === 0) { 
+            lastFetchedData = [];
+            albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registro encontrado.</p>'; 
+            return; 
         }
 
-        if (data.length === 0) { albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registro encontrado nesta faixa de anos.</p>'; return; }
-        currentAlbums = data; currentPage = 1; renderPage();
+        lastFetchedData = data; 
+        let filteredData = data;
+
+        if (document.getElementById('use-year-filter').checked) {
+            const minYear = parseInt(minSlider.value) || 0; 
+            const maxYear = parseInt(maxSlider.value) || 9999;
+            filteredData = data.filter(album => { 
+                const year = parseInt(album.year); 
+                return isNaN(year) ? true : (year >= minYear && year <= maxYear); 
+            });
+        }
+
+        if (filteredData.length === 0) { 
+            albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registro encontrado nesta faixa de anos.</p>'; 
+            return; 
+        }
+        
+        currentAlbums = filteredData; 
+        currentPage = 1; 
+        renderPage();
     } catch (error) { 
+        albumGrid.style.opacity = '1';
+        albumGrid.style.pointerEvents = 'auto';
         clearTimeout(timeoutAlert); if(renderToast) renderToast.classList.remove('show');
         albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333; width:100%;">A conexão falhou. Tente novamente.</p>'; 
     }
@@ -802,9 +863,6 @@ const loadFriendsFeed = async () => {
     } catch(e) { feed.innerHTML = '<p style="color:red;">Erro ao puxar o feed.</p>'; }
 };
 
-// ====================================================================
-// RENDERIZAÇÃO DE USUÁRIOS E BOTÃO DE SEGUIR COM MEMÓRIA GLOBAL
-// ====================================================================
 const renderUsers = (usersList) => {
     const usersGrid = document.getElementById('users-grid');
     usersGrid.innerHTML = '';
@@ -813,7 +871,6 @@ const renderUsers = (usersList) => {
     usersList.forEach(userObj => {
         const data = userObj.data; const uid = userObj.id;
         
-        // Verifica na memória global se tu já segue esse cara
         const isFollowing = currentFriends.includes(uid);
         const btnClass = isFollowing ? 'btn-follow following' : 'btn-follow';
         const btnText = isFollowing ? 'Seguindo' : 'Seguir';
@@ -844,13 +901,11 @@ const renderUsers = (usersList) => {
                 await deleteDoc(followRef); 
                 e.target.classList.remove('following'); 
                 e.target.innerText = 'Seguir'; 
-                // Remove da memória global
                 currentFriends = currentFriends.filter(id => id !== targetId);
             } else { 
                 await setDoc(followRef, { addedAt: new Date() }); 
                 e.target.classList.add('following'); 
                 e.target.innerText = 'Seguindo'; 
-                // Adiciona na memória global
                 currentFriends.push(targetId);
             }
             loadFriendsFeed(); 
@@ -862,8 +917,7 @@ document.getElementById('link-rede').addEventListener('click', async (e) => {
     e.preventDefault(); showSection('network-section'); loadFriendsFeed();
     const usersGrid = document.getElementById('users-grid'); usersGrid.innerHTML = '<p class="pulse-text">Buscando usuários...</p>';
     try {
-        currentFriends = []; // Limpa a memória
-        // Busca quem tu segue antes de desenhar a tela
+        currentFriends = []; 
         if (currentUser) {
             const friendsSnap = await getDocs(collection(db, "users", currentUser.uid, "friends"));
             friendsSnap.forEach(docSnap => currentFriends.push(docSnap.id));
