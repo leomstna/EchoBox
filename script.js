@@ -92,33 +92,19 @@ const scrollObserver = new IntersectionObserver((entries) => {
 
 document.querySelectorAll('.scroll-trigger').forEach(el => scrollObserver.observe(el));
 
-// AQUI: O NOVO OBSERVER PARA A LISTA ANIMADA (Efeito React)
+// AQUI TÁ A ANIMAÇÃO DO REACT: Observer contínuo de subida e descida
 const trackObserver = new IntersectionObserver((entries) => {
-    let delay = 0;
     entries.forEach(entry => {
         if (entry.isIntersecting) {
-            setTimeout(() => { entry.target.classList.add('track-animated'); }, delay);
-            delay += 60; // Efeito cascata
-            trackObserver.unobserve(entry.target); 
+            entry.target.classList.add('track-animated');
+        } else {
+            // Remove a classe pra reanimar na próxima vez que aparecer na tela
+            entry.target.classList.remove('track-animated');
         }
     });
-}, { threshold: 0.1, rootMargin: "0px 0px -20px 0px" });
+}, { threshold: 0.1, rootMargin: "0px 0px -10px 0px" });
 
-// AQUI: LÓGICA DE FADE DOS GRADIENTES
-const tracklistContainer = document.getElementById('tracklist-container');
-const trackTopGrad = document.getElementById('track-top-gradient');
-const trackBotGrad = document.getElementById('track-bottom-gradient');
-
-if(tracklistContainer) {
-    tracklistContainer.addEventListener('scroll', (e) => {
-        const { scrollTop, scrollHeight, clientHeight } = e.target;
-        trackTopGrad.style.opacity = Math.min(scrollTop / 30, 1);
-        const botDist = scrollHeight - (scrollTop + clientHeight);
-        trackBotGrad.style.opacity = scrollHeight <= clientHeight ? 0 : Math.min(botDist / 30, 1);
-    });
-}
-
-const sectionsMap = { '': 'home', '#home': 'home', '#explorar': 'search-section', '#rede': 'network-section' };
+const sectionsMap = { '': 'home', '#home': 'home', '#explorar': 'search-section', '#rede': 'network-section', '#album': 'album-view-section' };
 
 const showSection = (id, updateHash = true) => {
     const overlay = document.getElementById('page-transition');
@@ -153,8 +139,33 @@ const showSection = (id, updateHash = true) => {
     }, 300);
 };
 
-window.addEventListener('load', () => { const currentHash = window.location.hash; showSection(sectionsMap[currentHash] || 'home', false); });
-window.addEventListener('hashchange', () => { showSection(sectionsMap[window.location.hash] || 'home', false); });
+// CONTROLE DE REFRESH COM MEMÓRIA (Impede que F5 volte pra Home se estiver num álbum)
+window.addEventListener('load', () => { 
+    const currentHash = window.location.hash; 
+    if (currentHash === '#album') {
+        const savedAlbum = sessionStorage.getItem('echo_current_album');
+        if (savedAlbum) {
+            loadAlbumView(JSON.parse(savedAlbum));
+            return;
+        } else {
+            showSection('home', false);
+            return;
+        }
+    }
+    showSection(sectionsMap[currentHash] || 'home', false); 
+});
+
+window.addEventListener('hashchange', () => { 
+    const hash = window.location.hash;
+    if (hash === '#album') {
+        const savedAlbum = sessionStorage.getItem('echo_current_album');
+        if (savedAlbum) loadAlbumView(JSON.parse(savedAlbum));
+        else showSection('home', false);
+    } else {
+        showSection(sectionsMap[hash] || 'home', false); 
+    }
+});
+
 document.getElementById('link-home').addEventListener('click', (e) => { e.preventDefault(); showSection('home'); });
 document.getElementById('link-explorar').addEventListener('click', (e) => { e.preventDefault(); showSection('search-section'); });
 document.getElementById('back-to-explore').addEventListener('click', () => showSection('search-section'));
@@ -338,6 +349,11 @@ const animateStars = (starArray, targetIndex) => {
 
 const loadAlbumView = async (album) => {
     showSection('album-view-section', false);
+    
+    // NOVIDADE: Salva o álbum na sessão e muda o Link lá em cima para #album
+    sessionStorage.setItem('echo_current_album', JSON.stringify(album));
+    history.pushState(null, null, '#album');
+
     document.getElementById('album-view-cover').src = album.image;
     document.getElementById('album-view-title').innerText = album.name;
     document.getElementById('album-view-artist').innerText = album.artist;
@@ -349,8 +365,6 @@ const loadAlbumView = async (album) => {
 
     const trackContainer = document.getElementById('tracklist-container');
     trackContainer.innerHTML = Array(5).fill('<div class="skeleton skel-row"></div>').join('');
-    // Reseta scroll pros gradientes acompanharem
-    trackContainer.scrollTop = 0;
     
     let warningText = document.getElementById('album-rating-warning');
     if (!warningText) {
@@ -452,8 +466,7 @@ const loadAlbumView = async (album) => {
         tracks.forEach((track, index) => {
             const tId = String(track.trackId); const myTrackData = savedData[tId] || { rating: 0, comment: '' };
             const div = document.createElement('div'); 
-            
-            // AQUI É A NOVA CLASSE QUE PUXA A ANIMAÇÃO QUE TU MANDOU
+            // CLASSE INJETADA AQUI PARA O EFEITO REACT DO OBSERVER
             div.className = 'track-row liquid-glass track-trigger'; 
             
             div.innerHTML = `
@@ -466,7 +479,7 @@ const loadAlbumView = async (album) => {
                     <textarea class="track-comment custom-scroll" placeholder="Suas notas (máx 150 letras)..." data-track="${tId}" maxlength="150">${myTrackData.comment}</textarea>
                 </div>`;
             trackContainer.appendChild(div); 
-            trackObserver.observe(div); // ACIONA O OBSERVADOR DAS TRACKS
+            trackObserver.observe(div); // OBSERVA PRA FAZER EFEITO CASCADE
 
             const playBtn = div.querySelector('.play-btn');
             playBtn.addEventListener('click', async () => {
@@ -518,10 +531,6 @@ const loadAlbumView = async (album) => {
                 }, 1000);
             });
         });
-
-        // Força um scroll invisível pra ajustar os gradientes dps que carrega tudo
-        setTimeout(() => { trackContainer.dispatchEvent(new Event('scroll')); }, 200);
-
     } catch(e) { trackContainer.innerHTML = '<p style="color:red;">Erro de conexão com o catálogo musical.</p>'; }
 };
 
