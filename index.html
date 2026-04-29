@@ -136,10 +136,18 @@
         <button id="back-to-explore" class="btn-ghost scroll-trigger" style="margin-bottom: 20px; font-size: 1rem; border: 1px solid #333; padding: 5px 15px; border-radius: 5px;"><i class="ph ph-arrow-left"></i> Voltar</button>
         
         <div class="album-header liquid-glass scroll-trigger" style="display:flex; gap:30px; padding:30px; border-radius:16px; align-items: flex-start;">
-            <div style="position: relative; width: 220px; height: 220px; flex-shrink: 0;">
-                <img id="album-view-cover" src="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
-                <img src="./cd-overlay.png" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; transform: scale(1.02);">
+            
+            <div class="interactive-album-wrapper" id="interactive-album-wrapper">
+                <div class="interactive-album-card" id="interactive-album-card">
+                    <span class="edge-light"></span>
+                    <div class="spotlight-layer"></div>
+                    <div class="interactive-album-inner">
+                        <img id="album-view-cover" src="" alt="Capa do Álbum">
+                    </div>
+                    <img src="./cd-overlay.png" class="cd-overlay-3d" alt="Caixa Acrílica">
+                </div>
             </div>
+
             <div style="flex: 1;">
                 <p id="album-view-media-type" style="font-size:0.8rem; text-transform:uppercase; letter-spacing:2px; color:#fff; font-weight:700;">Álbum</p>
                 <h1 id="album-view-title" class="glow-text" style="font-size: 3rem; line-height:1.1; margin: 10px 0; letter-spacing:-1px;"></h1>
