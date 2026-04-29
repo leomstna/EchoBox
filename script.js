@@ -36,12 +36,11 @@ const renderToast = document.getElementById('render-toast');
 let currentUser = null;
 let allUsersData = [];
 let currentAlbums = [];
-let currentFriends = [];
+let currentFriends = []; 
 let currentPage = 1;
 const itemsPerPage = 12;
 let isSearchMode = false;
 
-// MEMÓRIA ANTI-FLICADA
 let lastFetchedData = [];
 let lastQuery = "";
 let lastType = "";
@@ -207,7 +206,7 @@ const pTimeCurr = document.getElementById('player-time-current');
 const pTimeTot = document.getElementById('player-time-total');
 
 // ====================================================================
-// FÍSICA DO ELASTIC SLIDER 
+// FÍSICA DO ELASTIC SLIDER
 // ====================================================================
 const MAX_OVERFLOW = 50;
 let volValue = 0.5;
@@ -712,15 +711,15 @@ const loadTrending = async () => {
 };
 
 // ====================================================================
-// CORREÇÃO: MEMÓRIA DE CACHE LOCAL (ANTI-FLICADA) E PREVENÇÃO DE BUG
+// CORREÇÃO: MEMÓRIA DE CACHE LOCAL (ANTI-FLICADA) E ESQUELETOS
 // ====================================================================
 const performSearch = async () => {
     let rawQuery = searchInput.value.trim();
     
-    // Se a pesquisa for vazia, não faz sentido filtrar.
+    // Se a pesquisa for vazia, não faz sentido filtrar, trava e volta pras tendências
     if (!rawQuery) { 
         if (isSearchMode) {
-            loadTrending(); // Volta pras tendências só se estava numa busca antes
+            loadTrending(); 
         }
         return; 
     }
@@ -752,15 +751,16 @@ const performSearch = async () => {
         return;
     }
 
-    // SE É PESQUISA NOVA, CHAMA A API COM OPACIDADE SUAVE (SEM SKELETONS PISCANDO)
+    // SE É PESQUISA NOVA, CHAMA A API E BOTA OS SKELETONS BONITINHOS DE VOLTA
     isSearchMode = true;
     lastQuery = rawQuery;
     lastType = selectedType;
     loadingText.style.display = 'none'; 
     
-    albumGrid.style.opacity = '0.3';
+    // Tira a gambiarra da opacidade e bota a tela de loading braba
+    albumGrid.style.opacity = '1';
     albumGrid.style.pointerEvents = 'none';
-    albumGrid.style.transition = 'opacity 0.2s ease';
+    albumGrid.innerHTML = getGridSkeletons();
     
     document.getElementById('top-result-wrapper').style.display = 'none';
     document.getElementById('pagination-controls').style.display = 'none';
@@ -774,7 +774,6 @@ const performSearch = async () => {
         if (!response.ok) throw new Error('A API devolveu um erro.');
         let data = await response.json(); 
         
-        albumGrid.style.opacity = '1';
         albumGrid.style.pointerEvents = 'auto';
 
         if (data.error || !data || data.length === 0) { 
@@ -804,7 +803,6 @@ const performSearch = async () => {
         currentPage = 1; 
         renderPage();
     } catch (error) { 
-        albumGrid.style.opacity = '1';
         albumGrid.style.pointerEvents = 'auto';
         clearTimeout(timeoutAlert); if(renderToast) renderToast.classList.remove('show');
         albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333; width:100%;">A conexão falhou. Tente novamente.</p>'; 
@@ -814,7 +812,7 @@ const performSearch = async () => {
 searchBtn.addEventListener('click', performSearch);
 searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
 
-// TRAVA: Só executa pesquisa por filtro se a barra de pesquisa não tiver vazia
+// TRAVA DE SEGURANÇA: Só pesquisa nos botões de rádio se a barra de pesquisa não tiver vazia
 document.querySelectorAll('input[name="search-type"]').forEach(radio => { 
     radio.addEventListener('change', () => {
         if (searchInput.value.trim() !== '') {
