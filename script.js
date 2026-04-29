@@ -596,7 +596,7 @@ searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') perform
 document.querySelectorAll('input[name="search-type"]').forEach(radio => { radio.addEventListener('change', performSearch); });
 minSlider.addEventListener('change', performSearch); maxSlider.addEventListener('change', performSearch); useYearFilter.addEventListener('change', performSearch);
 
-// CORREÇÃO DO LAYOUT DA COMUNIDADE - FEED
+// CORREÇÃO DO LAYOUT DO FEED (TRAVA DE WIDTH: 800PX)
 const loadFriendsFeed = async () => {
     if(!currentUser) return;
     const feed = document.getElementById('friends-feed');
@@ -635,7 +635,9 @@ const loadFriendsFeed = async () => {
 
             const div = document.createElement('div');
             div.className = 'feed-item liquid-glass scroll-trigger'; 
-            // Não injetamos width:100% solto aqui. Usamos flex direto nos elementos.
+            div.style.marginBottom = '15px'; div.style.borderRadius = '12px';
+            div.style.maxWidth = '800px'; // O BLOQUEIO DE LARGURA DO FEED ENTRA AQUI
+            
             div.innerHTML = `
                 <div class="pfp-container-mini" style="flex-shrink: 0;"><img src="${act.friendPfp}"></div>
                 <div style="flex:1; min-width: 0; display: flex; flex-direction: column;">
@@ -659,7 +661,6 @@ const loadFriendsFeed = async () => {
     } catch(e) { feed.innerHTML = '<p style="color:red;">Erro ao puxar o feed.</p>'; }
 };
 
-// CORREÇÃO DO LAYOUT DA COMUNIDADE - USUÁRIOS
 const renderUsers = (usersList) => {
     const usersGrid = document.getElementById('users-grid');
     usersGrid.innerHTML = '';
