@@ -15,12 +15,12 @@
     <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
-    <link rel="stylesheet" href="style.css?v=22">
+    <link rel="stylesheet" href="style.css?v=25">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 <body class="site-enter">
 
-    <div id="canvas-3d-container" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none;"></div>
+    <div id="canvas-3d-container" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; transition: opacity 0.8s ease, transform 0.8s ease;"></div>
     
     <div id="page-transition" class="transition-overlay" style="display: none;">
         <div class="pulse-text" style="font-size: 3rem;">
@@ -219,7 +219,7 @@
         </div>
     </div>
 
-    <div id="profile-modal" class="modal-overlay" style="display: none;">
+    <div id="profile-modal" class="modal-overlay" style="display: none; z-index: 99999;">
         <div class="modal-content liquid-glass">
             <div class="modal-header">
                 <h2 class="glow-text">Seu Perfil</h2>
@@ -276,7 +276,7 @@
         </div>
     </div>
 
-    <div id="public-profile-modal" class="modal-overlay" style="display: none;">
+    <div id="public-profile-modal" class="modal-overlay" style="display: none; z-index: 99999;">
         <div class="modal-content liquid-glass">
             <div class="modal-header">
                 <h2 id="public-name" class="glow-text">Perfil</h2>
@@ -304,12 +304,32 @@
         </div>
     </div>
 
-    <div style="position: fixed; left: 0; bottom: 0; width: 10px; height: 10px; opacity: 0.01; pointer-events: none; z-index: -9999;">
+    <div id="artist-profile-modal" class="modal-overlay" style="display: none; z-index: 99999;">
+        <div class="modal-content liquid-glass" style="max-width: 800px; padding-bottom: 20px;">
+            <div class="modal-header">
+                <h2 id="artist-profile-name" class="glow-text">Artista</h2>
+                <button id="close-artist-modal" class="btn-ghost"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="modal-body custom-scroll" style="overflow-y: auto; max-height: 70vh;">
+                <div style="text-align: center;">
+                    <img id="artist-profile-image" src="" style="width: 140px; height: 140px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; box-shadow: 0 0 20px rgba(255,255,255,0.2); margin-bottom: 20px;">
+                </div>
+                
+                <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">Álbuns</h3>
+                <div id="artist-albums-grid" class="custom-scroll" style="display: flex; gap: 15px; overflow-x: auto; padding-bottom: 15px; margin-bottom: 20px;"></div>
+
+                <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">EPs & Singles</h3>
+                <div id="artist-singles-grid" class="custom-scroll" style="display: flex; gap: 15px; overflow-x: auto; padding-bottom: 15px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div style="position: fixed; left: -9999px; bottom: 0; width: 10px; height: 10px; opacity: 0.01; pointer-events: none; z-index: -9999;">
         <div id="yt-player"></div>
     </div>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
-    <script type="module" src="script.js?v=23"></script>
+    <script type="module" src="script.js?v=25"></script>
 
     <script>
     window.addEventListener('load', () => {
@@ -414,7 +434,8 @@
                 composer.setSize(window.innerWidth, window.innerHeight); 
             });
         } else {
-            document.getElementById('canvas-3d-container').style.display = 'none';
+            const canvasContainer = document.getElementById('canvas-3d-container');
+            if(canvasContainer) canvasContainer.style.display = 'none';
         }
     });
     </script>
