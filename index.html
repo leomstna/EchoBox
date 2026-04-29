@@ -15,12 +15,12 @@
     <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
-    <link rel="stylesheet" href="style.css?v=33">
+    <link rel="stylesheet" href="style.css?v=35">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 <body class="site-enter">
 
-    <div id="canvas-3d-container" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none;"></div>
+    <div id="canvas-3d-container" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; transition: opacity 0.8s ease, transform 0.8s ease;"></div>
     
     <div id="page-transition" class="transition-overlay" style="display: none;">
         <div class="pulse-text" style="font-size: 3rem;">
@@ -252,6 +252,14 @@
                         <span class="slider-toggle"></span>
                     </label>
                 </div>
+                
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px; padding: 12px 15px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                    <span style="color: #aaa; font-size: 0.8rem; text-transform: uppercase;">Ocultar Fundo (Seda)</span>
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-silk-mode">
+                        <span class="slider-toggle"></span>
+                    </label>
+                </div>
 
                 <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
                     <h3 style="font-size: 1rem; margin-bottom: 10px; color: #aaa;">Top 3 Favoritos <i class="ph-fill ph-heart" style="color: #1ed760; margin-left: 5px;"></i></h3>
@@ -336,12 +344,12 @@
     </div>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
-    <script type="module" src="script.js?v=33"></script>
+    <script type="module" src="script.js?v=35"></script>
 
     <script>
     window.addEventListener('load', () => {
-        // Inicializa a variável de controle lendo o cache
         window.echoLightMode = localStorage.getItem('echo_light_mode') === 'true';
+        window.echoSilkMode = localStorage.getItem('echo_silk_mode') === 'true';
 
         if (typeof THREE !== 'undefined') {
             const container = document.getElementById('canvas-3d-container');
@@ -358,8 +366,8 @@
 
             const renderScene = new THREE.RenderPass(scene, camera);
             const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-            bloomPass.threshold = 0.3; // Corta o brilho estourado
-            bloomPass.strength = 1.2; // Reduz a força
+            bloomPass.threshold = 0.3;
+            bloomPass.strength = 1.2;
             bloomPass.radius = 1.0;
 
             const composer = new THREE.EffectComposer(renderer);
@@ -388,6 +396,7 @@
             }
             `;
 
+            // Adicionado a variável uOpacity pra fazer o Fade In/Out do fundo
             const silkFragmentShader = `
             varying vec2 vUv;
             varying vec3 vPosition;
@@ -397,6 +406,7 @@
             uniform float uScale;
             uniform float uRotation;
             uniform float uNoiseIntensity;
+            uniform float uOpacity;
 
             const float e = 2.71828182845904523536;
 
@@ -428,18 +438,20 @@
                                        sin(20.0 * (tex.x + tex.y - 0.1 * tOffset)));
 
               vec4 col = vec4(uColor, 1.0) * vec4(pattern) - rnd / 15.0 * uNoiseIntensity;
-              col.a = 1.0;
+              col.a = uOpacity;
               gl_FragColor = col;
             }
             `;
 
+            // Parâmetros solicitados (speed 5, noise 1.5) mas com cor e opacidade corrigidas
             const silkUniforms = {
                 uTime: { value: 0 },
-                uColor: { value: new THREE.Color('#18151A') }, // Cor escura pra não cegar o usuário
-                uSpeed: { value: 2.0 },
-                uScale: { value: 3.5 }, // Escala aumentada pra detalhar a seda
+                uColor: { value: new THREE.Color('#18151A') }, 
+                uSpeed: { value: 5.0 }, 
+                uScale: { value: 3.5 },
                 uRotation: { value: 0.0 },
-                uNoiseIntensity: { value: 1.5 }
+                uNoiseIntensity: { value: 1.5 },
+                uOpacity: { value: 1.0 } 
             };
 
             const silkGeo = new THREE.PlaneGeometry(150, 150);
@@ -447,7 +459,8 @@
                 vertexShader: silkVertexShader,
                 fragmentShader: silkFragmentShader,
                 uniforms: silkUniforms,
-                depthWrite: false
+                depthWrite: false,
+                transparent: true
             });
             const silkMesh = new THREE.Mesh(silkGeo, silkMat);
             silkMesh.position.z = -15; 
@@ -482,13 +495,20 @@
 
             const playBtn = document.getElementById('player-play-btn');
 
+            // CLOCK OFICIAL ADICIONADO PARA RASTREAR A VELOCIDADE DA ANIMAÇÃO EXATAMENTE COMO NO REACT
+            const clock = new THREE.Clock();
+
             function animate() {
                 requestAnimationFrame(animate);
 
-                silkUniforms.uTime.value += 0.002; 
+                const delta = clock.getDelta();
+                silkUniforms.uTime.value += 0.1 * delta; // Velocidade perfeitamente cravada na CPU
+                
+                // SISTEMA DE FADE DO BOTÃO DE SEDA
+                let targetSilkOpacity = window.echoSilkMode ? 0.0 : 1.0;
+                silkUniforms.uOpacity.value += (targetSilkOpacity - silkUniforms.uOpacity.value) * 0.05;
 
                 if (boombox) {
-                    // LÓGICA DE FADE DO BOOMBOX COM GRAVIDADE
                     let targetY = window.echoLightMode ? -15.0 : fixedPosY;
                     window.currentBoomboxY += (targetY - window.currentBoomboxY) * 0.05;
 
