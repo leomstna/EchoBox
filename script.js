@@ -92,6 +92,32 @@ const scrollObserver = new IntersectionObserver((entries) => {
 
 document.querySelectorAll('.scroll-trigger').forEach(el => scrollObserver.observe(el));
 
+// AQUI: O NOVO OBSERVER PARA A LISTA ANIMADA (Efeito React)
+const trackObserver = new IntersectionObserver((entries) => {
+    let delay = 0;
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            setTimeout(() => { entry.target.classList.add('track-animated'); }, delay);
+            delay += 60; // Efeito cascata
+            trackObserver.unobserve(entry.target); 
+        }
+    });
+}, { threshold: 0.1, rootMargin: "0px 0px -20px 0px" });
+
+// AQUI: LÓGICA DE FADE DOS GRADIENTES
+const tracklistContainer = document.getElementById('tracklist-container');
+const trackTopGrad = document.getElementById('track-top-gradient');
+const trackBotGrad = document.getElementById('track-bottom-gradient');
+
+if(tracklistContainer) {
+    tracklistContainer.addEventListener('scroll', (e) => {
+        const { scrollTop, scrollHeight, clientHeight } = e.target;
+        trackTopGrad.style.opacity = Math.min(scrollTop / 30, 1);
+        const botDist = scrollHeight - (scrollTop + clientHeight);
+        trackBotGrad.style.opacity = scrollHeight <= clientHeight ? 0 : Math.min(botDist / 30, 1);
+    });
+}
+
 const sectionsMap = { '': 'home', '#home': 'home', '#explorar': 'search-section', '#rede': 'network-section' };
 
 const showSection = (id, updateHash = true) => {
@@ -234,9 +260,6 @@ const loadArtistProfile = async (artistName, artistImage) => {
 
 document.getElementById('close-artist-modal').addEventListener('click', () => { artistModal.style.display = 'none'; });
 
-// =====================================================================
-// AQUI TAVA A MERDA: O SCRIPT DA API DO YOUTUBE FALTANDO! RECOLOQUEI!
-// =====================================================================
 const tag = document.createElement('script');
 tag.src = "https://www.youtube.com/iframe_api";
 const firstScriptTag = document.getElementsByTagName('script')[0];
@@ -326,6 +349,8 @@ const loadAlbumView = async (album) => {
 
     const trackContainer = document.getElementById('tracklist-container');
     trackContainer.innerHTML = Array(5).fill('<div class="skeleton skel-row"></div>').join('');
+    // Reseta scroll pros gradientes acompanharem
+    trackContainer.scrollTop = 0;
     
     let warningText = document.getElementById('album-rating-warning');
     if (!warningText) {
@@ -426,7 +451,11 @@ const loadAlbumView = async (album) => {
 
         tracks.forEach((track, index) => {
             const tId = String(track.trackId); const myTrackData = savedData[tId] || { rating: 0, comment: '' };
-            const div = document.createElement('div'); div.className = 'track-row liquid-glass scroll-trigger'; 
+            const div = document.createElement('div'); 
+            
+            // AQUI É A NOVA CLASSE QUE PUXA A ANIMAÇÃO QUE TU MANDOU
+            div.className = 'track-row liquid-glass track-trigger'; 
+            
             div.innerHTML = `
                 <div class="track-info">
                     <span style="color:#666; font-size:0.8rem; width:15px;">${index + 1}</span><i class="ph ph-play-circle play-btn"></i>
@@ -436,7 +465,8 @@ const loadAlbumView = async (album) => {
                     <div class="stars track-stars" data-track="${tId}">${[1,2,3,4,5].map(n => `<i class="${n <= myTrackData.rating ? 'ph-fill' : 'ph'} ph-star" style="color: ${n <= myTrackData.rating ? '#fff' : '#444'}"></i>`).join('')}</div>
                     <textarea class="track-comment custom-scroll" placeholder="Suas notas (máx 150 letras)..." data-track="${tId}" maxlength="150">${myTrackData.comment}</textarea>
                 </div>`;
-            trackContainer.appendChild(div); scrollObserver.observe(div); 
+            trackContainer.appendChild(div); 
+            trackObserver.observe(div); // ACIONA O OBSERVADOR DAS TRACKS
 
             const playBtn = div.querySelector('.play-btn');
             playBtn.addEventListener('click', async () => {
@@ -488,6 +518,10 @@ const loadAlbumView = async (album) => {
                 }, 1000);
             });
         });
+
+        // Força um scroll invisível pra ajustar os gradientes dps que carrega tudo
+        setTimeout(() => { trackContainer.dispatchEvent(new Event('scroll')); }, 200);
+
     } catch(e) { trackContainer.innerHTML = '<p style="color:red;">Erro de conexão com o catálogo musical.</p>'; }
 };
 
