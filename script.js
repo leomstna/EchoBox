@@ -25,7 +25,7 @@ const userMenu = document.getElementById('user-menu');
 const navPfp = document.getElementById('nav-pfp');
 const modal = document.getElementById('profile-modal');
 const publicModal = document.getElementById('public-profile-modal');
-const artistModal = document.getElementById('artist-profile-modal'); // NOVO MODAL
+const artistModal = document.getElementById('artist-profile-modal'); 
 const cropModal = document.getElementById('crop-modal');
 const searchBtn = document.getElementById('search-btn');
 const searchInput = document.getElementById('search-input');
@@ -42,7 +42,6 @@ let isSearchMode = false;
 
 const API_BASE_URL = 'https://api-musicbox-m275.onrender.com';
 
-// FUNÇÃO DE FADE SUAVE DO RÁDIO 3D
 const toggleLightMode = document.getElementById('toggle-light-mode');
 if(toggleLightMode) {
     toggleLightMode.checked = localStorage.getItem('echo_light_mode') === 'true';
@@ -50,14 +49,12 @@ if(toggleLightMode) {
         localStorage.setItem('echo_light_mode', e.target.checked);
         const canvasContainer = document.getElementById('canvas-3d-container');
         if (e.target.checked) {
-            // FADE OUT SEM REFRESH
             if(canvasContainer) {
                 canvasContainer.style.opacity = '0';
                 canvasContainer.style.transform = 'translateY(50px)';
                 setTimeout(() => { canvasContainer.style.display = 'none'; }, 800);
             }
         } else {
-            // PRA LIGAR ELE PRECISA RENDERIZAR OS MODELOS, ENTÃO DA REFRESH
             window.location.reload(); 
         }
     });
@@ -236,6 +233,33 @@ const loadArtistProfile = async (artistName, artistImage) => {
 };
 
 document.getElementById('close-artist-modal').addEventListener('click', () => { artistModal.style.display = 'none'; });
+
+window.onYouTubeIframeAPIReady = () => {
+    ytPlayer = new YT.Player('yt-player', {
+        height: '10', width: '10', videoId: 'M7lc1UVf-VE',
+        playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'fs': 0, 'origin': window.location.origin, 'enablejsapi': 1 },
+        events: {
+            'onReady': () => { isPlayerReady = true; if(volSlider) ytPlayer.setVolume(volSlider.value * 100); ytPlayer.pauseVideo(); },
+            'onStateChange': onPlayerStateChange
+        }
+    });
+};
+
+function onPlayerStateChange(event) {
+    if (event.data === YT.PlayerState.PLAYING) {
+        pPlayBtn.classList.replace('ph-play-circle', 'ph-pause-circle');
+        if (currentPlayBtnUI) { currentPlayBtnUI.classList.remove('ph-spinner'); currentPlayBtnUI.classList.add('ph-pause-circle'); }
+        clearInterval(progressInterval); progressInterval = setInterval(updateProgressBar, 500);
+    } else if (event.data === YT.PlayerState.PAUSED) {
+        pPlayBtn.classList.replace('ph-pause-circle', 'ph-play-circle');
+        if (currentPlayBtnUI) currentPlayBtnUI.classList.replace('ph-pause-circle', 'ph-play-circle');
+        clearInterval(progressInterval);
+    } else if (event.data === YT.PlayerState.ENDED) {
+        pPlayBtn.classList.replace('ph-pause-circle', 'ph-play-circle');
+        if (currentPlayBtnUI) currentPlayBtnUI.classList.replace('ph-pause-circle', 'ph-play-circle');
+        clearInterval(progressInterval); pBarFill.style.width = '0%'; pTimeCurr.innerText = '0:00';
+    }
+}
 
 function updateProgressBar() {
     if(!ytPlayer || !ytPlayer.getDuration) return;
@@ -572,6 +596,7 @@ searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') perform
 document.querySelectorAll('input[name="search-type"]').forEach(radio => { radio.addEventListener('change', performSearch); });
 minSlider.addEventListener('change', performSearch); maxSlider.addEventListener('change', performSearch); useYearFilter.addEventListener('change', performSearch);
 
+// CORREÇÃO DO LAYOUT DA COMUNIDADE AQUI NO LOADFRIENDSFEED
 const loadFriendsFeed = async () => {
     if(!currentUser) return;
     const feed = document.getElementById('friends-feed');
@@ -613,19 +638,17 @@ const loadFriendsFeed = async () => {
             div.style.marginBottom = '15px'; div.style.borderRadius = '12px';
             
             div.innerHTML = `
-                <div style="display: flex; gap: 15px; width: 100%;">
-                    <div class="pfp-container-mini" style="flex-shrink: 0;"><img src="${act.friendPfp}"></div>
-                    <div style="flex:1; min-width: 0;">
-                        <p style="font-size:0.75rem; color:#888;"><b>${act.friendName}</b> avaliou um ${typeLabel}:</p>
+                <div class="pfp-container-mini" style="flex-shrink: 0;"><img src="${act.friendPfp}"></div>
+                <div style="flex:1; min-width: 0;">
+                    <p style="font-size:0.75rem; color:#888; margin-bottom:10px;"><b>${act.friendName}</b> avaliou um ${typeLabel}:</p>
+                    
+                    <div style="display: flex; gap: 15px; align-items: flex-start; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
+                        <img src="${act.image}" class="cover" data-id="open-album" title="Abrir Álbum" style="width: 70px; height: 70px; border-radius: 6px; cursor: pointer; flex-shrink: 0; object-fit: cover;">
                         
-                        <div style="display: flex; gap: 15px; align-items: flex-start; margin-top: 10px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
-                            <img src="${act.image}" class="cover" data-id="open-album" title="Abrir Álbum" style="width: 70px; height: 70px; border-radius: 6px; cursor: pointer; flex-shrink: 0;">
-                            
-                            <div style="flex: 1;">
-                                <h4 style="color:#fff; margin: 0 0 5px 0; cursor:pointer; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" class="feed-title">${act.name} <span style="color:#aaa; font-weight:normal; font-size:0.8rem;">- ${act.artist}</span></h4>
-                                <p style="color:#fff; font-size:1.1rem; text-shadow: 0 0 10px rgba(255,255,255,0.3); margin-bottom: 8px;">${'★'.repeat(overallRating)}${'<span style="color:#444; text-shadow:none;">' + '☆'.repeat(5 - overallRating) + '</span>'}</p>
-                                ${highlightComment ? `<p style="color:#ddd; font-size:0.85rem; font-style: italic; line-height: 1.4; border-left: 2px solid #555; padding-left: 10px;">"${highlightComment}"</p>` : ''}
-                            </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <h4 style="color:#fff; margin: 0 0 5px 0; cursor:pointer; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" class="feed-title">${act.name} <span style="color:#aaa; font-weight:normal; font-size:0.8rem;">- ${act.artist}</span></h4>
+                            <p style="color:#fff; font-size:1.1rem; text-shadow: 0 0 10px rgba(255,255,255,0.3); margin-bottom: 8px;">${'★'.repeat(overallRating)}${'<span style="color:#444; text-shadow:none;">' + '☆'.repeat(5 - overallRating) + '</span>'}</p>
+                            ${highlightComment ? `<p style="color:#ddd; font-size:0.85rem; font-style: italic; line-height: 1.4; border-left: 2px solid #555; padding-left: 10px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">"${highlightComment}"</p>` : ''}
                         </div>
                     </div>
                 </div>
@@ -637,6 +660,7 @@ const loadFriendsFeed = async () => {
     } catch(e) { feed.innerHTML = '<p style="color:red;">Erro ao puxar o feed.</p>'; }
 };
 
+// CORREÇÃO DO LAYOUT DOS USUARIOS AQUI
 const renderUsers = (usersList) => {
     const usersGrid = document.getElementById('users-grid');
     usersGrid.innerHTML = '';
@@ -646,11 +670,14 @@ const renderUsers = (usersList) => {
         const data = userObj.data; const uid = userObj.id;
         const userCard = document.createElement('div'); userCard.className = 'user-card liquid-glass scroll-trigger'; 
         userCard.innerHTML = `
-            <div class="user-info-click" style="display:flex; align-items:center; gap:10px; width: 100%;">
-                <div class="pfp-container-mini"><img src="${data.photoURL || 'https://placehold.co/50x50/1a1a1a/888888?text=U'}"></div>
-                <div><h4 class="glow-text" style="color:#fff;">${data.name || 'Anônimo'}</h4><p style="font-size:0.7rem; color:#aaa;">${data.bio ? data.bio.substring(0, 30) + '...' : 'Sem biografia'}</p></div>
+            <div class="user-info-click" style="display:flex; align-items:center; gap:10px; flex: 1; min-width: 0;">
+                <div class="pfp-container-mini" style="flex-shrink: 0;"><img src="${data.photoURL || 'https://placehold.co/50x50/1a1a1a/888888?text=U'}"></div>
+                <div style="overflow: hidden; flex: 1;">
+                    <h4 class="glow-text" style="color:#fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin:0;">${data.name || 'Anônimo'}</h4>
+                    <p style="font-size:0.7rem; color:#aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin:0;">${data.bio ? data.bio : 'Sem biografia'}</p>
+                </div>
             </div>
-            <button class="btn-follow" data-id="${uid}">Seguir</button>
+            <button class="btn-follow" data-id="${uid}" style="flex-shrink: 0; margin-left: 10px;">Seguir</button>
         `;
         usersGrid.appendChild(userCard); scrollObserver.observe(userCard); 
         userCard.querySelector('.user-info-click').addEventListener('click', () => openPublicProfile(uid, data));
