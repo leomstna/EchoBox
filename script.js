@@ -283,7 +283,7 @@ const loadAlbumView = async (album) => {
             currentFavs.splice(existingIndex, 1);
             newFavBtn.querySelector('i').className = 'ph ph-heart'; newFavBtn.querySelector('i').style.color = 'inherit';
         } else {
-            if(currentFavs.length >= 3) return alert('Você já possui 3 obras favoritas. Remova uma primeiro.');
+            if(currentFavs.length >= 3) return alert('Você já possui 3 obras favoritas fixadas no perfil. Remova uma primeiro.');
             currentFavs.push({ id: String(album.id), name: album.name, artist: album.artist, image: album.image, type: originalType });
             newFavBtn.querySelector('i').className = 'ph-fill ph-heart'; newFavBtn.querySelector('i').style.color = '#1ed760';
         }
@@ -291,8 +291,11 @@ const loadAlbumView = async (album) => {
     });
 
     try {
-        let url = `https://itunes.apple.com/lookup?id=${album.id}&entity=song`;
-        if (originalType === 'single' || !album.id || isNaN(album.id)) url = `https://itunes.apple.com/search?term=${encodeURIComponent(album.name + ' ' + album.artist)}&entity=song&limit=25`;
+        // INJEÇÃO DA LOJA DO BRASIL (country=BR) AQUI PARA DESTRAVAR FAIXAS REGIONAIS
+        let url = `https://itunes.apple.com/lookup?id=${album.id}&entity=song&country=BR`;
+        if (originalType === 'single' || !album.id || isNaN(album.id)) {
+            url = `https://itunes.apple.com/search?term=${encodeURIComponent(album.name + ' ' + album.artist)}&entity=song&limit=25&country=BR`;
+        }
 
         const res = await fetch(url); const data = await res.json();
         let tracks = data.results.filter(t => t.wrapperType === 'track');
@@ -644,7 +647,6 @@ const openPublicProfile = async (uid, userData) => {
         if (snap.empty) { container.innerHTML = getEmptyStateHTML(); bindEmptyStateButton(container); return; }
         container.innerHTML = ''; let animDelay = 0;
         
-        // AGRUPADOR VISUAL PARA PERFIL PÚBLICO
         let groupedAlbums = {};
         snap.forEach((docSnap) => {
             const data = docSnap.data();
@@ -705,7 +707,6 @@ navPfp.addEventListener('click', async () => {
         if (querySnapshot.empty) { ratedContainer.innerHTML = getEmptyStateHTML(); bindEmptyStateButton(ratedContainer); return; }
         ratedContainer.innerHTML = ''; let animDelay = 0; 
         
-        // AGRUPADOR VISUAL PARA PERFIL PRIVADO
         let groupedAlbums = {};
         querySnapshot.forEach((docSnap) => {
             const data = docSnap.data();
@@ -890,4 +891,51 @@ const renderPage = () => {
 document.getElementById('prev-page').addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderPage(); document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' }); } });
 document.getElementById('next-page').addEventListener('click', () => { if ((currentPage * itemsPerPage) < currentAlbums.length) { currentPage++; renderPage(); document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' }); } });
 
-window.addEventListener('DOMContentLoaded', () => { if (currentAlbums.length === 0) { loadTrending(); } });
+searchBtn.addEventListener('click', async () => {
+    let rawQuery = searchInput.value.trim();
+    if (!rawQuery) { loadTrending(); return; }
+
+    isSearchMode = true;
+    loadingText.innerHTML = 'Buscando registros<span class="wavy-dot">.</span><span class="wavy-dot">.</span><span class="wavy-dot">.</span>';
+    loadingText.style.display = 'block'; albumGrid.innerHTML = ''; document.getElementById('top-result-wrapper').style.display = 'none'; document.getElementById('pagination-controls').style.display = 'none';
+
+    let timeoutAlert = setTimeout(() => { loadingText.innerHTML = 'O servidor Render está acordando da hibernação. Aguenta aí (pode levar até 1 minuto)...'; }, 5000);
+
+    try {
+        const selectedType = document.querySelector('input[name="search-type"]:checked').value;
+        let fetchUrl = `https://api-musicbox-m275.onrender.com/search?q=${encodeURIComponent(rawQuery)}&type=${selectedType}`;
+        
+        const response = await fetch(fetchUrl);
+        clearTimeout(timeoutAlert);
+        
+        if (!response.ok) throw new Error('A API devolveu um erro.');
+
+        let data = await response.json();
+        loadingText.style.display = 'none';
+        
+        if (data.error || !data || data.length === 0) { 
+            albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registro encontrado.</p>'; 
+            return; 
+        }
+
+        const useYear = document.getElementById('use-year-filter').checked;
+        if (useYear) {
+            const minYear = parseInt(minSlider.value) || 0;
+            const maxYear = parseInt(maxSlider.value) || 9999;
+            data = data.filter(album => {
+                const year = parseInt(album.year);
+                if (isNaN(year)) return false; 
+                return year >= minYear && year <= maxYear;
+            });
+        }
+
+        if (data.length === 0) { albumGrid.innerHTML = '<p style="text-align:center; color:#666; width:100%;">Nenhum registro encontrado nesta faixa de anos.</p>'; return; }
+
+        currentAlbums = data; currentPage = 1; renderPage();
+    } catch (error) { 
+        clearTimeout(timeoutAlert);
+        loadingText.style.display = 'none'; 
+        albumGrid.innerHTML = '<p style="text-align:center; color:#ff3333; width:100%;">A conexão falhou. Tente novamente.</p>'; 
+    }
+});
+searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchBtn.click(); });
