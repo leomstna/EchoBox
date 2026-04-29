@@ -37,8 +37,6 @@ let allUsersData = [];
 let currentAlbums = [];
 let currentPage = 1;
 const itemsPerPage = 12;
-
-// O ERRO DO CONSOLE TAVA AQUI, FALTOU ESSA VARIÁVEL GLOBAL
 let isSearchMode = false;
 
 const API_BASE_URL = 'https://api-musicbox-m275.onrender.com';
@@ -83,17 +81,11 @@ const scrollObserver = new IntersectionObserver((entries) => {
 
 document.querySelectorAll('.scroll-trigger').forEach(el => scrollObserver.observe(el));
 
-const sectionsMap = {
-    '': 'home',
-    '#home': 'home',
-    '#explorar': 'search-section',
-    '#rede': 'network-section'
-};
+const sectionsMap = { '': 'home', '#home': 'home', '#explorar': 'search-section', '#rede': 'network-section' };
 
 const showSection = (id, updateHash = true) => {
     const overlay = document.getElementById('page-transition');
     const sections = document.querySelectorAll('.section-page');
-    
     const isHomeOrExplore = (id === 'home' || id === 'search-section');
     const isCurrentlyOnHomeOrExplore = (document.getElementById('home').style.display !== 'none');
 
@@ -108,37 +100,24 @@ const showSection = (id, updateHash = true) => {
 
     setTimeout(() => {
         sections.forEach(s => s.style.display = 'none');
-        
         if (isHomeOrExplore) { 
             document.getElementById('home').style.display = 'block'; 
             document.getElementById('search-section').style.display = 'block';
             if (id === 'search-section') { setTimeout(() => document.getElementById('search-section').scrollIntoView({ behavior: 'instant' }), 50); } 
             else { window.scrollTo({ top: 0, behavior: 'instant' }); }
         } else {
-            document.getElementById(id).style.display = 'block';
-            window.scrollTo({ top: 0, behavior: 'instant' });
+            document.getElementById(id).style.display = 'block'; window.scrollTo({ top: 0, behavior: 'instant' });
         }
-
         if(updateHash) {
             const hash = Object.keys(sectionsMap).find(key => sectionsMap[key] === id) || '#home';
             history.pushState(null, null, hash);
         }
-
         overlay.style.opacity = '0'; setTimeout(() => { overlay.style.display = 'none'; }, 300);
     }, 300);
 };
 
-window.addEventListener('load', () => {
-    const currentHash = window.location.hash;
-    const sectionId = sectionsMap[currentHash] || 'home';
-    showSection(sectionId, false);
-});
-
-window.addEventListener('hashchange', () => {
-    const sectionId = sectionsMap[window.location.hash] || 'home';
-    showSection(sectionId, false);
-});
-
+window.addEventListener('load', () => { const currentHash = window.location.hash; showSection(sectionsMap[currentHash] || 'home', false); });
+window.addEventListener('hashchange', () => { showSection(sectionsMap[window.location.hash] || 'home', false); });
 document.getElementById('link-home').addEventListener('click', (e) => { e.preventDefault(); showSection('home'); });
 document.getElementById('link-explorar').addEventListener('click', (e) => { e.preventDefault(); showSection('search-section'); });
 document.getElementById('back-to-explore').addEventListener('click', () => showSection('search-section'));
@@ -162,7 +141,6 @@ if(minSlider && maxSlider) {
     minSlider.addEventListener('input', () => { if (parseInt(minSlider.value) > parseInt(maxSlider.value) - 1) minSlider.value = parseInt(maxSlider.value) - 1; minValText.innerText = minSlider.value; updateSlider(); });
     maxSlider.addEventListener('input', () => { if (parseInt(maxSlider.value) < parseInt(minSlider.value) + 1) maxSlider.value = parseInt(minSlider.value) + 1; maxValText.innerText = maxSlider.value; updateSlider(); });
     updateSlider();
-
     useYearFilter.addEventListener('change', (e) => {
         if (e.target.checked) { sliderWrapper.style.opacity = '1'; sliderWrapper.style.pointerEvents = 'auto'; } 
         else { sliderWrapper.style.opacity = '0.3'; sliderWrapper.style.pointerEvents = 'none'; }
@@ -191,15 +169,11 @@ pCover.addEventListener('click', () => {
     }
 });
 
-// O SEGUNDO ERRO DO YOUTUBE RESOLVIDO AQUI: ENABLEJSAPI ADICIONADO
 window.onYouTubeIframeAPIReady = () => {
     ytPlayer = new YT.Player('yt-player', {
-        height: '10', width: '10', videoId: 'M7lc1UVf-VE',
+        height: '1', width: '1', videoId: 'M7lc1UVf-VE',
         playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'fs': 0, 'origin': window.location.origin, 'enablejsapi': 1 },
-        events: {
-            'onReady': () => { isPlayerReady = true; if(volSlider) ytPlayer.setVolume(volSlider.value * 100); ytPlayer.pauseVideo(); },
-            'onStateChange': onPlayerStateChange
-        }
+        events: { 'onReady': () => { isPlayerReady = true; if(volSlider) ytPlayer.setVolume(volSlider.value * 100); ytPlayer.pauseVideo(); }, 'onStateChange': onPlayerStateChange }
     });
 };
 
@@ -280,7 +254,7 @@ const loadAlbumView = async (album) => {
             <i class="ph ph-info" style="color: #aaa; font-size: 1.2rem; margin-top: 2px;"></i>
             <div>
                 <p style="color:#fff; font-size:0.75rem; font-weight:600; margin-bottom: 4px;">Avaliação Rápida</p>
-                <p style="color:#aaa; font-size:0.65rem; line-height: 1.4;">A nota dada aqui será distribuída para todas as faixas. Para uma curadoria precisa, avalie as músicas individualmente abaixo.</p>
+                <p style="color:#aaa; font-size:0.65rem; line-height: 1.4;">A nota dada aqui será distribuída para todas as faixas. Para curadoria precisa, avalie abaixo.</p>
             </div>`;
         starsContainer.parentElement.appendChild(warningText);
     }
@@ -309,7 +283,7 @@ const loadAlbumView = async (album) => {
             currentFavs.splice(existingIndex, 1);
             newFavBtn.querySelector('i').className = 'ph ph-heart'; newFavBtn.querySelector('i').style.color = 'inherit';
         } else {
-            if(currentFavs.length >= 3) return alert('Você já possui 3 obras favoritas fixadas no perfil. Remova uma primeiro.');
+            if(currentFavs.length >= 3) return alert('Você já possui 3 obras favoritas. Remova uma primeiro.');
             currentFavs.push({ id: String(album.id), name: album.name, artist: album.artist, image: album.image, type: originalType });
             newFavBtn.querySelector('i').className = 'ph-fill ph-heart'; newFavBtn.querySelector('i').style.color = '#1ed760';
         }
@@ -370,11 +344,7 @@ const loadAlbumView = async (album) => {
 
         tracks.forEach((track, index) => {
             const tId = String(track.trackId); const myTrackData = savedData[tId] || { rating: 0, comment: '' };
-            const div = document.createElement('div'); 
-            
-            // O TRIGGER DE SCROLL DAS FAIXAS FOI RESTAURADO AQUI
-            div.className = 'track-row liquid-glass scroll-trigger'; 
-            
+            const div = document.createElement('div'); div.className = 'track-row liquid-glass scroll-trigger'; 
             div.innerHTML = `
                 <div class="track-info">
                     <span style="color:#666; font-size:0.8rem; width:15px;">${index + 1}</span><i class="ph ph-play-circle play-btn"></i>
@@ -384,8 +354,7 @@ const loadAlbumView = async (album) => {
                     <div class="stars track-stars" data-track="${tId}">${[1,2,3,4,5].map(n => `<i class="${n <= myTrackData.rating ? 'ph-fill' : 'ph'} ph-star" style="color: ${n <= myTrackData.rating ? '#fff' : '#444'}"></i>`).join('')}</div>
                     <textarea class="track-comment custom-scroll" placeholder="Suas notas (máx 150 letras)..." data-track="${tId}" maxlength="150">${myTrackData.comment}</textarea>
                 </div>`;
-            trackContainer.appendChild(div); 
-            scrollObserver.observe(div); // OBSERVER VENDO A FAIXA
+            trackContainer.appendChild(div); scrollObserver.observe(div); 
 
             const playBtn = div.querySelector('.play-btn');
             playBtn.addEventListener('click', async () => {
@@ -674,8 +643,20 @@ const openPublicProfile = async (uid, userData) => {
         const snap = await getDocs(collection(db, "users", uid, "ratings"));
         if (snap.empty) { container.innerHTML = getEmptyStateHTML(); bindEmptyStateButton(container); return; }
         container.innerHTML = ''; let animDelay = 0;
+        
+        // AGRUPADOR VISUAL PARA PERFIL PÚBLICO
+        let groupedAlbums = {};
         snap.forEach((docSnap) => {
-            const data = docSnap.data(); const originalType = data.type || 'album';
+            const data = docSnap.data();
+            if(!groupedAlbums[data.image]) {
+                groupedAlbums[data.image] = data;
+            } else {
+                groupedAlbums[data.image].type = 'album';
+            }
+        });
+
+        Object.values(groupedAlbums).forEach((data) => {
+            const originalType = data.type || 'album';
             let typeLabel = 'Álbum'; if (originalType === 'single') typeLabel = 'Single'; else if (originalType === 'ep') typeLabel = 'EP';
 
             const div = document.createElement('div'); div.className = 'rated-album-mini'; div.style.animationDelay = `${animDelay}s`;
@@ -723,8 +704,20 @@ navPfp.addEventListener('click', async () => {
         const querySnapshot = await getDocs(collection(db, "users", currentUser.uid, "ratings"));
         if (querySnapshot.empty) { ratedContainer.innerHTML = getEmptyStateHTML(); bindEmptyStateButton(ratedContainer); return; }
         ratedContainer.innerHTML = ''; let animDelay = 0; 
+        
+        // AGRUPADOR VISUAL PARA PERFIL PRIVADO
+        let groupedAlbums = {};
         querySnapshot.forEach((docSnap) => {
-            const data = docSnap.data(); const originalType = data.type || 'album';
+            const data = docSnap.data();
+            if(!groupedAlbums[data.image]) {
+                groupedAlbums[data.image] = data;
+            } else {
+                groupedAlbums[data.image].type = 'album';
+            }
+        });
+
+        Object.values(groupedAlbums).forEach((data) => {
+            const originalType = data.type || 'album';
             let typeLabel = 'Álbum'; if (originalType === 'single') typeLabel = 'Single'; else if (originalType === 'ep') typeLabel = 'EP';
 
             const div = document.createElement('div'); div.className = 'rated-album-mini'; div.style.animationDelay = `${animDelay}s`;
