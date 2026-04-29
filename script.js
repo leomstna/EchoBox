@@ -35,20 +35,19 @@ let allUsersData = [];
 let currentAlbums = [];
 let currentPage = 1;
 const itemsPerPage = 12;
+let isSearchMode = false;
 
 const API_BASE_URL = 'https://api-musicbox-m275.onrender.com';
 
-// --- CONTROLE MODO LEVE (ALTERAÇÃO 2) ---
 const toggleLightMode = document.getElementById('toggle-light-mode');
 if(toggleLightMode) {
     toggleLightMode.checked = localStorage.getItem('echo_light_mode') === 'true';
     toggleLightMode.addEventListener('change', (e) => {
         localStorage.setItem('echo_light_mode', e.target.checked);
-        window.location.reload(); // Recarrega pra aplicar/tirar o script do 3D
+        window.location.reload(); 
     });
 }
 
-// --- FUNÇÃO GLOBAL DE EMPTY STATE (ALTERAÇÃO 3) ---
 const getEmptyStateHTML = () => {
     return `
         <div style="text-align: center; width: 100%; padding: 30px 0; opacity: 0.6;">
@@ -58,6 +57,7 @@ const getEmptyStateHTML = () => {
         </div>
     `;
 };
+
 const bindEmptyStateButton = (container) => {
     container.querySelectorAll('.go-explore-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -80,17 +80,11 @@ const scrollObserver = new IntersectionObserver((entries) => {
 
 document.querySelectorAll('.scroll-trigger').forEach(el => scrollObserver.observe(el));
 
-const sectionsMap = {
-    '': 'home',
-    '#home': 'home',
-    '#explorar': 'search-section',
-    '#rede': 'network-section'
-};
+const sectionsMap = { '': 'home', '#home': 'home', '#explorar': 'search-section', '#rede': 'network-section' };
 
 const showSection = (id, updateHash = true) => {
     const overlay = document.getElementById('page-transition');
     const sections = document.querySelectorAll('.section-page');
-    
     const isHomeOrExplore = (id === 'home' || id === 'search-section');
     const isCurrentlyOnHomeOrExplore = (document.getElementById('home').style.display !== 'none');
 
@@ -105,37 +99,24 @@ const showSection = (id, updateHash = true) => {
 
     setTimeout(() => {
         sections.forEach(s => s.style.display = 'none');
-        
         if (isHomeOrExplore) { 
             document.getElementById('home').style.display = 'block'; 
             document.getElementById('search-section').style.display = 'block';
             if (id === 'search-section') { setTimeout(() => document.getElementById('search-section').scrollIntoView({ behavior: 'instant' }), 50); } 
             else { window.scrollTo({ top: 0, behavior: 'instant' }); }
         } else {
-            document.getElementById(id).style.display = 'block';
-            window.scrollTo({ top: 0, behavior: 'instant' });
+            document.getElementById(id).style.display = 'block'; window.scrollTo({ top: 0, behavior: 'instant' });
         }
-
         if(updateHash) {
             const hash = Object.keys(sectionsMap).find(key => sectionsMap[key] === id) || '#home';
             history.pushState(null, null, hash);
         }
-
         overlay.style.opacity = '0'; setTimeout(() => { overlay.style.display = 'none'; }, 300);
     }, 300);
 };
 
-window.addEventListener('load', () => {
-    const currentHash = window.location.hash;
-    const sectionId = sectionsMap[currentHash] || 'home';
-    showSection(sectionId, false);
-});
-
-window.addEventListener('hashchange', () => {
-    const sectionId = sectionsMap[window.location.hash] || 'home';
-    showSection(sectionId, false);
-});
-
+window.addEventListener('load', () => { const currentHash = window.location.hash; showSection(sectionsMap[currentHash] || 'home', false); });
+window.addEventListener('hashchange', () => { showSection(sectionsMap[window.location.hash] || 'home', false); });
 document.getElementById('link-home').addEventListener('click', (e) => { e.preventDefault(); showSection('home'); });
 document.getElementById('link-explorar').addEventListener('click', (e) => { e.preventDefault(); showSection('search-section'); });
 document.getElementById('back-to-explore').addEventListener('click', () => showSection('search-section'));
@@ -159,7 +140,6 @@ if(minSlider && maxSlider) {
     minSlider.addEventListener('input', () => { if (parseInt(minSlider.value) > parseInt(maxSlider.value) - 1) minSlider.value = parseInt(maxSlider.value) - 1; minValText.innerText = minSlider.value; updateSlider(); });
     maxSlider.addEventListener('input', () => { if (parseInt(maxSlider.value) < parseInt(minSlider.value) + 1) maxSlider.value = parseInt(minSlider.value) + 1; maxValText.innerText = maxSlider.value; updateSlider(); });
     updateSlider();
-
     useYearFilter.addEventListener('change', (e) => {
         if (e.target.checked) { sliderWrapper.style.opacity = '1'; sliderWrapper.style.pointerEvents = 'auto'; } 
         else { sliderWrapper.style.opacity = '0.3'; sliderWrapper.style.pointerEvents = 'none'; }
@@ -182,10 +162,7 @@ window.onYouTubeIframeAPIReady = () => {
     ytPlayer = new YT.Player('yt-player', {
         height: '1', width: '1', videoId: 'M7lc1UVf-VE',
         playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'fs': 0, 'origin': window.location.origin },
-        events: {
-            'onReady': () => { isPlayerReady = true; if(volSlider) ytPlayer.setVolume(volSlider.value * 100); ytPlayer.pauseVideo(); },
-            'onStateChange': onPlayerStateChange
-        }
+        events: { 'onReady': () => { isPlayerReady = true; if(volSlider) ytPlayer.setVolume(volSlider.value * 100); ytPlayer.pauseVideo(); }, 'onStateChange': onPlayerStateChange }
     });
 };
 
@@ -248,28 +225,46 @@ const loadAlbumView = async (album) => {
     document.getElementById('album-view-cover').src = album.image;
     document.getElementById('album-view-title').innerText = album.name;
     document.getElementById('album-view-artist').innerText = album.artist;
+    document.getElementById('album-view-extra-info').innerText = ''; // Limpa pra renderizar de novo
     
     const mediaTypeText = document.getElementById('album-view-media-type');
     const originalType = album.type || 'album';
     if (originalType === 'single') mediaTypeText.innerText = 'Single'; else if (originalType === 'ep') mediaTypeText.innerText = 'EP'; else mediaTypeText.innerText = 'Álbum';
 
     const trackContainer = document.getElementById('tracklist-container');
-    // Skeleton das faixas
     trackContainer.innerHTML = Array(5).fill('<div class="skeleton skel-row"></div>').join('');
     
-    let warningText = document.getElementById('album-rating-warning');
-    if (!warningText) {
-        const starsContainer = document.getElementById('album-view-stars').parentElement;
-        warningText = document.createElement('div'); warningText.id = 'album-rating-warning';
-        warningText.style.cssText = 'margin-top: 15px; padding: 12px 15px; border-radius: 10px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); display: flex; gap: 10px; align-items: flex-start; max-width: 420px;';
-        warningText.innerHTML = `
-            <i class="ph ph-info" style="color: #aaa; font-size: 1.2rem; margin-top: 2px;"></i>
-            <div>
-                <p style="color:#fff; font-size:0.75rem; font-weight:600; margin-bottom: 4px;">Avaliação Rápida</p>
-                <p style="color:#aaa; font-size:0.65rem; line-height: 1.4;">A nota dada aqui será distribuída para todas as faixas. Para uma curadoria precisa, avalie as músicas individualmente abaixo.</p>
-            </div>`;
-        starsContainer.parentElement.appendChild(warningText);
+    // BOTAO DE FAVORITAR NO ÁLBUM
+    const favBtn = document.getElementById('btn-favorite-album');
+    let isFav = false; let userFavorites = [];
+    if(currentUser) {
+        const uDoc = await getDoc(doc(db, "users", currentUser.uid));
+        if(uDoc.exists() && uDoc.data().favorites) {
+            userFavorites = uDoc.data().favorites;
+            isFav = userFavorites.some(f => f.id === String(album.id));
+        }
     }
+    const favIcon = favBtn.querySelector('i');
+    if(isFav) { favIcon.className = 'ph-fill ph-heart'; favIcon.style.color = '#1ed760'; } 
+    else { favIcon.className = 'ph ph-heart'; favIcon.style.color = 'inherit'; }
+
+    const newFavBtn = favBtn.cloneNode(true); favBtn.parentNode.replaceChild(newFavBtn, favBtn);
+    newFavBtn.addEventListener('click', async () => {
+        if(!currentUser) return alert('Faça login.');
+        const uDoc = await getDoc(doc(db, "users", currentUser.uid));
+        let currentFavs = uDoc.exists() && uDoc.data().favorites ? uDoc.data().favorites : [];
+        const existingIndex = currentFavs.findIndex(f => f.id === String(album.id));
+        
+        if(existingIndex >= 0) {
+            currentFavs.splice(existingIndex, 1);
+            newFavBtn.querySelector('i').className = 'ph ph-heart'; newFavBtn.querySelector('i').style.color = 'inherit';
+        } else {
+            if(currentFavs.length >= 3) return alert('Você já possui 3 obras favoritas fixadas no perfil. Remova uma primeiro.');
+            currentFavs.push({ id: String(album.id), name: album.name, artist: album.artist, image: album.image, type: originalType });
+            newFavBtn.querySelector('i').className = 'ph-fill ph-heart'; newFavBtn.querySelector('i').style.color = '#1ed760';
+        }
+        await setDoc(doc(db, "users", currentUser.uid), { favorites: currentFavs }, { merge: true });
+    });
 
     try {
         let url = `https://itunes.apple.com/lookup?id=${album.id}&entity=song`;
@@ -278,6 +273,12 @@ const loadAlbumView = async (album) => {
         const res = await fetch(url); const data = await res.json();
         let tracks = data.results.filter(t => t.wrapperType === 'track');
         if (originalType === 'single' || isNaN(album.id)) tracks = tracks.filter(t => (t.collectionName && t.collectionName.includes(album.name)) || (t.trackName && t.trackName.includes(album.name)));
+
+        // Calcular Info do Álbum
+        let totalMs = 0; tracks.forEach(t => totalMs += (t.trackTimeMillis || 0));
+        let min = Math.floor(totalMs / 60000); let sec = ((totalMs % 60000) / 1000).toFixed(0);
+        if(sec == 60) { min++; sec = 0; }
+        document.getElementById('album-view-extra-info').innerText = ` • ${album.year} • ${tracks.length} músicas, ${min}min ${sec}s`;
 
         let savedData = {};
         if(currentUser) {
@@ -301,7 +302,6 @@ const loadAlbumView = async (album) => {
                 const currentStarsNodes = Array.from(document.querySelectorAll('#album-view-stars i'));
                 const isAlreadyRated = currentStarsNodes[index].classList.contains('ph-fill') && (index === 4 || !currentStarsNodes[index+1]?.classList.contains('ph-fill'));
                 const finalRating = isAlreadyRated ? 0 : index + 1;
-
                 animateStars(currentStarsNodes, finalRating - 1);
                 
                 tracks.forEach(track => {
@@ -384,13 +384,11 @@ const loadAlbumView = async (album) => {
     } catch(e) { trackContainer.innerHTML = '<p style="color:red;">Erro de conexão com o catálogo musical.</p>'; }
 };
 
-// --- RENDERIZAR EM ALTA NA HOME (ALTERAÇÃO 1) ---
 const renderHomeTrending = (data) => {
     const homeGrid = document.getElementById('home-trending-grid');
     if(!homeGrid) return;
     homeGrid.innerHTML = '';
     
-    // Pega os 12 primeiros pra home
     data.slice(0, 12).forEach((album, i) => {
         const div = document.createElement('div');
         div.className = 'rated-album-mini liquid-glass';
@@ -410,8 +408,10 @@ const renderHomeTrending = (data) => {
 const getGridSkeletons = () => Array(8).fill('<div class="skeleton skel-card"></div>').join('');
 
 const loadTrending = async () => {
+    isSearchMode = false;
     loadingText.style.display = 'none'; 
-    albumGrid.innerHTML = getGridSkeletons(); // Skeleton da grelha
+    albumGrid.innerHTML = getGridSkeletons(); 
+    document.getElementById('top-result-wrapper').style.display = 'none';
     document.getElementById('pagination-controls').style.display = 'none';
     let timeoutAlert = setTimeout(() => { if(renderToast) renderToast.classList.add('show'); }, 3000);
 
@@ -436,8 +436,10 @@ const performSearch = async () => {
     let rawQuery = searchInput.value.trim();
     if (!rawQuery) { loadTrending(); return; }
 
+    isSearchMode = true;
     loadingText.style.display = 'none'; 
-    albumGrid.innerHTML = getGridSkeletons(); // Skeleton da grelha
+    albumGrid.innerHTML = getGridSkeletons(); 
+    document.getElementById('top-result-wrapper').style.display = 'none';
     document.getElementById('pagination-controls').style.display = 'none';
     let timeoutAlert = setTimeout(() => { if(renderToast) renderToast.classList.add('show'); }, 3000);
 
@@ -469,7 +471,6 @@ searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') perform
 document.querySelectorAll('input[name="search-type"]').forEach(radio => { radio.addEventListener('change', performSearch); });
 minSlider.addEventListener('change', performSearch); maxSlider.addEventListener('change', performSearch); useYearFilter.addEventListener('change', performSearch);
 
-// --- FEED DA COMUNIDADE FOCADO EM CONTEÚDO (ALTERAÇÃO 5) ---
 const loadFriendsFeed = async () => {
     if(!currentUser) return;
     const feed = document.getElementById('friends-feed');
@@ -584,11 +585,35 @@ if(document.getElementById('user-search-input')) {
     });
 }
 
+// --- RENDERIZAR FAVORITOS (ALTERAÇÃO 4) ---
+const renderFavorites = (favoritesArray, containerId) => {
+    const container = document.getElementById(containerId);
+    if(!container) return;
+    container.innerHTML = '';
+    
+    for(let i=0; i<3; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'fav-slot liquid-glass';
+        if(favoritesArray && favoritesArray[i]) {
+            slot.innerHTML = `<img src="${favoritesArray[i].image}" title="${favoritesArray[i].name}">`;
+            slot.style.cursor = 'pointer';
+            slot.addEventListener('click', () => { modal.style.display='none'; publicModal.style.display='none'; loadAlbumView(favoritesArray[i]); });
+        } else {
+            slot.innerHTML = `<i class="ph ph-plus" style="font-size: 1.5rem; opacity: 0.3;"></i>`;
+        }
+        container.appendChild(slot);
+    }
+};
+
 const openPublicProfile = async (uid, userData) => {
     publicModal.style.display = 'flex';
     document.getElementById('public-name').innerText = userData.name || 'Anônimo';
     document.getElementById('public-pfp').src = userData.photoURL || 'https://placehold.co/80x80/1a1a1a/888888?text=U';
     document.getElementById('public-bio').innerText = userData.bio || 'Este usuário não possui biografia.';
+    
+    // Renderiza Favoritos do Público
+    renderFavorites(userData.favorites || [], 'public-favorite-albums');
+
     const container = document.getElementById('public-rated-albums');
     container.innerHTML = '<p style="color: #888; font-size: 0.8rem;">Buscando obras...</p>';
     try {
@@ -601,7 +626,7 @@ const openPublicProfile = async (uid, userData) => {
 
             const div = document.createElement('div'); div.className = 'rated-album-mini'; div.style.animationDelay = `${animDelay}s`;
             div.innerHTML = `
-                <img src="${data.image}" style="width: 110px; height: 110px; border-radius: 8px; object-fit: cover; border: 1px solid #333; transition: border-color 0.2s;">
+                <img src="${data.image}">
                 <p style="font-size: 0.75rem; color: #fff; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px;" title="${data.name}">${data.name}</p>
                 <p style="font-size: 0.6rem; color: #aaa; text-transform:uppercase; letter-spacing:1px; margin-top: 2px;">${typeLabel}</p>
                 <p style="font-size: 1rem; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); white-space: nowrap; margin-top: 5px;">${'★'.repeat(data.rating || 0)}${'<span style="color:#444; text-shadow:none;">' + '☆'.repeat(5 - (data.rating || 0)) + '</span>'}</p>
@@ -635,6 +660,11 @@ navPfp.addEventListener('click', async () => {
     modal.style.display = 'flex';
     const ratedContainer = document.getElementById('user-rated-albums');
     if (!currentUser) return;
+    
+    // Atualiza info básica e favoritos
+    const uDoc = await getDoc(doc(db, "users", currentUser.uid));
+    renderFavorites(uDoc.exists() && uDoc.data().favorites ? uDoc.data().favorites : [], 'user-favorite-albums');
+
     ratedContainer.innerHTML = '<p style="color: #888; font-size: 0.8rem;">Acessando dados da conta...</p>';
     try {
         const querySnapshot = await getDocs(collection(db, "users", currentUser.uid, "ratings"));
@@ -646,7 +676,7 @@ navPfp.addEventListener('click', async () => {
 
             const div = document.createElement('div'); div.className = 'rated-album-mini'; div.style.animationDelay = `${animDelay}s`;
             div.innerHTML = `
-                <img src="${data.image}" style="width: 110px; height: 110px; border-radius: 8px; object-fit: cover; border: 1px solid #333; transition: border-color 0.2s;">
+                <img src="${data.image}">
                 <p style="font-size: 0.75rem; color: #fff; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px;" title="${data.name}">${data.name}</p>
                 <p style="font-size: 0.6rem; color: #aaa; text-transform:uppercase; letter-spacing:1px; margin-top: 2px;">${typeLabel}</p>
                 <p style="font-size: 1rem; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); white-space: nowrap; margin-top: 5px;">${'★'.repeat(data.rating || 0)}${'<span style="color:#444; text-shadow:none;">' + '☆'.repeat(5 - (data.rating || 0)) + '</span>'}</p>
@@ -695,14 +725,69 @@ document.getElementById('save-profile').addEventListener('click', async () => {
 });
 
 const renderPage = () => {
+    const topResultWrapper = document.getElementById('top-result-wrapper');
+    const topResultContainer = document.getElementById('top-result-container');
+    
     albumGrid.innerHTML = '';
-    const start = (currentPage - 1) * itemsPerPage; const pageData = currentAlbums.slice(start, start + itemsPerPage);
+    topResultContainer.innerHTML = '';
+    topResultWrapper.style.display = 'none';
 
-    if (currentAlbums.length > itemsPerPage) {
+    let itemsToRender = currentAlbums;
+
+    // --- RENDERIZA O MELHOR RESULTADO (DESTAQUE) SE FOR BUSCA (ALTERAÇÃO 3) ---
+    if (isSearchMode && currentPage === 1 && currentAlbums.length > 0) {
+        topResultWrapper.style.display = 'block';
+        const topAlbum = currentAlbums[0];
+        itemsToRender = currentAlbums.slice(1);
+        
+        const originalType = topAlbum.type || 'album';
+        let typeLabel = 'Álbum'; if (originalType === 'single') typeLabel = 'Single'; else if (originalType === 'ep') typeLabel = 'EP';
+
+        const topCard = document.createElement('div');
+        topCard.className = 'top-result-card liquid-glass scroll-trigger';
+        topCard.innerHTML = `
+            <img src="${topAlbum.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa'}" alt="Capa">
+            <div class="top-result-info">
+                <h2 class="glow-text" style="font-size: 2rem; margin-bottom: 5px; line-height: 1.1;">${topAlbum.name}</h2>
+                <div style="color: #aaa; font-size: 1rem; margin-bottom: 15px;">${topAlbum.artist}</div>
+                <div class="rating-ui" style="border: none; justify-content: flex-start; gap: 20px; padding: 0;">
+                    <span style="font-size: 0.7rem; color: #888; text-transform:uppercase; letter-spacing:1px; border: 1px solid rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 10px;">${typeLabel}</span>
+                    <div class="stars card-stars">
+                        <i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        topResultContainer.appendChild(topCard);
+        scrollObserver.observe(topCard);
+
+        topCard.addEventListener('click', (e) => {
+            if(!e.target.closest('.card-stars')) loadAlbumView(topAlbum);
+        });
+
+        const stars = Array.from(topCard.querySelectorAll('.card-stars i'));
+        stars.forEach((star, index) => {
+            star.addEventListener('click', async (e) => {
+                e.stopPropagation(); 
+                if(!currentUser) return alert('Faça login para avaliar esta obra.'); 
+                animateStars(stars, index); 
+                const rating = index + 1;
+                await setDoc(doc(db, "users", currentUser.uid, "ratings", String(topAlbum.id)), {
+                    id: String(topAlbum.id), name: topAlbum.name, artist: topAlbum.artist, image: topAlbum.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: rating, timestamp: new Date(), type: originalType
+                }, { merge: true });
+            });
+        });
+    }
+
+    const start = (currentPage - 1) * itemsPerPage;
+    const pageData = itemsToRender.slice(start, start + itemsPerPage);
+
+    if (itemsToRender.length > itemsPerPage) {
         document.getElementById('pagination-controls').style.display = 'flex';
-        document.getElementById('page-info').innerText = `Página ${currentPage} de ${Math.ceil(currentAlbums.length / itemsPerPage)}`;
+        document.getElementById('page-info').innerText = `Página ${currentPage} de ${Math.ceil(itemsToRender.length / itemsPerPage)}`;
         document.getElementById('prev-page').style.visibility = currentPage === 1 ? 'hidden' : 'visible';
-        document.getElementById('next-page').style.visibility = (start + itemsPerPage) >= currentAlbums.length ? 'hidden' : 'visible';
+        document.getElementById('next-page').style.visibility = (start + itemsPerPage) >= itemsToRender.length ? 'hidden' : 'visible';
     } else { document.getElementById('pagination-controls').style.display = 'none'; }
 
     pageData.forEach(album => {
@@ -711,8 +796,8 @@ const renderPage = () => {
         let typeLabel = 'Álbum'; if (originalType === 'single') typeLabel = 'Single'; else if (originalType === 'ep') typeLabel = 'EP';
 
         card.innerHTML = `
-            <img src="${album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa'}" alt="Capa">
-            <div class="album-title glow-text">${album.name}</div>
+            <img src="${album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa'}" alt="Capa" class="capa-click">
+            <div class="album-title glow-text capa-click">${album.name}</div>
             <div class="album-artist">${album.artist}</div>
             <div class="rating-ui">
                 <span style="font-size: 0.6rem; color: #888; text-transform:uppercase; letter-spacing:1px; border: 1px solid rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px;">${typeLabel}</span>
@@ -720,20 +805,18 @@ const renderPage = () => {
             </div>`;
         albumGrid.appendChild(card); scrollObserver.observe(card);
 
-        card.addEventListener('click', () => loadAlbumView(album));
+        card.addEventListener('click', (e) => {
+            if(!e.target.closest('.card-stars')) loadAlbumView(album);
+        });
 
         const stars = Array.from(card.querySelectorAll('.card-stars i'));
         stars.forEach((star, index) => {
             star.addEventListener('click', async (e) => {
                 e.stopPropagation(); 
                 if(!currentUser) return alert('Faça login para avaliar esta obra.'); 
-                const isAlreadyRated = stars[index].classList.contains('ph-fill') && (index === 4 || !stars[index+1]?.classList.contains('ph-fill'));
-                const finalRating = isAlreadyRated ? 0 : index + 1;
-                animateStars(stars, finalRating - 1); 
-                
-                const docRef = doc(db, "users", currentUser.uid, "ratings", String(album.id));
-                if (finalRating === 0) await deleteDoc(docRef);
-                else await setDoc(docRef, { id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: finalRating, timestamp: new Date(), type: originalType }, { merge: true });
+                animateStars(stars, index); 
+                const rating = index + 1;
+                await setDoc(doc(db, "users", currentUser.uid, "ratings", String(album.id)), { id: String(album.id), name: album.name, artist: album.artist, image: album.image || 'https://placehold.co/200x200/1a1a1a/888888?text=Capa', rating: rating, timestamp: new Date(), type: originalType }, { merge: true });
             });
         });
     });
