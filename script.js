@@ -1,6 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+// BIBLIOTECA DO STORAGE ADICIONADA AQUI
+import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCvRd8N7UQaGLsV-0rxjLn-Z4Ys14KH3pY",
@@ -15,6 +17,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app); // INICIALIZANDO O STORAGE
 const provider = new GoogleAuthProvider();
 
 const loginBtn = document.getElementById('login-btn');
@@ -146,7 +149,12 @@ if(minSlider && maxSlider) {
     });
 }
 
-let ytPlayer = null; let isPlayerReady = false; let currentTrackId = null; let progressInterval = null; let currentPlayBtnUI = null;
+let ytPlayer = null; 
+let isPlayerReady = false; 
+let currentTrackId = null; 
+let progressInterval = null; 
+let currentPlayBtnUI = null;
+let currentAlbumData = null; // MEMÓRIA DO ÁLBUM ATUAL TOCANDO
 
 const globalPlayer = document.getElementById('global-player');
 const pPlayBtn = document.getElementById('player-play-btn');
@@ -157,6 +165,16 @@ const pBarFill = document.getElementById('progress-bar-fill');
 const pTimeCurr = document.getElementById('player-time-current');
 const pTimeTot = document.getElementById('player-time-total');
 const volSlider = document.getElementById('volume-slider');
+
+// --- ABRIR O ÁLBUM CLICANDO NA CAPA DO PLAYER ---
+pCover.style.cursor = 'pointer';
+pCover.addEventListener('click', () => {
+    if (currentAlbumData) {
+        modal.style.display = 'none';
+        publicModal.style.display = 'none';
+        loadAlbumView(currentAlbumData);
+    }
+});
 
 window.onYouTubeIframeAPIReady = () => {
     ytPlayer = new YT.Player('yt-player', {
@@ -225,7 +243,7 @@ const loadAlbumView = async (album) => {
     document.getElementById('album-view-cover').src = album.image;
     document.getElementById('album-view-title').innerText = album.name;
     document.getElementById('album-view-artist').innerText = album.artist;
-    document.getElementById('album-view-extra-info').innerText = ''; // Limpa pra renderizar de novo
+    document.getElementById('album-view-extra-info').innerText = ''; 
     
     const mediaTypeText = document.getElementById('album-view-media-type');
     const originalType = album.type || 'album';
@@ -234,7 +252,6 @@ const loadAlbumView = async (album) => {
     const trackContainer = document.getElementById('tracklist-container');
     trackContainer.innerHTML = Array(5).fill('<div class="skeleton skel-row"></div>').join('');
     
-    // BOTAO DE FAVORITAR NO ÁLBUM
     const favBtn = document.getElementById('btn-favorite-album');
     let isFav = false; let userFavorites = [];
     if(currentUser) {
@@ -274,7 +291,6 @@ const loadAlbumView = async (album) => {
         let tracks = data.results.filter(t => t.wrapperType === 'track');
         if (originalType === 'single' || isNaN(album.id)) tracks = tracks.filter(t => (t.collectionName && t.collectionName.includes(album.name)) || (t.trackName && t.trackName.includes(album.name)));
 
-        // Calcular Info do Álbum
         let totalMs = 0; tracks.forEach(t => totalMs += (t.trackTimeMillis || 0));
         let min = Math.floor(totalMs / 60000); let sec = ((totalMs % 60000) / 1000).toFixed(0);
         if(sec == 60) { min++; sec = 0; }
@@ -337,6 +353,8 @@ const loadAlbumView = async (album) => {
             playBtn.addEventListener('click', async () => {
                 if(!isPlayerReady) return alert("O reprodutor está iniciando, aguarde um momento.");
                 globalPlayer.style.display = 'flex';
+                currentAlbumData = album; // ATUALIZA A MEMORIA PRO PLAYER
+
                 if (currentTrackId === tId) { if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) ytPlayer.pauseVideo(); else ytPlayer.playVideo(); } 
                 else {
                     if (currentPlayBtnUI) { currentPlayBtnUI.classList.remove('ph-spinner', 'ph-pause-circle'); currentPlayBtnUI.classList.add('ph-play-circle'); }
@@ -585,7 +603,6 @@ if(document.getElementById('user-search-input')) {
     });
 }
 
-// --- RENDERIZAR FAVORITOS (ALTERAÇÃO 4) ---
 const renderFavorites = (favoritesArray, containerId) => {
     const container = document.getElementById(containerId);
     if(!container) return;
@@ -611,7 +628,6 @@ const openPublicProfile = async (uid, userData) => {
     document.getElementById('public-pfp').src = userData.photoURL || 'https://placehold.co/80x80/1a1a1a/888888?text=U';
     document.getElementById('public-bio').innerText = userData.bio || 'Este usuário não possui biografia.';
     
-    // Renderiza Favoritos do Público
     renderFavorites(userData.favorites || [], 'public-favorite-albums');
 
     const container = document.getElementById('public-rated-albums');
@@ -661,7 +677,6 @@ navPfp.addEventListener('click', async () => {
     const ratedContainer = document.getElementById('user-rated-albums');
     if (!currentUser) return;
     
-    // Atualiza info básica e favoritos
     const uDoc = await getDoc(doc(db, "users", currentUser.uid));
     renderFavorites(uDoc.exists() && uDoc.data().favorites ? uDoc.data().favorites : [], 'user-favorite-albums');
 
@@ -714,14 +729,36 @@ document.getElementById('save-crop-btn').addEventListener('click', () => {
     }
 });
 
+// AQUI ESTÁ O BLOCO REFEITO COM FIREBASE STORAGE PARA A FOTO DE PERFIL
 document.getElementById('save-profile').addEventListener('click', async () => {
     if (!currentUser) return alert("Faça login primeiro.");
-    document.getElementById('save-profile').innerText = "Salvando...";
+    const btn = document.getElementById('save-profile');
+    btn.innerText = "Salvando na Nuvem...";
     try {
-        const pfpSrc = document.getElementById('modal-pfp').src;
-        await setDoc(doc(db, "users", currentUser.uid), { name: document.getElementById('edit-name').value, bio: document.getElementById('edit-bio').value, photoURL: pfpSrc }, { merge: true });
-        navPfp.src = pfpSrc; document.getElementById('save-profile').innerText = "Salvar Modificações"; modal.style.display = 'none';
-    } catch (error) { alert("Falha na gravação."); document.getElementById('save-profile').innerText = "Salvar Modificações"; }
+        let pfpSrc = document.getElementById('modal-pfp').src;
+        
+        // Se a foto começar com data:image, significa que veio do Cropper e precisa subir pro Storage
+        if (pfpSrc.startsWith('data:image')) {
+            const storageRef = ref(storage, `avatars/${currentUser.uid}_${Date.now()}.jpg`);
+            await uploadString(storageRef, pfpSrc, 'data_url');
+            pfpSrc = await getDownloadURL(storageRef); // Troca o base64 gigante pela URL curtinha
+            document.getElementById('modal-pfp').src = pfpSrc;
+        }
+
+        await setDoc(doc(db, "users", currentUser.uid), { 
+            name: document.getElementById('edit-name').value, 
+            bio: document.getElementById('edit-bio').value, 
+            photoURL: pfpSrc 
+        }, { merge: true });
+        
+        navPfp.src = pfpSrc; 
+        btn.innerText = "Salvar Modificações"; 
+        modal.style.display = 'none';
+    } catch (error) { 
+        console.error("Erro no Storage:", error);
+        alert("Falha na gravação."); 
+        btn.innerText = "Salvar Modificações"; 
+    }
 });
 
 const renderPage = () => {
@@ -734,7 +771,6 @@ const renderPage = () => {
 
     let itemsToRender = currentAlbums;
 
-    // --- RENDERIZA O MELHOR RESULTADO (DESTAQUE) SE FOR BUSCA (ALTERAÇÃO 3) ---
     if (isSearchMode && currentPage === 1 && currentAlbums.length > 0) {
         topResultWrapper.style.display = 'block';
         const topAlbum = currentAlbums[0];
