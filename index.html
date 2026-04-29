@@ -6,7 +6,6 @@
     <title>EchoBox</title>
     
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
@@ -15,12 +14,12 @@
     <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
-    <link rel="stylesheet" href="style.css?v=35">
+    <link rel="stylesheet" href="style.css?v=36">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 <body class="site-enter">
 
-    <div id="canvas-3d-container" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; transition: opacity 0.8s ease, transform 0.8s ease;"></div>
+    <div id="canvas-3d-container" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none;"></div>
     
     <div id="page-transition" class="transition-overlay" style="display: none;">
         <div class="pulse-text" style="font-size: 3rem;">
@@ -246,14 +245,6 @@
                 <textarea id="edit-bio" class="dark-input liquid-glass" rows="3" placeholder="Escreva algo sobre você..."></textarea>
                 
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px; padding: 12px 15px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-                    <span style="color: #aaa; font-size: 0.8rem; text-transform: uppercase;">Modo Leve (Desativar Rádio)</span>
-                    <label class="switch">
-                        <input type="checkbox" id="toggle-light-mode">
-                        <span class="slider-toggle"></span>
-                    </label>
-                </div>
-                
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px; padding: 12px 15px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
                     <span style="color: #aaa; font-size: 0.8rem; text-transform: uppercase;">Ocultar Fundo (Seda)</span>
                     <label class="switch">
                         <input type="checkbox" id="toggle-silk-mode">
@@ -344,11 +335,10 @@
     </div>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
-    <script type="module" src="script.js?v=35"></script>
+    <script type="module" src="script.js?v=36"></script>
 
     <script>
     window.addEventListener('load', () => {
-        window.echoLightMode = localStorage.getItem('echo_light_mode') === 'true';
         window.echoSilkMode = localStorage.getItem('echo_silk_mode') === 'true';
 
         if (typeof THREE !== 'undefined') {
@@ -365,41 +355,20 @@
             container.appendChild(renderer.domElement);
 
             const renderScene = new THREE.RenderPass(scene, camera);
-            const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-            bloomPass.threshold = 0.3;
-            bloomPass.strength = 1.2;
-            bloomPass.radius = 1.0;
-
             const composer = new THREE.EffectComposer(renderer);
             composer.addPass(renderScene);
-            composer.addPass(bloomPass);
 
-            const ambientLight = new THREE.AmbientLight(0x050505, 1);
-            scene.add(ambientLight);
-            
-            const dirLight = new THREE.DirectionalLight(0x00ffff, 4);
-            dirLight.position.set(5, 10, 7.5);
-            scene.add(dirLight);
-
-            const rimLight = new THREE.PointLight(0x0000ff, 3);
-            rimLight.position.set(-5, -5, -2);
-            scene.add(rimLight);
-
-            // ======== INTEGRAÇÃO DO COMPONENTE SILK ========
+            // ======== COMPONENTE SILK (Apenas o fundo animado) ========
             const silkVertexShader = `
             varying vec2 vUv;
-            varying vec3 vPosition;
             void main() {
-              vPosition = position;
               vUv = uv;
               gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
             }
             `;
 
-            // Adicionado a variável uOpacity pra fazer o Fade In/Out do fundo
             const silkFragmentShader = `
             varying vec2 vUv;
-            varying vec3 vPosition;
             uniform float uTime;
             uniform vec3  uColor;
             uniform float uSpeed;
@@ -408,49 +377,30 @@
             uniform float uNoiseIntensity;
             uniform float uOpacity;
 
-            const float e = 2.71828182845904523536;
-
-            float noise(vec2 texCoord) {
-              float G = e;
-              vec2  r = (G * sin(G * texCoord));
-              return fract(r.x * r.y * (1.0 + texCoord.x));
-            }
-
-            vec2 rotateUvs(vec2 uv, float angle) {
-              float c = cos(angle);
-              float s = sin(angle);
-              mat2  rot = mat2(c, -s, s, c);
-              return rot * uv;
-            }
-
             void main() {
-              float rnd        = noise(gl_FragCoord.xy);
-              vec2  uv         = rotateUvs(vUv * uScale, uRotation);
-              vec2  tex        = uv * uScale;
+              vec2  uv         = vUv * uScale;
               float tOffset    = uSpeed * uTime;
-
-              tex.y += 0.03 * sin(8.0 * tex.x - tOffset);
+              uv.y += 0.03 * sin(8.0 * uv.x - tOffset);
 
               float pattern = 0.6 +
-                              0.4 * sin(5.0 * (tex.x + tex.y +
-                                               cos(3.0 * tex.x + 5.0 * tex.y) +
+                              0.4 * sin(5.0 * (uv.x + uv.y +
+                                               cos(3.0 * uv.x + 5.0 * uv.y) +
                                                0.02 * tOffset) +
-                                       sin(20.0 * (tex.x + tex.y - 0.1 * tOffset)));
+                                       sin(20.0 * (uv.x + uv.y - 0.1 * tOffset)));
 
-              vec4 col = vec4(uColor, 1.0) * vec4(pattern) - rnd / 15.0 * uNoiseIntensity;
+              vec4 col = vec4(uColor, 1.0) * vec4(pattern);
               col.a = uOpacity;
               gl_FragColor = col;
             }
             `;
 
-            // Parâmetros solicitados (speed 5, noise 1.5) mas com cor e opacidade corrigidas
             const silkUniforms = {
                 uTime: { value: 0 },
-                uColor: { value: new THREE.Color('#18151A') }, 
+                uColor: { value: new THREE.Color('#121014') }, 
                 uSpeed: { value: 5.0 }, 
-                uScale: { value: 3.5 },
+                uScale: { value: 0.6 }, // Esticado como pedido
                 uRotation: { value: 0.0 },
-                uNoiseIntensity: { value: 1.5 },
+                uNoiseIntensity: { value: 0.0 }, 
                 uOpacity: { value: 1.0 } 
             };
 
@@ -463,78 +413,18 @@
                 transparent: true
             });
             const silkMesh = new THREE.Mesh(silkGeo, silkMat);
-            silkMesh.position.z = -15; 
+            silkMesh.position.z = -10; 
             scene.add(silkMesh);
-            // ========================================================================
 
-            const loader = new THREE.GLTFLoader();
-            let boombox;
-
-            const fixedPosX = 3.5;
-            const fixedPosY = 2.2; 
-            const fixedPosZ = -4.0;
-            const baseScale = 0.45;
-            const fixedRotX = 0.2;
-            const fixedRotY = -0.6;
-            
-            window.currentBoomboxY = window.echoLightMode ? -15.0 : fixedPosY;
-
-            loader.load('./modelos/boombox/scene.gltf', (gltf) => {
-                boombox = gltf.scene;
-                boombox.position.set(fixedPosX, window.currentBoomboxY, fixedPosZ);
-                boombox.rotation.set(fixedRotX, fixedRotY, 0);
-                boombox.scale.set(baseScale, baseScale, baseScale);
-                scene.add(boombox);
-            });
-
-            let mouseX = 0, mouseY = 0;
-            document.addEventListener('mousemove', (e) => {
-                mouseX = (e.clientX - window.innerWidth / 2) * 0.0003;
-                mouseY = (e.clientY - window.innerHeight / 2) * 0.0003;
-            });
-
-            const playBtn = document.getElementById('player-play-btn');
-
-            // CLOCK OFICIAL ADICIONADO PARA RASTREAR A VELOCIDADE DA ANIMAÇÃO EXATAMENTE COMO NO REACT
             const clock = new THREE.Clock();
 
             function animate() {
                 requestAnimationFrame(animate);
-
                 const delta = clock.getDelta();
-                silkUniforms.uTime.value += 0.1 * delta; // Velocidade perfeitamente cravada na CPU
+                silkUniforms.uTime.value += 0.1 * delta; 
                 
-                // SISTEMA DE FADE DO BOTÃO DE SEDA
                 let targetSilkOpacity = window.echoSilkMode ? 0.0 : 1.0;
                 silkUniforms.uOpacity.value += (targetSilkOpacity - silkUniforms.uOpacity.value) * 0.05;
-
-                if (boombox) {
-                    let targetY = window.echoLightMode ? -15.0 : fixedPosY;
-                    window.currentBoomboxY += (targetY - window.currentBoomboxY) * 0.05;
-
-                    let floatY = window.currentBoomboxY + (Math.sin(Date.now() * 0.001) * 0.1) + (Math.cos(Date.now() * 0.0008) * 0.05);
-                    boombox.position.y = floatY;
-
-                    let targetRotationX = fixedRotX + mouseY;
-                    let targetRotationY = fixedRotY + mouseX;
-                    boombox.rotation.x += (targetRotationX - boombox.rotation.x) * 0.05;
-                    boombox.rotation.y += (targetRotationY - boombox.rotation.y) * 0.05;
-
-                    let currentScaleX = baseScale;
-                    let currentScaleY = baseScale;
-                    let currentScaleZ = baseScale;
-
-                    if (playBtn && playBtn.classList.contains('ph-pause-circle') && !window.echoLightMode) {
-                        let beat = Math.pow(Math.abs(Math.sin(Date.now() * 0.006)), 4); 
-                        currentScaleX += beat * 0.03;
-                        currentScaleY += beat * 0.03;
-                        currentScaleZ += beat * 0.06; 
-                    }
-
-                    boombox.scale.x += (currentScaleX - boombox.scale.x) * 0.2;
-                    boombox.scale.y += (currentScaleY - boombox.scale.y) * 0.2;
-                    boombox.scale.z += (currentScaleZ - boombox.scale.z) * 0.2;
-                }
 
                 composer.render(); 
             }
@@ -544,7 +434,6 @@
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
-                composer.setSize(window.innerWidth, window.innerHeight); 
             });
         }
     });
