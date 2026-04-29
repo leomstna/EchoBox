@@ -234,7 +234,18 @@ const loadArtistProfile = async (artistName, artistImage) => {
 
 document.getElementById('close-artist-modal').addEventListener('click', () => { artistModal.style.display = 'none'; });
 
-// O HACK DO AUTOPLAY MUTADO FOI INJETADO AQUI DE NOVO (Obrigatório pro Chrome rodar a API)
+// =====================================================================
+// AQUI TAVA A MERDA: O SCRIPT DA API DO YOUTUBE FALTANDO! RECOLOQUEI!
+// =====================================================================
+const tag = document.createElement('script');
+tag.src = "https://www.youtube.com/iframe_api";
+const firstScriptTag = document.getElementsByTagName('script')[0];
+if (firstScriptTag) {
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+} else {
+    document.head.appendChild(tag);
+}
+
 window.onYouTubeIframeAPIReady = () => {
     ytPlayer = new YT.Player('yt-player', {
         height: '250', width: '250', videoId: 'M7lc1UVf-VE',
