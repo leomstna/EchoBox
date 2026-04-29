@@ -214,23 +214,28 @@ main.section-page { padding-bottom: 120px !important; }
     transform: scale(1) !important;
 }
 
-.track-top-gradient {
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 40px;
-    background: linear-gradient(to bottom, #050505, transparent);
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    z-index: 10;
+/* EFEITO REACT BITS ANIMATED LIST (Vanilla JS + CSS) */
+.tracklist-wrapper {
+    position: relative;
+    width: 100%;
 }
 
-.track-bottom-gradient {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 60px;
-    background: linear-gradient(to top, #050505, transparent);
-    pointer-events: none;
-    transition: opacity 0.2s ease;
-    z-index: 10;
+#tracklist-container {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 10px 10px 20px 0;
+    /* Essa máscara apaga os cantos baseada na transparência, sem usar cores sólidas */
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
+}
+
+.track-trigger {
+    opacity: 0;
+    transform: scale(0.7);
+    transition: opacity 0.3s ease-out, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.track-animated {
+    opacity: 1 !important;
+    transform: scale(1) !important;
 }
