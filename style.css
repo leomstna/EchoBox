@@ -79,7 +79,6 @@ textarea.dark-input { resize: none; max-height: 80px; }
 .filters-row { position: relative; width: 100%; }
 .range-slider-wrapper { margin-top: 10px; position: relative; }
 
-/* FIX DO SLIDER DE FILTRAGEM DE ANO */
 .range-slider-wrapper .slider-track { 
     width: 100%; 
     height: 4px !important; 
@@ -350,10 +349,9 @@ main.section-page { padding-bottom: 120px !important; }
    FUSÃO 3 EFEITOS: TILT + SPOTLIGHT + GLOW + CD 3D
 ========================================================= */
 
-/* Container principal - Cria a perspectiva 3D e suporta interatividade */
+/* Container principal - Cria a perspectiva, mas NÃO preserva o 3D pros filhos vazarem */
 .interactive-album-figure {
     perspective: 1200px;
-    transform-style: preserve-3d;
     position: relative;
     display: flex;
     align-items: center;
@@ -361,23 +359,22 @@ main.section-page { padding-bottom: 120px !important; }
     cursor: pointer;
 }
 
-/* CARRINHO DO CD: Controla apenas o movimento de deslizar */
+/* CARRINHO DO CD: Controla apenas o movimento de deslizar, sempre atrás (z-index) */
 .cd-container {
     position: absolute;
     top: 0;
     right: 0;
     width: 100%;
     height: 100%;
-    z-index: -1;
-    transform: translateZ(-30px);
+    z-index: 0; 
     transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     pointer-events: none;
 }
 
-/* HOVER GERAL: Desliza o carrinho para o lado sem interferir no giro do disco */
+/* HOVER GERAL: Desliza o carrinho para o lado (sem translateZ pra não bugar) */
 .album-header:hover .cd-container,
 .interactive-album-figure:hover .cd-container {
-    transform: translateZ(-30px) translateX(45%);
+    transform: translateX(45%);
 }
 
 /* IMAGEM DO DISCO: Controla apenas a animação de girar infinitamente */
@@ -394,7 +391,7 @@ main.section-page { padding-bottom: 120px !important; }
     to { transform: rotate(360deg); }
 }
 
-/* O bloco que inclina com o mouse (Capa + Overlay) */
+/* O bloco que inclina com o mouse (Capa + Overlay) - ESSE SIM mantém o 3D interno */
 .interactive-album-inner {
     position: relative;
     width: 100%;
@@ -416,7 +413,7 @@ main.section-page { padding-bottom: 120px !important; }
     --glow-padding: 30px;
     --cone-spread: 25;
     --spotlight-color: rgba(255, 255, 255, 0.15);
-    z-index: 2;
+    z-index: 2; /* Garante que esmaga o CD que tá com z-index 0 */
 }
 
 .tilted-card-img {
@@ -430,7 +427,7 @@ main.section-page { padding-bottom: 120px !important; }
     z-index: 1;
 }
 
-/* ACRÍLICO FLUTUANTE (Subido para 30px conforme solicitado) */
+/* ACRÍLICO FLUTUANTE (Subido para 30px) */
 .tilted-card-overlay {
     position: absolute;
     inset: 0;
