@@ -359,7 +359,16 @@ main.section-page { padding-bottom: 120px !important; }
     cursor: pointer;
 }
 
-/* CARRINHO DO CD: Controla apenas o movimento de deslizar, sempre atrás (z-index) */
+/* NOVO: Tilt Container une CD e Capa no mesmo movimento 3D */
+.tilt-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    will-change: transform;
+}
+
+/* CARRINHO DO CD: Controla apenas o movimento de deslizar na diagonal */
 .cd-container {
     position: absolute;
     top: 0;
@@ -371,10 +380,10 @@ main.section-page { padding-bottom: 120px !important; }
     pointer-events: none;
 }
 
-/* HOVER GERAL: Desliza o carrinho para o lado de forma controlada */
+/* HOVER GERAL: Desliza o carrinho para a diagonal (Conforme desenho image_2b4498.png) */
 .album-header:hover .cd-container,
 .interactive-album-figure:hover .cd-container {
-    transform: translateX(20%);
+    transform: translate(25%, -25%); /* Refinado para não cobrir o texto */
 }
 
 /* IMAGEM DO DISCO: Controla apenas a animação de girar infinitamente */
@@ -391,13 +400,12 @@ main.section-page { padding-bottom: 120px !important; }
     to { transform: rotate(360deg); }
 }
 
-/* O bloco que inclina com o mouse (Capa + Overlay) - ESSE SIM mantém o 3D interno */
-.interactive-album-inner {
+/* O bloco da Capa - ESSE SIM mantém o 3D interno para o acrílico flutuar */
+.interactive-album-inner-core {
     position: relative;
     width: 100%;
     height: 100%;
     transform-style: preserve-3d;
-    will-change: transform;
     border-radius: 8px;
     background-color: #111;
     border: 1px solid rgba(255, 255, 255, 0.15);
@@ -413,7 +421,7 @@ main.section-page { padding-bottom: 120px !important; }
     --glow-padding: 30px;
     --cone-spread: 25;
     --spotlight-color: rgba(255, 255, 255, 0.15);
-    z-index: 2; /* Garante que esmaga o CD que tá com z-index 0 */
+    z-index: 2; /* Garante que esmaga o CD */
 }
 
 .tilted-card-img {
@@ -427,7 +435,7 @@ main.section-page { padding-bottom: 120px !important; }
     z-index: 1;
 }
 
-/* ACRÍLICO FLUTUANTE (Subido para 30px) */
+/* ACRÍLICO FLUTUANTE (translateZ de 30px) */
 .tilted-card-overlay {
     position: absolute;
     inset: 0;
@@ -443,7 +451,7 @@ main.section-page { padding-bottom: 120px !important; }
 }
 
 /* 1. SPOTLIGHT EFFECT */
-.interactive-album-inner::after {
+.interactive-album-inner-core::after {
     content: '';
     position: absolute;
     inset: 0;
@@ -456,13 +464,13 @@ main.section-page { padding-bottom: 120px !important; }
     z-index: 2;
 }
 
-.interactive-album-figure:hover .interactive-album-inner::after {
+.interactive-album-figure:hover .interactive-album-inner-core::after {
     opacity: 1;
 }
 
 /* 2. BORDER GLOW EFFECT */
-.interactive-album-inner::before,
-.interactive-album-inner > .edge-light {
+.interactive-album-inner-core::before,
+.interactive-album-inner-core > .edge-light {
     content: "";
     position: absolute;
     inset: 0;
@@ -472,13 +480,13 @@ main.section-page { padding-bottom: 120px !important; }
     transform: translateZ(-1px); 
 }
 
-.interactive-album-figure:not(:hover) .interactive-album-inner::before,
-.interactive-album-figure:not(:hover) .interactive-album-inner > .edge-light {
+.interactive-album-figure:not(:hover) .interactive-album-inner-core::before,
+.interactive-album-figure:not(:hover) .interactive-album-inner-core > .edge-light {
     opacity: 0;
     transition: opacity 0.75s ease-in-out;
 }
 
-.interactive-album-inner::before {
+.interactive-album-inner-core::before {
     border: 1px solid transparent;
     background:
         linear-gradient(#111 0 100%) padding-box,
@@ -494,7 +502,7 @@ main.section-page { padding-bottom: 120px !important; }
     mask-image: conic-gradient(from var(--cursor-angle) at center, black calc(var(--cone-spread) * 1%), transparent calc((var(--cone-spread) + 15) * 1%), transparent calc((100 - var(--cone-spread) - 15) * 1%), black calc((100 - var(--cone-spread)) * 1%));
 }
 
-.interactive-album-inner > .edge-light {
+.interactive-album-inner-core > .edge-light {
     inset: calc(var(--glow-padding) * -1);
     pointer-events: none;
     -webkit-mask-image: conic-gradient(from var(--cursor-angle) at center, black 2.5%, transparent 10%, transparent 90%, black 97.5%);
@@ -503,7 +511,7 @@ main.section-page { padding-bottom: 120px !important; }
     mix-blend-mode: plus-lighter;
 }
 
-.interactive-album-inner > .edge-light::before {
+.interactive-album-inner-core > .edge-light::before {
     content: "";
     position: absolute;
     inset: var(--glow-padding);
