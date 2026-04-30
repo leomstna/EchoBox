@@ -371,10 +371,10 @@ main.section-page { padding-bottom: 120px !important; }
     pointer-events: none;
 }
 
-/* HOVER GERAL: Desliza o carrinho para o lado (sem translateZ pra não bugar) */
+/* HOVER GERAL: Desliza o carrinho para o lado de forma controlada */
 .album-header:hover .cd-container,
 .interactive-album-figure:hover .cd-container {
-    transform: translateX(45%);
+    transform: translateX(20%);
 }
 
 /* IMAGEM DO DISCO: Controla apenas a animação de girar infinitamente */
