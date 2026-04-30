@@ -346,10 +346,10 @@ main.section-page { padding-bottom: 120px !important; }
 }
 
 /* =========================================================
-   FUSÃO 3 EFEITOS: TILT + SPOTLIGHT + GLOW + CD 3D
+   FUSÃO: TILT + SPOTLIGHT + GLOW (SEM CD)
 ========================================================= */
 
-/* Container principal - Cria a perspectiva, mas NÃO preserva o 3D pros filhos vazarem */
+/* Container principal - Cria a perspectiva 3D */
 .interactive-album-figure {
     perspective: 1200px;
     position: relative;
@@ -359,49 +359,8 @@ main.section-page { padding-bottom: 120px !important; }
     cursor: pointer;
 }
 
-/* NOVO: Tilt Container une CD e Capa no mesmo movimento 3D */
-.tilt-container {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    transform-style: preserve-3d;
-    will-change: transform;
-}
-
-/* CARRINHO DO CD: Controla apenas o movimento de deslizar na diagonal */
-.cd-container {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 0; 
-    transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    pointer-events: none;
-}
-
-/* HOVER GERAL: Desliza o carrinho para a diagonal (Conforme desenho image_2b4498.png) */
-.album-header:hover .cd-container,
-.interactive-album-figure:hover .cd-container {
-    transform: translate(25%, -25%); /* Refinado para não cobrir o texto */
-}
-
-/* IMAGEM DO DISCO: Controla apenas a animação de girar infinitamente */
-.cd-disc {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    border-radius: 50%;
-    animation: spinCd 8s linear infinite;
-}
-
-@keyframes spinCd {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-/* O bloco da Capa - ESSE SIM mantém o 3D interno para o acrílico flutuar */
-.interactive-album-inner-core {
+/* O bloco da Capa - Mantém o 3D interno para o acrílico flutuar */
+.interactive-album-inner {
     position: relative;
     width: 100%;
     height: 100%;
@@ -421,7 +380,7 @@ main.section-page { padding-bottom: 120px !important; }
     --glow-padding: 30px;
     --cone-spread: 25;
     --spotlight-color: rgba(255, 255, 255, 0.15);
-    z-index: 2; /* Garante que esmaga o CD */
+    z-index: 1;
 }
 
 .tilted-card-img {
@@ -450,8 +409,8 @@ main.section-page { padding-bottom: 120px !important; }
     mix-blend-mode: soft-light;
 }
 
-/* 1. SPOTLIGHT EFFECT */
-.interactive-album-inner-core::after {
+/* 1. SPOTLIGHT EFFECT (translada 10px em Z) */
+.interactive-album-inner::after {
     content: '';
     position: absolute;
     inset: 0;
@@ -464,13 +423,13 @@ main.section-page { padding-bottom: 120px !important; }
     z-index: 2;
 }
 
-.interactive-album-figure:hover .interactive-album-inner-core::after {
+.interactive-album-figure:hover .interactive-album-inner::after {
     opacity: 1;
 }
 
-/* 2. BORDER GLOW EFFECT */
-.interactive-album-inner-core::before,
-.interactive-album-inner-core > .edge-light {
+/* 2. BORDER GLOW EFFECT (translada -1px em Z para não clipping) */
+.interactive-album-inner::before,
+.interactive-album-inner > .edge-light {
     content: "";
     position: absolute;
     inset: 0;
@@ -480,13 +439,13 @@ main.section-page { padding-bottom: 120px !important; }
     transform: translateZ(-1px); 
 }
 
-.interactive-album-figure:not(:hover) .interactive-album-inner-core::before,
-.interactive-album-figure:not(:hover) .interactive-album-inner-core > .edge-light {
+.interactive-album-figure:not(:hover) .interactive-album-inner::before,
+.interactive-album-figure:not(:hover) .interactive-album-inner > .edge-light {
     opacity: 0;
     transition: opacity 0.75s ease-in-out;
 }
 
-.interactive-album-inner-core::before {
+.interactive-album-inner::before {
     border: 1px solid transparent;
     background:
         linear-gradient(#111 0 100%) padding-box,
@@ -502,7 +461,7 @@ main.section-page { padding-bottom: 120px !important; }
     mask-image: conic-gradient(from var(--cursor-angle) at center, black calc(var(--cone-spread) * 1%), transparent calc((var(--cone-spread) + 15) * 1%), transparent calc((100 - var(--cone-spread) - 15) * 1%), black calc((100 - var(--cone-spread)) * 1%));
 }
 
-.interactive-album-inner-core > .edge-light {
+.interactive-album-inner > .edge-light {
     inset: calc(var(--glow-padding) * -1);
     pointer-events: none;
     -webkit-mask-image: conic-gradient(from var(--cursor-angle) at center, black 2.5%, transparent 10%, transparent 90%, black 97.5%);
@@ -511,7 +470,7 @@ main.section-page { padding-bottom: 120px !important; }
     mix-blend-mode: plus-lighter;
 }
 
-.interactive-album-inner-core > .edge-light::before {
+.interactive-album-inner > .edge-light::before {
     content: "";
     position: absolute;
     inset: var(--glow-padding);
