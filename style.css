@@ -490,3 +490,103 @@ main.section-page { padding-bottom: 120px !important; }
         0 0 25px 2px hsla(40, 80%, 80%, 0.2),
         0 0 50px 2px hsla(40, 80%, 80%, 0.1);
 }
+
+/* =========================================================
+   PORT MOBILE - RESPONSIVIDADE
+========================================================= */
+@media (max-width: 768px) {
+    /* Navbar e Hero */
+    .pill-nav { 
+        flex-direction: column; 
+        gap: 15px; 
+        padding: 15px; 
+        border-radius: 20px; 
+    }
+    .nav-links { 
+        display: flex; 
+        flex-wrap: wrap; 
+        justify-content: center; 
+        gap: 10px; 
+    }
+    .hero h1 { font-size: 2.2rem !important; }
+    .hero .desc { font-size: 0.9rem; margin-bottom: 30px !important; }
+
+    /* Barra de Pesquisa e Filtros */
+    .search-bar-container > div:first-child { 
+        flex-direction: column; 
+    }
+    #search-btn { 
+        width: 100%; 
+    }
+    .filters-container > div {
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+    .type-options { 
+        flex-wrap: wrap;
+        justify-content: center; 
+    }
+    .range-slider-wrapper {
+        width: 100%;
+        max-width: none !important;
+    }
+
+    /* Grid dos álbuns na Home e Pesquisa */
+    .grid-container { 
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); 
+        gap: 15px; 
+    }
+    .album-card { padding: 10px; }
+    .album-card img { height: 130px; object-fit: cover; }
+
+    /* Tela do Álbum (Capa e Informações) */
+    .album-header { 
+        flex-direction: column; 
+        align-items: center !important; 
+        text-align: center; 
+        padding: 20px !important; 
+    }
+    #interactive-album-figure { 
+        width: 180px !important; 
+        height: 180px !important; 
+        margin: 0 auto 20px auto !important; 
+    }
+    .track-row { 
+        flex-direction: column; 
+        align-items: flex-start; 
+        gap: 15px; 
+    }
+    .track-info { width: 100%; }
+    .track-actions { 
+        width: 100%; 
+        justify-content: space-between; 
+    }
+    .track-comment { width: 100%; }
+
+    /* Modais */
+    .modal-content {
+        width: 95%;
+        padding: 10px;
+    }
+
+    /* Player Global (Barra inferior) */
+    #global-player { 
+        padding: 0 10px; 
+        height: 70px;
+    }
+    .player-volume { 
+        display: none !important; /* Arrancado fora pra não bugar a tela */
+    }
+    .player-info { 
+        width: 60%; 
+        min-width: 0;
+    }
+    .progress-container { 
+        display: none !important; /* Simplifica a UI no celular */
+    }
+    .player-controls {
+        flex: 1;
+        max-width: none;
+        align-items: flex-end;
+    }
+}
