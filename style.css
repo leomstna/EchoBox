@@ -360,13 +360,14 @@ main.section-page { padding-bottom: 120px !important; }
 }
 
 /* O bloco da Capa - Mantém o 3D interno para o acrílico flutuar */
+/* O bloco da Capa - Funciona como o chassi da caixa de acrílico */
 .interactive-album-inner {
     position: relative;
     width: 100%;
     height: 100%;
     transform-style: preserve-3d;
     border-radius: 8px;
-    background-color: #111;
+    background-color: #050505;
     border: 1px solid rgba(255, 255, 255, 0.15);
     box-shadow: 0 15px 35px rgba(0,0,0,0.8);
     
@@ -383,6 +384,7 @@ main.section-page { padding-bottom: 120px !important; }
     z-index: 1;
 }
 
+/* A ARTE DA CAPA (Paralax Reverso) */
 .tilted-card-img {
     position: absolute;
     inset: 0;
@@ -390,11 +392,12 @@ main.section-page { padding-bottom: 120px !important; }
     height: 100%;
     object-fit: cover;
     border-radius: inherit;
-    transform: translateZ(0); 
+    /* O SEGREDO: Afunda a arte 40px pra dentro da tela e dá um zoom de 15% pra não mostrar rebarba */
+    transform: translateZ(-40px) scale(1.15); 
     z-index: 1;
 }
 
-/* ACRÍLICO FLUTUANTE (Subido para 60px para máximo efeito 3D) */
+/* O OVERLAY ACRÍLICO (A Tampa) */
 .tilted-card-overlay {
     position: absolute;
     inset: 0;
@@ -403,11 +406,10 @@ main.section-page { padding-bottom: 120px !important; }
     object-fit: cover;
     border-radius: inherit;
     pointer-events: none;
-    transform: translateZ(65px) scale(1.1); 
+    /* Fica quase zerado, selando a frente da caixa perfeitamente */
+    transform: translateZ(2px); 
     z-index: 4;
-    filter: drop-shadow(10px 10px 20px rgba(0,0,0,0.6));
 }
-
 /* 1. SPOTLIGHT EFFECT (translada 10px em Z) */
 .interactive-album-inner::after {
     content: '';
