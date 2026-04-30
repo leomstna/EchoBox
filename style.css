@@ -403,7 +403,7 @@ main.section-page { padding-bottom: 120px !important; }
     object-fit: cover;
     border-radius: inherit;
     pointer-events: none;
-    transform: translateZ(60px) scale(1.02); 
+    transform: translateZ(70px) scale(1.5); 
     z-index: 4;
     filter: drop-shadow(10px 10px 20px rgba(0,0,0,0.6));
 }
