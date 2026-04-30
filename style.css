@@ -349,30 +349,29 @@ main.section-page { padding-bottom: 120px !important; }
 /* =========================================================
    FUSÃO 3 EFEITOS: TILT + SPOTLIGHT + GLOW + CD 3D
 ========================================================= */
+/* Container principal - Cria a perspectiva 3D */
 .interactive-album-figure {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: crosshair;
-    perspective: 1000px;
-    z-index: 10;
+  perspective: 1000px; /* Força do 3D */
+  transform-style: preserve-3d;
 }
 
+/* 1. Mídia Física (CD) - Camada de baixo, girando sempre */
 .cd-disc {
   position: absolute;
-  top: 2%;
-  right: 0;
-  width: 95%;
-  height: 95%;
-  object-fit: cover;
-  border-radius: 50%;
-  z-index: -1; /* Força ele pra camada de baixo */
-  /* Empurra o CD 50px pra trás no espaço 3D */
-  transform: translateZ(-50px);
-  /* Unifica a transição numa propriedade só pra não dar glitch de rotação */
-  transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  pointer-events: none;
+  top: 0;
+  right: -25px;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  z-index: -1; /* Força pra trás */
+  
+  /* SANDUÍCHE 3D: Afundando o CD -20px */
+  transform: translateZ(-20px); 
+  
+  /* Aplica a animação constante */
+  animation: constantRotation 10s linear infinite;
+  
+  border-radius: 50%; /* Garante corte perfeito se a img falhar */
 }
 
 .album-header:hover .cd-disc {
@@ -380,51 +379,40 @@ main.section-page { padding-bottom: 120px !important; }
   transform: translateZ(-50px) translateX(45%) rotate(180deg);
 }
 
+/* O bloco que inclina com o mouse (Capa + Overlay) */
 .interactive-album-inner {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    transform-style: preserve-3d;
-    will-change: transform;
-    border-radius: 8px;
-    background-color: #111;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 15px 35px rgba(0,0,0,0.8);
-    
-    --edge-proximity: 0;
-    --cursor-angle: 90deg;
-    --mouse-x: 50%;
-    --mouse-y: 50%;
-    
-    --edge-sensitivity: 30;
-    --color-sensitivity: 50; 
-    --glow-padding: 30px;
-    --cone-spread: 25;
-    --spotlight-color: rgba(255, 255, 255, 0.15);
+  transform-style: preserve-3d; /* Permite que os filhos herdem o 3D */
+  transition: transform 0.1s ease-out; /* Suavidade no tilt */
+  position: relative;
 }
 
+/* 2. Capa - Camada do meio (Z=0 por padrão) */
 .tilted-card-img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: inherit;
-    transform: translateZ(0); 
-    z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
 }
 
 .tilted-card-overlay {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: inherit;
-    pointer-events: none;
-    transform: translateZ(40px) scale(1.04); 
-    z-index: 4;
-    filter: drop-shadow(10px 10px 15px rgba(0,0,0,0.5));
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5; /* Força pra frente */
+  
+  /* SANDUÍCHE 3D: Puxando o overlay 30px pra frente */
+  transform: translateZ(30px); 
+  
+  border-radius: 12px;
+  mix-blend-mode: soft-light; /* Deixa o brilho mais realista */
+}
+
+/* ANIMAÇÃO: Rotação Constante */
+@keyframes constantRotation {
+  from { transform: translateZ(-20px) rotateZ(0deg); }
+  to { transform: translateZ(-20px) rotateZ(360deg); }
 }
 
 /* 1. SPOTLIGHT EFFECT */
