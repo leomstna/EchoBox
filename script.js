@@ -211,9 +211,6 @@ const pBarFill = document.getElementById('progress-bar-fill');
 const pTimeCurr = document.getElementById('player-time-current');
 const pTimeTot = document.getElementById('player-time-total');
 
-// ====================================================================
-// FÍSICA DO ELASTIC SLIDER
-// ====================================================================
 const MAX_OVERFLOW = 50;
 let volValue = 0.5;
 let volOverflow = 0;
@@ -1272,8 +1269,9 @@ if (albumFigure && albumInner) {
     let targetScale = 1;
     let isHovering = false;
 
-    const rotateAmplitude = 14;
-    const scaleOnHover = 1.08;
+    // Amplitude aumentada pra dar mais sensação de 3D
+    const rotateAmplitude = 20;
+    const scaleOnHover = 1.05;
 
     function lerp(start, end, factor) {
         return start + (end - start) * factor;
@@ -1290,6 +1288,7 @@ if (albumFigure && albumInner) {
             currentScale = lerp(currentScale, 1, 0.1);
         }
 
+        // Aplica o tilt no sanduíche inteiro com suporte a 3D nativo
         albumInner.style.transform = `scale(${currentScale}) rotateX(${currentRotateX}deg) rotateY(${currentRotateY}deg)`;
         requestAnimationFrame(updateTransform);
     }
@@ -1302,6 +1301,8 @@ if (albumFigure && albumInner) {
 
         const offsetX = x - rect.width / 2;
         const offsetY = y - rect.height / 2;
+        
+        // Eixos invertidos pro tilt não quebrar no 3D space
         targetRotateX = (offsetY / (rect.height / 2)) * -rotateAmplitude;
         targetRotateY = (offsetX / (rect.width / 2)) * rotateAmplitude;
 
