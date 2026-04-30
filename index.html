@@ -128,16 +128,13 @@
         
         <div class="album-header liquid-glass scroll-trigger" style="display:flex; gap:30px; padding:30px; border-radius:16px; align-items: flex-start;">
             
-           <figure class="interactive-album-figure" id="interactive-album-figure" style="width: 220px; height: 220px; margin: 0; flex-shrink: 0; perspective: 1000px; position: relative;">
+           <figure class="interactive-album-figure" id="interactive-album-figure">
+                <img src="./cd-disc.png" class="cd-disc" alt="Mídia Física">
                 
-                <img src="./cd-disc.png" class="cd-disc" alt="Mídia Física" style="position: absolute; top: 0; right: -25px; width: 100%; height: 100%; object-fit: contain; z-index: -1;">
-                
-                <div class="interactive-album-inner" id="interactive-album-inner" style="z-index: 2; transform-style: preserve-3d; position: relative;">
+                <div class="interactive-album-inner" id="interactive-album-inner">
                     <span class="edge-light"></span>
-                    
-                    <img id="album-view-cover" class="tilted-card-img" src="" alt="Capa" style="position: relative; z-index: 0;">
-                    
-                    <img src="./cd-overlay.png" class="tilted-card-overlay" alt="Acrílico" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+                    <img id="album-view-cover" class="tilted-card-img" src="" alt="Capa">
+                    <img src="./cd-overlay.png" class="tilted-card-overlay" alt="Acrílico">
                 </div>
             </figure>
 
@@ -434,6 +431,5 @@
         }
     });
     </script>
-    
 </body>
 </html>
