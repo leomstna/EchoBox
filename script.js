@@ -328,7 +328,6 @@ const loadArtistProfile = async (artistName, artistImage) => {
     singlesGrid.innerHTML = '<p style="color:#aaa;">Buscando singles...</p>';
 
     try {
-        // AQUI: Fetch apontando para o Spotify
         const response = await fetch(`${API_BASE_URL}/spotify-search?q=${encodeURIComponent(artistName)}&type=artist_works`);
         const data = await response.json();
 
@@ -505,12 +504,22 @@ const loadAlbumView = async (album) => {
     });
 
     try {
-        let url = `https://itunes.apple.com/lookup?id=${album.id}&entity=song&country=BR`;
-        if (originalType === 'single' || !album.id || isNaN(album.id)) url = `https://itunes.apple.com/search?term=${encodeURIComponent(album.name + ' ' + album.artist)}&entity=song&limit=25&country=BR`;
-
-        const res = await fetch(url); const data = await res.json();
-        let tracks = data.results.filter(t => t.wrapperType === 'track');
-        if (originalType === 'single' || isNaN(album.id)) tracks = tracks.filter(t => (t.collectionName && t.collectionName.includes(album.name)) || (t.trackName && t.trackName.includes(album.name)));
+        let isSpotify = isNaN(album.id);
+        let tracks = [];
+        
+        if (isSpotify) {
+            const res = await fetch(`${API_BASE_URL}/spotify-tracks?id=${album.id}`);
+            const data = await res.json();
+            tracks = data.results || [];
+        } else {
+            let url = `https://itunes.apple.com/lookup?id=${album.id}&entity=song&country=BR`;
+            if (originalType === 'single' || !album.id) url = `https://itunes.apple.com/search?term=${encodeURIComponent(album.name + ' ' + album.artist)}&entity=song&limit=25&country=BR`;
+            
+            const res = await fetch(url); 
+            const data = await res.json();
+            tracks = data.results.filter(t => t.wrapperType === 'track');
+            if (originalType === 'single') tracks = tracks.filter(t => (t.collectionName && t.collectionName.includes(album.name)) || (t.trackName && t.trackName.includes(album.name)));
+        }
 
         let totalMs = 0; tracks.forEach(t => totalMs += (t.trackTimeMillis || 0));
         let min = Math.floor(totalMs / 60000); let sec = ((totalMs % 60000) / 1000).toFixed(0);
@@ -755,7 +764,6 @@ const performSearch = async () => {
     document.getElementById('pagination-controls').style.display = 'none';
 
     try {
-        // AQUI: Fetch apontando para o Spotify
         const response = await fetch(`${API_BASE_URL}/spotify-search?q=${encodeURIComponent(rawQuery)}&type=${selectedType}`);
 
         if (!response.ok) throw new Error('A API devolveu um erro.');
