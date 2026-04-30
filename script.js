@@ -328,7 +328,8 @@ const loadArtistProfile = async (artistName, artistImage) => {
     singlesGrid.innerHTML = '<p style="color:#aaa;">Buscando singles...</p>';
 
     try {
-        const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(artistName)}&type=artist_works`);
+        // AQUI: Fetch apontando para o Spotify
+        const response = await fetch(`${API_BASE_URL}/spotify-search?q=${encodeURIComponent(artistName)}&type=artist_works`);
         const data = await response.json();
 
         albumsGrid.innerHTML = '';
@@ -754,7 +755,8 @@ const performSearch = async () => {
     document.getElementById('pagination-controls').style.display = 'none';
 
     try {
-        const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(rawQuery)}&type=${selectedType}`);
+        // AQUI: Fetch apontando para o Spotify
+        const response = await fetch(`${API_BASE_URL}/spotify-search?q=${encodeURIComponent(rawQuery)}&type=${selectedType}`);
 
         if (!response.ok) throw new Error('A API devolveu um erro.');
         let data = await response.json(); 
@@ -1269,7 +1271,6 @@ if (albumFigure && albumInner) {
     let targetScale = 1;
     let isHovering = false;
 
-    // Amplitude aumentada pra dar mais sensação de 3D
     const rotateAmplitude = 20;
     const scaleOnHover = 1.05;
 
@@ -1288,7 +1289,6 @@ if (albumFigure && albumInner) {
             currentScale = lerp(currentScale, 1, 0.1);
         }
 
-        // Aplica o tilt no sanduíche inteiro com suporte a 3D nativo
         albumInner.style.transform = `scale(${currentScale}) rotateX(${currentRotateX}deg) rotateY(${currentRotateY}deg)`;
         requestAnimationFrame(updateTransform);
     }
@@ -1302,7 +1302,6 @@ if (albumFigure && albumInner) {
         const offsetX = x - rect.width / 2;
         const offsetY = y - rect.height / 2;
         
-        // Eixos invertidos pro tilt não quebrar no 3D space
         targetRotateX = (offsetY / (rect.height / 2)) * -rotateAmplitude;
         targetRotateY = (offsetX / (rect.width / 2)) * rotateAmplitude;
 
@@ -1343,7 +1342,6 @@ if (albumFigure && albumInner) {
 // FAVICON GIRATÓRIO (CANVAS DYNAMIC RENDER)
 // ====================================================================
 const initSpinningFavicon = () => {
-    // Procura o favicon existente ou cria um novo
     let link = document.querySelector("link[rel*='icon']");
     if (!link) {
         link = document.createElement('link');
@@ -1352,7 +1350,6 @@ const initSpinningFavicon = () => {
     }
 
     const img = new Image();
-    // Coloque aqui o nome exato da imagem que você quer girar
     img.src = './favicon.png'; 
     
     img.onload = () => {
@@ -1362,22 +1359,19 @@ const initSpinningFavicon = () => {
         const ctx = canvas.getContext('2d');
         let angle = 0;
 
-        // Roda a 15 frames por segundo pra não fritar a CPU do usuário
         setInterval(() => {
-            angle += 0.15; // Velocidade do giro
+            angle += 0.15; 
             
             ctx.clearRect(0, 0, 32, 32);
             ctx.save();
-            ctx.translate(16, 16); // Vai pro meio do canvas
+            ctx.translate(16, 16); 
             ctx.rotate(angle);
-            ctx.drawImage(img, -16, -16, 32, 32); // Desenha a imagem centralizada
+            ctx.drawImage(img, -16, -16, 32, 32); 
             ctx.restore();
             
-            // Atualiza a aba com o novo frame gerado
             link.href = canvas.toDataURL('image/png');
         }, 60); 
     };
 };
 
-// Dispara a bruxaria assim que o site carregar
 window.addEventListener('DOMContentLoaded', initSpinningFavicon);
