@@ -405,8 +405,7 @@ main.section-page { padding-bottom: 120px !important; }
     pointer-events: none;
     transform: translateZ(30px); 
     z-index: 4;
-    filter: drop-shadow(5px 5px 15px rgba(0,0,0,0.4));
-    mix-blend-mode: soft-light;
+    /* mix-blend-mode REMOVIDO DAQUI para não bugar a transparência do PNG */
 }
 
 /* 1. SPOTLIGHT EFFECT (translada 10px em Z) */
