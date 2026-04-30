@@ -394,7 +394,7 @@ main.section-page { padding-bottom: 120px !important; }
     z-index: 1;
 }
 
-/* ACRÍLICO FLUTUANTE (translateZ de 30px) */
+/* ACRÍLICO FLUTUANTE (Subido para 60px para máximo efeito 3D) */
 .tilted-card-overlay {
     position: absolute;
     inset: 0;
@@ -403,9 +403,9 @@ main.section-page { padding-bottom: 120px !important; }
     object-fit: cover;
     border-radius: inherit;
     pointer-events: none;
-    transform: translateZ(30px); 
+    transform: translateZ(60px) scale(1.02); 
     z-index: 4;
-    /* mix-blend-mode REMOVIDO DAQUI para não bugar a transparência do PNG */
+    filter: drop-shadow(10px 10px 20px rgba(0,0,0,0.6));
 }
 
 /* 1. SPOTLIGHT EFFECT (translada 10px em Z) */
