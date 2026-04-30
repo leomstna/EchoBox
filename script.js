@@ -1339,3 +1339,45 @@ if (albumFigure && albumInner) {
         albumInner.style.setProperty('--edge-proximity', '0');
     });
 }
+// ====================================================================
+// FAVICON GIRATÓRIO (CANVAS DYNAMIC RENDER)
+// ====================================================================
+const initSpinningFavicon = () => {
+    // Procura o favicon existente ou cria um novo
+    let link = document.querySelector("link[rel*='icon']");
+    if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+    }
+
+    const img = new Image();
+    // Coloque aqui o nome exato da imagem que você quer girar
+    img.src = './favicon.png'; 
+    
+    img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 32;
+        canvas.height = 32;
+        const ctx = canvas.getContext('2d');
+        let angle = 0;
+
+        // Roda a 15 frames por segundo pra não fritar a CPU do usuário
+        setInterval(() => {
+            angle += 0.15; // Velocidade do giro
+            
+            ctx.clearRect(0, 0, 32, 32);
+            ctx.save();
+            ctx.translate(16, 16); // Vai pro meio do canvas
+            ctx.rotate(angle);
+            ctx.drawImage(img, -16, -16, 32, 32); // Desenha a imagem centralizada
+            ctx.restore();
+            
+            // Atualiza a aba com o novo frame gerado
+            link.href = canvas.toDataURL('image/png');
+        }, 60); 
+    };
+};
+
+// Dispara a bruxaria assim que o site carregar
+window.addEventListener('DOMContentLoaded', initSpinningFavicon);
