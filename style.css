@@ -495,40 +495,71 @@ main.section-page { padding-bottom: 120px !important; }
    PORT MOBILE - RESPONSIVIDADE
 ========================================================= */
 @media (max-width: 768px) {
-    /* Navbar e Hero */
+    /* Navbar mais limpa e compacta */
     .pill-nav { 
-        flex-direction: column; 
-        gap: 15px; 
-        padding: 15px; 
+        flex-direction: row; 
+        flex-wrap: wrap;
+        justify-content: space-between;
+        padding: 10px 20px; 
         border-radius: 20px; 
+        gap: 10px;
+    }
+    .user-actions {
+        order: 2; /* Mantém a foto do perfil alinhada com a logo */
     }
     .nav-links { 
+        order: 3; /* Joga os links pra linha de baixo */
+        width: 100%;
         display: flex; 
         flex-wrap: wrap; 
         justify-content: center; 
-        gap: 10px; 
+        gap: 15px; 
+        margin-top: 5px;
     }
+
+    /* Hero */
     .hero h1 { font-size: 2.2rem !important; }
     .hero .desc { font-size: 0.9rem; margin-bottom: 30px !important; }
 
-    /* Barra de Pesquisa e Filtros */
+    /* Fim do "Tijolo Branco" no botão Buscar */
     .search-bar-container > div:first-child { 
-        flex-direction: column; 
+        flex-direction: row; /* Volta a ficar lado a lado com o input */
+    }
+    #search-input {
+        flex: 1;
     }
     #search-btn { 
-        width: 100%; 
+        width: auto; 
+        padding: 0 15px;
     }
+
+    /* Filtros respirando */
     .filters-container > div {
         flex-direction: column;
-        align-items: stretch !important;
+        align-items: center !important;
+        gap: 15px;
     }
     .type-options { 
         flex-wrap: wrap;
         justify-content: center; 
+        gap: 6px;
+    }
+    .type-options label {
+        padding: 6px 12px;
+        font-size: 0.8rem; /* Diminui pra caber melhor */
+    }
+
+    /* Centralizando o filtro de ano */
+    .filters-container > div > div:last-child {
+        flex-direction: column;
+        width: 100%;
+        align-items: center !important;
+        justify-content: center !important;
     }
     .range-slider-wrapper {
         width: 100%;
         max-width: none !important;
+        margin-top: 10px;
     }
 
     /* Grid dos álbuns na Home e Pesquisa */
@@ -575,14 +606,14 @@ main.section-page { padding-bottom: 120px !important; }
         height: 70px;
     }
     .player-volume { 
-        display: none !important; /* Arrancado fora pra não bugar a tela */
+        display: none !important;
     }
     .player-info { 
         width: 60%; 
         min-width: 0;
     }
     .progress-container { 
-        display: none !important; /* Simplifica a UI no celular */
+        display: none !important;
     }
     .player-controls {
         flex: 1;
