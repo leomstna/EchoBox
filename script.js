@@ -1302,7 +1302,12 @@ if (albumFigure && albumInner) {
     }
     updateTransform(); 
 
-    albumFigure.addEventListener('mousemove', (e) => {
+    // Trava o scroll da tela enquanto o dedo estiver na capa
+    albumFigure.style.touchAction = 'none';
+
+    let isDraggingCover = false;
+
+    function updateCoverPos(e) {
         const rect = albumFigure.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
@@ -1331,21 +1336,54 @@ if (albumFigure && albumInner) {
 
         albumInner.style.setProperty('--edge-proximity', (edge * 100).toFixed(3));
         albumInner.style.setProperty('--cursor-angle', `${degrees.toFixed(3)}deg`);
-    });
+    }
 
-    albumFigure.addEventListener('mouseenter', () => {
+    albumFigure.addEventListener('pointerdown', (e) => {
         isHovering = true;
+        isDraggingCover = true;
         targetScale = scaleOnHover;
+        albumFigure.setPointerCapture(e.pointerId);
+        updateCoverPos(e);
     });
 
-    albumFigure.addEventListener('mouseleave', () => {
+    albumFigure.addEventListener('pointermove', (e) => {
+        // Se for no celular (touch), só gira se tiver segurando. Se for PC (mouse), gira livre
+        if (e.pointerType === 'touch' && !isDraggingCover) return; 
+        updateCoverPos(e);
+    });
+
+    const stopDrag = (e) => {
+        isDraggingCover = false;
+        if(e.pointerType === 'touch') {
+            isHovering = false;
+            targetScale = 1;
+            targetRotateX = 0;
+            targetRotateY = 0;
+            albumInner.style.setProperty('--edge-proximity', '0');
+        }
+        albumFigure.releasePointerCapture(e.pointerId);
+    };
+
+    albumFigure.addEventListener('pointerup', stopDrag);
+    albumFigure.addEventListener('pointercancel', stopDrag);
+
+    albumFigure.addEventListener('pointerenter', (e) => {
+        if(e.pointerType === 'mouse') {
+            isHovering = true;
+            targetScale = scaleOnHover;
+        }
+    });
+
+    albumFigure.addEventListener('pointerleave', (e) => {
         isHovering = false;
+        isDraggingCover = false;
         targetScale = 1;
         targetRotateX = 0;
         targetRotateY = 0;
         albumInner.style.setProperty('--edge-proximity', '0');
     });
 }
+
 // ====================================================================
 // FAVICON GIRATÓRIO (CANVAS DYNAMIC RENDER)
 // ====================================================================
